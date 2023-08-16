@@ -39,6 +39,7 @@ public struct ConvertAction: Action, RecreatingContext {
     let inheritDocs: Bool
     let treatWarningsAsErrors: Bool
     let experimentalEnableCustomTemplates: Bool
+    let experimentalCompressedOutput: Bool
     let buildLMDBIndex: Bool
     let documentationCoverageOptions: DocumentationCoverageOptions
     let diagnosticLevel: DiagnosticSeverity
@@ -107,6 +108,7 @@ public struct ConvertAction: Action, RecreatingContext {
         inheritDocs: Bool = false,
         treatWarningsAsErrors: Bool = false,
         experimentalEnableCustomTemplates: Bool = false,
+        experimentalCompressedOutput: Bool = false,
         transformForStaticHosting: Bool = false,
         allowArbitraryCatalogDirectories: Bool = false,
         hostingBasePath: String? = nil,
@@ -146,6 +148,8 @@ public struct ConvertAction: Action, RecreatingContext {
         self.treatWarningsAsErrors = treatWarningsAsErrors
 
         self.experimentalEnableCustomTemplates = experimentalEnableCustomTemplates
+        
+        self.experimentalCompressedOutput = experimentalCompressedOutput
         
         let engine = diagnosticEngine ?? DiagnosticEngine(treatWarningsAsErrors: treatWarningsAsErrors)
         engine.filterLevel = filterLevel
@@ -470,7 +474,7 @@ public struct ConvertAction: Action, RecreatingContext {
             let indexerProblems = indexer.finalize(emitJSON: true, emitLMDB: buildLMDBIndex)
             allProblems.append(contentsOf: indexerProblems)
         }
-
+        
         // Stop the "total time" metric here. The moveOutput time isn't very interesting to include in the benchmark.
         // New tasks and computations should be added above this line so that they're included in the benchmark.
         benchmark(end: totalTimeMetric)
@@ -520,7 +524,7 @@ public struct ConvertAction: Action, RecreatingContext {
         if !analyze {
             allProblems.removeAll(where: { $0.diagnostic.severity.rawValue >  diagnosticLevel.rawValue })
         }
-
+        
         return ActionResult(didEncounterError: allProblems.containsErrors, outputs: [targetDirectory])
     }
     

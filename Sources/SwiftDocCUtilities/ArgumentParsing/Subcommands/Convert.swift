@@ -133,6 +133,12 @@ extension Docc {
         @Flag(help: "Allows for custom templates, like `header.html`.")
         public var experimentalEnableCustomTemplates = false
         
+        /// A user-provided value that is true if the users wants to enable compressed archive output.
+        ///
+        /// Defaults to false.
+        @Flag(help: "Produce a compressed archive that needs inflating before use by the renderer.")
+        public var experimentalCompressedOutput = false
+        
         /// A user-provided value that is true if the user enables experimental Objective-C language support.
         ///
         /// > Important: This flag is deprecated now that the feature is enabled by default, and will be removed in a future release.

@@ -83,6 +83,7 @@ extension ConvertAction {
             inheritDocs: convert.enableInheritedDocs,
             treatWarningsAsErrors: convert.warningsAsErrors,
             experimentalEnableCustomTemplates: convert.experimentalEnableCustomTemplates,
+            experimentalCompressedOutput: convert.experimentalCompressedOutput,
             transformForStaticHosting: convert.transformForStaticHosting,
             allowArbitraryCatalogDirectories: convert.allowArbitraryCatalogDirectories,
             hostingBasePath: convert.hostingBasePath,

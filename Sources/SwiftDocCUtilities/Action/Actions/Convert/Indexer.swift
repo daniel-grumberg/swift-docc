@@ -19,7 +19,7 @@ extension ConvertAction {
     /// finally call ``finalize()`` to write the index on disk.
     /// > Warning: Call ``finalize()`` at most once.
     /// > Note: The index is always created on disk in the given output folder.
-    class Indexer {
+    public class Indexer {
         /// A list of problems encountered during indexing.
         private var problems = [Problem]()
         
