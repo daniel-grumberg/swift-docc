@@ -69,6 +69,9 @@ struct TopicGraph {
             }
         }
         
+        /// The identifier for the `DocumentationNode` this node represents.
+        let identifier: UniqueTopicIdentifier
+        
         /// The reference to the `DocumentationNode` this node represents.
         let reference: ResolvedTopicReference
         
@@ -90,7 +93,8 @@ struct TopicGraph {
         /// If true, the topic has been removed from the hierarchy due to being an extension whose children have been curated elsewhere.
         let isEmptyExtension: Bool
         
-        init(reference: ResolvedTopicReference, kind: DocumentationNode.Kind, source: ContentLocation, title: String, isResolvable: Bool = true, isVirtual: Bool = false, isEmptyExtension: Bool = false) {
+        init(identifier: UniqueTopicIdentifier, reference: ResolvedTopicReference, kind: DocumentationNode.Kind, source: ContentLocation, title: String, isResolvable: Bool = true, isVirtual: Bool = false, isEmptyExtension: Bool = false) {
+            self.identifier = identifier
             self.reference = reference
             self.kind = kind
             self.source = source
@@ -100,35 +104,34 @@ struct TopicGraph {
             self.isEmptyExtension = isEmptyExtension
         }
         
+        func withIdentifier(_ identifier: UniqueTopicIdentifier) -> Node {
+            Node(identifier: identifier, reference: reference, kind: kind, source: source, title: title)
+        }
+        
         func withReference(_ reference: ResolvedTopicReference) -> Node {
-            Node(
-                reference: reference,
-                kind: kind,
-                source: source,
-                title: title
-            )
+            Node(identifier: identifier, reference: reference, kind: kind, source: source, title: title)
         }
         
         func hash(into hasher: inout Hasher) {
-            hasher.combine(reference)
+            hasher.combine(identifier)
         }
         
         var debugDescription: String {
-            return "TopicGraph.Node(reference: \(reference), kind: \(kind), source: \(source), title: \(title)"
+            return "TopicGraph.Node(identifier: \(identifier), kind: \(kind), source: \(source), title: \(title)"
         }
         
         static func == (lhs: Node, rhs: Node) -> Bool {
-            return lhs.reference == rhs.reference
+            return lhs.identifier == rhs.identifier
         }
     }
         
     /// The nodes in the graph.
-    var nodes: [ResolvedTopicReference: Node]
+    var nodes: [UniqueTopicIdentifier: Node]
     
     /// The edges in the graph.
-    var edges: [ResolvedTopicReference: [ResolvedTopicReference]]
+    var edges: [UniqueTopicIdentifier: [UniqueTopicIdentifier]]
     /// A reversed lookup of the graph's edges.
-    var reverseEdges: [ResolvedTopicReference: [ResolvedTopicReference]]
+    var reverseEdges: [UniqueTopicIdentifier: [UniqueTopicIdentifier]]
     
     /// Create an empty topic graph.
     init() {
@@ -139,53 +142,42 @@ struct TopicGraph {
     
     /// Adds a node to the graph.
     mutating func addNode(_ node: Node) {
-        guard nodes[node.reference] == nil else {
+        guard nodes[node.identifier] == nil else {
             return
         }
-        nodes[node.reference] = node
+        nodes[node.identifier] = node
+    }
+    
+    mutating func updateReference(_ old: ResolvedTopicReference, newReference: ResolvedTopicReference) {
+        guard old != newReference else { return }
+        assert(old.identifier == newReference.identifier)
+        
+        let node = nodes[old.identifier]!
+        nodes.updateValue(node.withReference(newReference), forKey: old.identifier)
     }
     
     /// Replaces one node with another in the graph, and preserves the edges.
     mutating func replaceNode(_ node: Node, with newNode: Node) {
-        let parentEdges = reverseEdges[node.reference]
-        let parentReference = parentEdges?.first
-        
-        // 1. Remove the node edges
-        let childrenEdges = edges[node.reference]
-        removeEdges(from: node)
-        edges.removeValue(forKey: node.reference)
-        
-        // 2. Remove reverse edges
-        if let parentReference = parentReference {
-            edges[parentReference]!.removeAll(where: { ref -> Bool in
-                return ref == node.reference
-            })
-        }
-        
-        // 3. Remove the node
-        nodes.removeValue(forKey: node.reference)
-        
-        // Now we do the reverse actions for the new node
-        
-        // 3. Add the new node
-        addNode(newNode)
-        
-        // 2. Add the reverse edges
-        if let edges = childrenEdges {
-            for edge in edges.compactMap({ nodes[$0] }) {
-                addEdge(from: newNode, to: edge)
+        if let childEdges = edges.removeValue(forKey: node.identifier) {
+            for childID in childEdges {
+                // We found this relationship via the node's edge so it's guaranteed to exist in reverseEdges
+                let oldIndex = reverseEdges[childID]!.firstIndex(of: node.identifier)!
+                reverseEdges[childID]!.remove(at: oldIndex)
+                reverseEdges[childID]!.append(newNode.identifier)
             }
         }
-
-        // 1. Add the new edges
-        if let parentReference = parentReference, let parentNode = nodeWithReference(parentReference) {
-            addEdge(from: parentNode, to: newNode)
+        
+        if let parentEdges = reverseEdges[node.identifier] {
+            for parentID in parentEdges {
+                // We found this relationship via the node's reverse edges so it's guaranteed to exist in reverseEdges
+                let oldIndex = edges[parentID]!.firstIndex(of: node.identifier)!
+                edges[parentID]!.remove(at: oldIndex)
+                edges[parentID]!.append(newNode.identifier)
+            }
         }
-    }
-    
-    /// Updates the node with the given reference with a new reference.
-    mutating func updateReference(_ reference: ResolvedTopicReference, newReference: ResolvedTopicReference) {
-        nodes[reference] = nodes[reference]?.withReference(newReference)
+        
+        nodes.removeValue(forKey: node.identifier)
+        addNode(newNode)
     }
     
     /// Adds a topic edge but it doesn't verify if the nodes exist for the given references.
@@ -193,7 +185,7 @@ struct TopicGraph {
     /// - Parameters:
     ///   - source: A source for the new edge.
     ///   - target: A target for the new edge.
-    mutating func unsafelyAddEdge(source: ResolvedTopicReference, target: ResolvedTopicReference) {
+    mutating func unsafelyAddEdge(source: UniqueTopicIdentifier, target: UniqueTopicIdentifier) {
         precondition(source != target, "Attempting to add edge between two equal nodes. \nsource: \(source)\ntarget: \(target)\n")
         
         // Do not add the edge if it exists already.
@@ -216,12 +208,12 @@ struct TopicGraph {
         addNode(target)
         
         // Do not add the edge if it exists already.
-        guard edges[source.reference]?.contains(target.reference) != true else {
+        guard edges[source.identifier]?.contains(target.identifier) != true else {
             return
         }
         
-        edges[source.reference, default: []].append(target.reference)
-        reverseEdges[target.reference, default: []].append(source.reference)
+        edges[source.identifier, default: []].append(target.identifier)
+        reverseEdges[target.identifier, default: []].append(source.identifier)
     }
     
     /// Removes the edges for a given node.
@@ -229,33 +221,33 @@ struct TopicGraph {
     /// For example, when a symbol's children are curated we need to remove
     /// the symbol-graph vended children.
     mutating func removeEdges(from source: Node) {
-        guard edges.keys.contains(source.reference) else {
+        guard edges.keys.contains(source.identifier) else {
             return
         }
-        for target in edges[source.reference, default: []] {
-            reverseEdges[target]!.removeAll(where: { $0 == source.reference })
+        for target in edges[source.identifier, default: []] {
+            reverseEdges[target]!.removeAll(where: { $0 == source.identifier})
         }
         
-        edges[source.reference] = []
+        edges[source.identifier] = []
     }
 
     mutating func removeEdges(to target: Node) {
-        guard reverseEdges.keys.contains(target.reference) else {
+        guard reverseEdges.keys.contains(target.identifier) else {
             return
         }
 
-        for source in reverseEdges[target.reference, default: []] {
-            edges[source]!.removeAll(where: { $0 == target.reference })
+        for source in reverseEdges[target.identifier, default: []] {
+            edges[source]!.removeAll(where: { $0 == target.identifier})
         }
 
-        reverseEdges[target.reference] = []
+        reverseEdges[target.identifier] = []
     }
 
     /// Removes the edge from one reference to another.
     /// - Parameters:
     ///   - source: The parent reference in the edge.
     ///   - target: The child reference in the edge.
-    mutating func removeEdge(fromReference source: ResolvedTopicReference, toReference target: ResolvedTopicReference) {
+    mutating func removeEdge(fromIdentifier source: UniqueTopicIdentifier, toIdentifier target: UniqueTopicIdentifier) {
         guard var nodeEdges = edges[source],
             let index = nodeEdges.firstIndex(of: target) else {
             return
@@ -267,14 +259,19 @@ struct TopicGraph {
         edges[source] = nodeEdges
     }
 
-    /// Returns a ``Node`` in the graph with the given `reference` if it exists.
+    /// Returns a ``Node`` in the graph with the given `identifier` if it exists.
+    func nodeWithIdentifier(_ identifier: UniqueTopicIdentifier) -> Node? {
+        return nodes[identifier]
+    }
+    
+    /// Returns a ``Node`` in the graph with the given reference if it exists.
     func nodeWithReference(_ reference: ResolvedTopicReference) -> Node? {
-        return nodes[reference]
+        return nodes[reference.identifier]
     }
     
     /// Returns the targets of the given ``Node``.
-    subscript(node: Node) -> [ResolvedTopicReference] {
-        return edges[node.reference] ?? []
+    subscript(node: Node) -> [UniqueTopicIdentifier] {
+        return edges[node.identifier] ?? []
     }
     
     /// Traverses the graph depth-first and passes each node to `observe`.
@@ -287,7 +284,7 @@ struct TopicGraph {
                 continue
             }
             let children = self[node].map {
-                nodeWithReference($0)!
+                nodeWithIdentifier($0)!
             }
             nodesToVisit.append(contentsOf: children)
             guard case .continue = observe(node) else {
@@ -307,7 +304,7 @@ struct TopicGraph {
                 continue
             }
             let children = self[node].map {
-                nodeWithReference($0)!
+                nodeWithIdentifier($0)!
             }
             nodesToVisit.append(contentsOf: children)
             guard case .continue = observe(node) else {
@@ -318,10 +315,14 @@ struct TopicGraph {
     }
 
     /// Returns true if a node exists with the given reference and it's set as linkable.
-    func isLinkable(_ reference: ResolvedTopicReference) -> Bool {
+    func isLinkable(_ identifier: UniqueTopicIdentifier) -> Bool {
         // Sections (represented by the node path + fragment with the section name)
         // don't have nodes in the topic graph so we verify that
         // the path without the fragment is resolvable.
+        return nodeWithIdentifier(identifier.removingFragment())?.isResolvable == true
+    }
+    
+    func isLinkable(_ reference: ResolvedTopicReference) -> Bool {
         return nodeWithReference(reference.withFragment(nil))?.isResolvable == true
     }
     
@@ -343,8 +344,8 @@ struct TopicGraph {
     func dump(startingAt node: Node, keyPath: KeyPath<TopicGraph.Node, String> = \.title, decorator: String = "") -> String {
         var result = ""
         result.append("\(decorator) \(node[keyPath: keyPath])\r\n")
-        if let childEdges = edges[node.reference]?.sorted(by: { $0.path < $1.path }) {
-            for (index, childRef) in childEdges.enumerated() {
+        if let childEdges = edges[node.identifier]?.sorted(by: \.description) {
+            for (index, childID) in childEdges.enumerated() {
                 var decorator = decorator
                 if decorator.hasSuffix("├") {
                     decorator = decorator.dropLast() + "│"
@@ -353,7 +354,7 @@ struct TopicGraph {
                     decorator = decorator.dropLast() + " "
                 }
                 let newDecorator = decorator + " " + (index == childEdges.count-1 ? "╰" : "├")
-                if let node = nodeWithReference(childRef) {
+                if let node = nodeWithIdentifier(childID) {
                     // We recurse into the child's hierarchy only if it's a legit topic node;
                     // otherwise, when for example this is a symbol curated via external resolving and it's
                     // not found in the current topic graph, we skip it.

@@ -130,6 +130,7 @@ public class OutOfProcessReferenceResolver: ExternalReferenceResolver, FallbackR
                 return .success(
                     ResolvedTopicReference(
                         bundleIdentifier: bundleIdentifier,
+                        identifier: UniqueTopicIdentifier(type: .placeholder, id: unresolvedReference.path, bundleIdentifier: bundleIdentifier, fragment: unresolvedReference.fragment),
                         path: unresolvedReference.path,
                         fragment: unresolvedReference.fragment,
                         sourceLanguages: sourceLanguages(for: metadata)
@@ -237,6 +238,7 @@ public class OutOfProcessReferenceResolver: ExternalReferenceResolver, FallbackR
         // already resolved information can be looked up when determining the URL for this symbol.
         let reference = ResolvedTopicReference(
             bundleIdentifier: symbolBundleIdentifier,
+            identifier: UniqueTopicIdentifier(type: .symbol, id: preciseIdentifier, bundleIdentifier: symbolBundleIdentifier),
             path: "/" + preciseIdentifier,
             sourceLanguages: sourceLanguages(for: resolvedInformation)
         )
@@ -970,7 +972,7 @@ extension OutOfProcessReferenceResolver {
             navigatorVariants: .empty,
             roleHeadingVariants: .init(values: [:], defaultVariantValue: ""), // This information isn't used anywhere since this node doesn't have its own page, it's just referenced from other pages.
             platformNameVariants: .empty,
-            moduleReference: ResolvedTopicReference(bundleIdentifier: "", path: "", sourceLanguage: language), // This information isn't used anywhere since the `urlForResolvedReference(reference:)` specifies the URL for this node.
+            moduleReference: ResolvedTopicReference(bundleIdentifier: "", identifier: UniqueTopicIdentifier(), path: "", sourceLanguage: language), // This information isn't used anywhere since the `urlForResolvedReference(reference:)` specifies the URL for this node.
             externalIDVariants: .empty,
             accessLevelVariants: .empty,
             availabilityVariants: .init(values: [:], defaultVariantValue: availability),

@@ -371,7 +371,7 @@ Tutorial @1:1-150:2 projectFiles: nil
     func testAnalyzeNode() throws {
         let title = "unreferenced-tutorial"
         let reference = ResolvedTopicReference(bundleIdentifier: "org.swift.docc.TopicGraphTests", path: "/\(title)", sourceLanguage: .swift)
-        let node = TopicGraph.Node(reference: reference, kind: .technology, source: .file(url: URL(fileURLWithPath: "/path/to/\(title)")), title: title)
+        let node = TopicGraph.Node(identifier: reference.identifier, reference: reference, kind: .technology, source: .file(url: URL(fileURLWithPath: "/path/to/\(title)")), title: title)
 
         let (_, context) = try testBundleAndContext(named: "TestBundle")
         context.topicGraph.addNode(node)
@@ -390,7 +390,7 @@ Tutorial @1:1-150:2 projectFiles: nil
     func testAnalyzeExternalNode() throws {
         let title = "unreferenced-tutorial"
         let reference = ResolvedTopicReference(bundleIdentifier: "org.swift.docc.TopicGraphTests", path: "/\(title)", sourceLanguage: .swift)
-        let node = TopicGraph.Node(reference: reference, kind: .technology, source: .external, title: title)
+        let node = TopicGraph.Node(identifier: reference.identifier, reference: reference, kind: .technology, source: .external, title: title)
 
         let (_, context) = try testBundleAndContext(named: "TestBundle")
         context.topicGraph.addNode(node)
@@ -410,7 +410,7 @@ Tutorial @1:1-150:2 projectFiles: nil
         let url = URL(fileURLWithPath: "/path/to/\(title)")
         let reference = ResolvedTopicReference(bundleIdentifier: "org.swift.docc.TopicGraphTests", path: "/\(title)", sourceLanguage: .swift)
         let range = SourceLocation(line: 1, column: 1, source: url)..<SourceLocation(line: 1, column: 1, source: url)
-        let node = TopicGraph.Node(reference: reference, kind: .technology, source: .range(range, url: url) , title: title)
+        let node = TopicGraph.Node(identifier: reference.identifier, reference: reference, kind: .technology, source: .range(range, url: url) , title: title)
 
         let (_, context) = try testBundleAndContext(named: "TestBundle")
         context.topicGraph.addNode(node)
@@ -431,7 +431,7 @@ Tutorial @1:1-150:2 projectFiles: nil
             let url = URL(fileURLWithPath: "/path/to/\(title)")
             let reference = ResolvedTopicReference(bundleIdentifier: "org.swift.docc.TutorialArticleTests", path:  "/\(title)", sourceLanguage: .swift)
             let range = SourceLocation(line: 1, column: 1, source: url)..<SourceLocation(line: 1, column: 1, source: url)
-            return TopicGraph.Node(reference: reference, kind: kind, source: .range(range, url: url) , title: title)
+            return TopicGraph.Node(identifier: reference.identifier, reference: reference, kind: kind, source: .range(range, url: url) , title: title)
         }
 
         let (_, context) = try testBundleAndContext(named: "TestBundle")
@@ -450,7 +450,7 @@ Tutorial @1:1-150:2 projectFiles: nil
             XCTAssertEqual(engine.problems.count, 0)
 
             context.topicGraph.removeEdges(from: parentNode)
-            context.topicGraph.nodes.removeValue(forKey: parentNode.reference)
+            context.topicGraph.nodes.removeValue(forKey: parentNode.identifier)
             XCTAssert(context.parents(of: tutorialNode.reference).isEmpty)
         }
 
@@ -466,7 +466,7 @@ Tutorial @1:1-150:2 projectFiles: nil
             XCTAssertEqual(problem.diagnostic.identifier, "org.swift.docc.UnreferencedTutorial")
 
             context.topicGraph.removeEdges(from: parentNode)
-            context.topicGraph.nodes.removeValue(forKey: parentNode.reference)
+            context.topicGraph.nodes.removeValue(forKey: parentNode.identifier)
             XCTAssert(context.parents(of: tutorialNode.reference).isEmpty)
         }
     }

@@ -49,6 +49,7 @@ public struct SymbolReference {
         shouldAddKind: Bool = false
     ) {
         self.interfaceLanguages = Set(interfaceLanguages)
+        self.preciseIdentifier = identifier
         
         guard let symbol = symbol else {
             path = shouldAddHash ?
@@ -136,6 +137,8 @@ public struct SymbolReference {
         pathComponents: [String],
         interfaceLanguages: SourceLanguages
     ) where SourceLanguages.Element == SourceLanguage {
+        assert(false, "Symbol reference garbage")
+        self.preciseIdentifier = "BOO"
         self.path = pathComponents.joinedSymbolPathComponents
         self.interfaceLanguages = Set(interfaceLanguages)
     }
@@ -146,9 +149,13 @@ public struct SymbolReference {
     ///   - pathComponents: The relative path components from the module or framework to the symbol.
     ///   - interfaceLanguage: The source language of the symbol.
     public init(pathComponents: [String], interfaceLanguage: SourceLanguage) {
+        assert(false, "Symbol reference garbage")
+        self.preciseIdentifier = "BOO"
         self.path = pathComponents.joinedSymbolPathComponents
         self.interfaceLanguages = [interfaceLanguage]
     }
+    
+    public let preciseIdentifier: String
     
     /// The relative path from the module or framework to the symbol itself.
     public let path: String

@@ -52,8 +52,8 @@ class DocumentationContext_RootPageTests: XCTestCase {
         XCTAssertEqual(context.rootModules.map({ $0.url.path }), ["/documentation/ReleaseNotes"])
         
         // Verify the root was crawled
-        XCTAssertEqual(context.topicGraph.edges[ResolvedTopicReference(bundleIdentifier: "com.test.example", path: "/documentation/ReleaseNotes", sourceLanguage: .swift)]?.map({ $0.url.path }),
-                       ["/documentation/TestBundle/ReleaseNotes-1.2"])
+        XCTAssertEqual(context.topicGraph.edges[UniqueTopicIdentifier(type: .container, id: "ReleaseNotes")],
+                       [UniqueTopicIdentifier(type: .article, id: "ReleaseNotes 1.2")])
     }
 
     func testWarnForSidecarRootPage() throws {

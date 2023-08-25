@@ -1261,7 +1261,7 @@ class DocumentationContextTests: XCTestCase {
 
         // Sort the edges for each node to get consistent results, no matter the order that the symbols were processed.
         for (source, targets) in context.topicGraph.edges {
-            context.topicGraph.edges[source] = targets.sorted(by: { $0.absoluteString < $1.absoluteString })
+            context.topicGraph.edges[source] = targets.sorted(by: { $0.id < $1.id })
         }
         
 let expected = """
@@ -2865,8 +2865,8 @@ let expected = """
 
         // Verify the doc extension curation, thanks to the new link resolving this is an absolute identifier.
         XCTAssertEqual(symbol1.topics?.taskGroups.first?.links.first?.destination, "doc://com.shapes.ShapeKit/documentation/ShapeKit/NewArticle")
-        let tgNode1 = try XCTUnwrap(context.topicGraph.edges[reference1])
-        XCTAssertTrue(tgNode1.contains(articleReference))
+        let tgNode1 = try XCTUnwrap(context.topicGraph.edges[reference1.identifier])
+        XCTAssertTrue(tgNode1.contains(articleReference.identifier))
         
         // Fetch the "fifthTestMember" node
         let reference2 = ResolvedTopicReference(bundleIdentifier: bundle.identifier, path: "/documentation/\(fifthTestMemberPath)", sourceLanguage: .swift)
@@ -2881,8 +2881,8 @@ let expected = """
         XCTAssertEqual(symbol2.topics?.taskGroups.first?.links.first?.destination, "doc://com.shapes.ShapeKit/documentation/ShapeKit/NewArticle")
 
         // Verify the correct topic graph parent <-> child relationship is created.
-        let tgNode2 = try XCTUnwrap(context.topicGraph.edges[reference2])
-        XCTAssertTrue(tgNode2.contains(articleReference))
+        let tgNode2 = try XCTUnwrap(context.topicGraph.edges[reference2.identifier])
+        XCTAssertTrue(tgNode2.contains(articleReference.identifier))
     }
     
     func testMatchesDocumentationExtensionsAsSymbolLinks() throws {

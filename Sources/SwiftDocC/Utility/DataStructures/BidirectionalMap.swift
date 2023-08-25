@@ -67,4 +67,20 @@ struct BidirectionalMap<Value1: Hashable, Value2: Hashable>: Sequence {
     func makeIterator() -> Dictionary<Value1, Value2>.Iterator {
         return forward.makeIterator()
     }
+    
+    @discardableResult
+    mutating func removeValue(forKey key1: Value1) -> Value2? {
+        guard let value2 = forward.removeValue(forKey: key1) else { return nil }
+        let value1 = reverse.removeValue(forKey: value2)
+        assert(key1 == value1)
+        return value2
+    }
+    
+    @discardableResult
+    mutating func removeValue(forKey key2: Value2) -> Value1? {
+        guard let value1 = reverse.removeValue(forKey: key2) else { return nil }
+        let value2 = forward.removeValue(forKey: value1)
+        assert(key2 == value2)
+        return value1
+    }
 }

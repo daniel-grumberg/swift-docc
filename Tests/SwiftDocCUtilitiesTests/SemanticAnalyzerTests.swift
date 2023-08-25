@@ -14,6 +14,20 @@ import Markdown
 @testable import SwiftDocCUtilities
 import SwiftDocCTestUtilities
 
+extension UniqueTopicIdentifierType {
+    static let test = Self.init("test")
+}
+
+extension ResolvedTopicReference {
+    init(bundleIdentifier: String, path: String, fragment: String? = nil, sourceLanguage: SourceLanguage) {
+        self.init(bundleIdentifier: bundleIdentifier, identifier: UniqueTopicIdentifier(type: .test, id: path), path: path, fragment: fragment, sourceLanguage: sourceLanguage)
+    }
+    
+    init(bundleIdentifier: String, path: String, fragment: String? = nil, sourceLanguages: Set<SourceLanguage>) {
+        self.init(bundleIdentifier: bundleIdentifier, identifier: UniqueTopicIdentifier(type: .test, id: path), path: path, fragment: fragment, sourceLanguages: sourceLanguages)
+    }
+}
+
 class SemanticAnalyzerTests: XCTestCase {
     let bundleFolderHierarchy = Folder(name: "SemanticAnalyzerTests.docc", content: [
         Folder(name: "Symbols", content: []),

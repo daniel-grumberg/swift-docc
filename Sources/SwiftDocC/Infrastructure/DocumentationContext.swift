@@ -186,7 +186,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
         // There are multiple "root modules" but some may be "virtual".
         // Removing those may leave only one root module left.
         let nonVirtualModules = rootModules.filter {
-            topicGraph.nodes[$0]?.isVirtual ?? false
+            topicGraph.nodeWithReference($0)?.isVirtual ?? false
         }
         return nonVirtualModules.count == 1 ? nonVirtualModules.first : nil
     }
@@ -713,24 +713,35 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
                 
                 for volume in technology.volumes {
                     // Graph node: Volume
-                    let volumeReference = technologyNode.reference.appendingPath(volume.name ?? anonymousVolumeName)
-                    let volumeNode = TopicGraph.Node(reference: volumeReference, kind: .volume, source: .file(url: url), title: volume.name ?? anonymousVolumeName)
+                    let volumeName = volume.name ?? anonymousVolumeName
+                    let volumeIdentifier = UniqueTopicIdentifier(
+                        type: .volume,
+                        id: "\(technologyNode.name)/\(volumeName)",
+                        bundleIdentifier: technologyNode.reference.bundleIdentifier,
+                        bundleDisplayName: technologyNode.reference.identifier.bundleDisplayName
+                    )
+                    let volumeReference = technologyNode.reference.appendingPath(volumeName, identifier: volumeIdentifier)
+                    let volumeNode = TopicGraph.Node(identifier: volumeIdentifier, reference: volumeReference, kind: .volume, source: .file(url: url), title: volumeName)
                     topicGraph.addNode(volumeNode)
                     
                     // Graph edge: Technology -> Volume
                     topicGraph.addEdge(from: technologyResult.topicGraphNode, to: volumeNode)
+                    // Graph node: Module
                     
-                    for chapter in volume.chapters {
-                        // Graph node: Module
-                        let baseNodeReference: ResolvedTopicReference
-                        if volume.name == nil {
-                            baseNodeReference = technologyNode.reference
-                        } else {
-                            baseNodeReference = volumeNode.reference
-                        }
+                    let baseNodeReference: ResolvedTopicReference
+                    let baseName: String
+                    if volume.name == nil {
+                        baseNodeReference = technologyNode.reference
+                        baseName = "\(technologyNode.name)"
+                    } else {
+                        baseNodeReference = volumeNode.reference
+                        baseName = "\(technologyNode.name)/\(volumeName)"
+                    }
 
-                        let chapterReference = baseNodeReference.appendingPath(chapter.name)
-                        let chapterNode = TopicGraph.Node(reference: chapterReference, kind: .chapter, source: .file(url: url), title: chapter.name)
+                    for chapter in volume.chapters {
+                        let chapterIdentifier = UniqueTopicIdentifier(type: .chapter, id: "\(baseName)/\(chapter.name)" , bundleIdentifier: baseNodeReference.bundleIdentifier, bundleDisplayName: baseNodeReference.identifier.bundleDisplayName)
+                        let chapterReference = baseNodeReference.appendingPath(chapter.name, identifier: chapterIdentifier)
+                        let chapterNode = TopicGraph.Node(identifier: chapterIdentifier, reference: chapterReference, kind: .chapter, source: .file(url: url), title: chapter.name)
                         topicGraph.addNode(chapterNode)
                         
                         // Graph edge: Volume -> Chapter
@@ -883,7 +894,8 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
             let (url, analyzed) = analyzedDocument
 
             let path = NodeURLGenerator.pathForSemantic(analyzed, source: url, bundle: bundle)
-            let reference = ResolvedTopicReference(bundleIdentifier: bundle.identifier, path: path, sourceLanguage: .swift)
+            let identifier = UniqueTopicIdentifierGenerator.identifierForSemantic(analyzed, source: url, bundle: bundle)
+            let reference = ResolvedTopicReference(bundleIdentifier: bundle.identifier, identifier: identifier, path: path, sourceLanguage: .swift)
             
             if let firstFoundAtURL = references[reference] {
                 let problem = Problem(
@@ -912,19 +924,19 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
              there may be circular linking.
              */
             if let technology = analyzed as? Technology {
-                let topicGraphNode = TopicGraph.Node(reference: reference, kind: .technology, source: .file(url: url), title: technology.intro.title)
+                let topicGraphNode = TopicGraph.Node(identifier: identifier, reference: reference, kind: .technology, source: .file(url: url), title: technology.intro.title)
                 topicGraph.addNode(topicGraphNode)
                 let result = SemanticResult(value: technology, source: url, topicGraphNode: topicGraphNode)
                 technologies.append(result)
             } else if let tutorial = analyzed as? Tutorial {
-                let topicGraphNode = TopicGraph.Node(reference: reference, kind: .tutorial, source: .file(url: url), title: tutorial.title ?? "")
+                let topicGraphNode = TopicGraph.Node(identifier: identifier, reference: reference, kind: .tutorial, source: .file(url: url), title: tutorial.title ?? "")
                 topicGraph.addNode(topicGraphNode)
                 let result = SemanticResult(value: tutorial, source: url, topicGraphNode: topicGraphNode)
                 tutorials.append(result)
                 
                 insertLandmarks(tutorial.landmarks, from: topicGraphNode, source: url)
             } else if let tutorialArticle = analyzed as? TutorialArticle {
-                let topicGraphNode = TopicGraph.Node(reference: reference, kind: .tutorialArticle, source: .file(url: url), title: tutorialArticle.title ?? "")
+                let topicGraphNode = TopicGraph.Node(identifier: identifier, reference: reference, kind: .tutorialArticle, source: .file(url: url), title: tutorialArticle.title ?? "")
                 topicGraph.addNode(topicGraphNode)
                 let result = SemanticResult(value: tutorialArticle, source: url, topicGraphNode: topicGraphNode)
                 tutorialArticles.append(result)
@@ -934,7 +946,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
                                 
                 // Here we create a topic graph node with the prepared data but we don't add it to the topic graph just yet
                 // because we don't know where in the hierarchy the article belongs, we will add it later when crawling the manual curation via Topics task groups.
-                let topicGraphNode = TopicGraph.Node(reference: reference, kind: .article, source: .file(url: url), title: article.title!.plainText)
+                let topicGraphNode = TopicGraph.Node(identifier: identifier, reference: reference, kind: .article, source: .file(url: url), title: article.title!.plainText)
                 let result = SemanticResult(value: article, source: url, topicGraphNode: topicGraphNode)
                 
                 // Separate articles that look like documentation extension files from other articles, so that the documentation extension files can be matched up with a symbol.
@@ -987,7 +999,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
             let landmarkReference = topicGraphNode.reference.withFragment(landmark.title)
             
             // Graph node: Landmark
-            let landmarkTopicGraphNode = TopicGraph.Node(reference: landmarkReference, kind: .onPageLandmark, source: .range(range, url: url), title: landmark.title)
+            let landmarkTopicGraphNode = TopicGraph.Node(identifier: landmarkReference.identifier, reference: landmarkReference, kind: .onPageLandmark, source: .range(range, url: url), title: landmark.title)
             topicGraph.addNode(landmarkTopicGraphNode)
             
             // Graph edge: Topic -> Landmark
@@ -1050,7 +1062,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
         } else {
             source = .external
         }
-        let graphNode = TopicGraph.Node(reference: reference, kind: documentation.kind, source: source, title: symbol.defaultSymbol!.names.title, isVirtual: module.isVirtual)
+        let graphNode = TopicGraph.Node(identifier: reference.identifier, reference: reference, kind: documentation.kind, source: source, title: symbol.defaultSymbol!.names.title, isVirtual: module.isVirtual)
 
         return ((reference, symbol.uniqueIdentifier, graphNode, documentation), [])
     }
@@ -1217,7 +1229,8 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
                             kind: SymbolGraph.Symbol.Kind(parsedIdentifier: .module, displayName: moduleKindDisplayName),
                             mixins: [:])
                     let moduleSymbolReference = SymbolReference(moduleName, interfaceLanguages: moduleInterfaceLanguages, defaultSymbol: moduleSymbol)
-                    moduleReference = ResolvedTopicReference(symbolReference: moduleSymbolReference, moduleName: moduleName, bundle: bundle)
+//                    moduleReference = ResolvedTopicReference(symbolReference: moduleSymbolReference, moduleName: moduleName, bundle: bundle)
+                    moduleReference = ResolvedTopicReference(bundleIdentifier: bundle.identifier, identifier: UniqueTopicIdentifier(type: .container, id: "documentation"), path: moduleSymbolReference.path, sourceLanguages: moduleSymbolReference.interfaceLanguages)
                     
                     addSymbolsToTopicGraph(symbolGraph: unifiedSymbolGraph, url: fileURL, symbolReferences: symbolReferences, moduleReference: moduleReference, bundle: bundle)
                     
@@ -1323,6 +1336,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
                         let symbolPath = NodeURLGenerator.Path.documentation(path: url.components.path).stringValue
                         let symbolReference = ResolvedTopicReference(
                             bundleIdentifier: reference.bundleIdentifier,
+                            identifier: UniqueTopicIdentifier(type: .symbol, id: "\(symbolPath)", bundleIdentifier: bundle.identifier, bundleDisplayName: bundle.displayName),
                             path: symbolPath,
                             fragment: nil,
                             sourceLanguages: reference.sourceLanguages
@@ -1450,7 +1464,8 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
                     context: self,
                     symbolIndex: &symbolIndex,
                     documentationCache: documentationCache,
-                    engine: diagnosticEngine
+                    engine: diagnosticEngine,
+                    hierarchyBasedLinkResolver: hierarchyBasedLinkResolver
                 )
             case .inheritsFrom:
                 // Build ancestor <-> offspring relationships.
@@ -1813,7 +1828,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
             // Create the documentation node
             documentLocationMap[article.source] = reference
             let topicGraphKind = DocumentationNode.Kind.module
-            let graphNode = TopicGraph.Node(reference: reference, kind: topicGraphKind, source: .file(url: article.source), title: title)
+            let graphNode = TopicGraph.Node(identifier: reference.identifier, reference: reference, kind: topicGraphKind, source: .file(url: article.source), title: title)
             topicGraph.addNode(graphNode)
             documentationCache[reference] = documentation
             
@@ -1870,7 +1885,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
             documentationCache[reference] = documentation
             
             documentLocationMap[article.source] = reference
-            let graphNode = TopicGraph.Node(reference: reference, kind: .article, source: .file(url: article.source), title: title)
+            let graphNode = TopicGraph.Node(identifier: reference.identifier, reference: reference, kind: .article, source: .file(url: article.source), title: title)
             topicGraph.addNode(graphNode)
             
             hierarchyBasedLinkResolver.addArticle(article, anchorSections: documentation.anchorSections)
@@ -1923,6 +1938,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
         
         let reference = ResolvedTopicReference(
             bundleIdentifier: bundle.identifier,
+            identifier: UniqueTopicIdentifierGenerator.identifierForSemantic(article.value, source: article.source, bundle: bundle),
             path: path,
             sourceLanguages: availableSourceLanguages
                 // FIXME: Pages in article-only catalogs should not be inferred as "Swift" as a fallback
@@ -1959,8 +1975,8 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
     private func autoCurateArticles(_ otherArticles: DocumentationContext.Articles, in bundle: DocumentationBundle, startingFrom rootNode: TopicGraph.Node) throws -> [ResolvedTopicReference] {
         
         let autoCuratedArticles: DocumentationContext.Articles = otherArticles.compactMap { article in
-            let edges = topicGraph.edges[article.topicGraphNode.reference] ?? []
-            let reverseEdges = topicGraph.reverseEdges[article.topicGraphNode.reference] ?? []
+            let edges = topicGraph.edges[article.topicGraphNode.reference.identifier] ?? []
+            let reverseEdges = topicGraph.reverseEdges[article.topicGraphNode.reference.identifier] ?? []
             guard edges.isEmpty, reverseEdges.isEmpty else {
                 return nil
             }
@@ -2266,7 +2282,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
             guard parents.count > 1 else { continue }
             
             // The topic has been manually curated, remove the automatic curation now.
-            topicGraph.removeEdge(fromReference: pair.parent, toReference: pair.child)
+            topicGraph.removeEdge(fromIdentifier: pair.parent.identifier, toIdentifier: pair.child.identifier)
         }
     }
     
@@ -2289,13 +2305,13 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
     /// Remove unneeded "Extended Symbol" pages whose children have been curated elsewhere.
     func trimEmptyExtendedSymbolPages(under nodeReference: ResolvedTopicReference) {
         // Get the children of this node that are an "Extended Symbol" page.
-        let extendedSymbolChildren = topicGraph.edges[nodeReference]?.filter({ childReference in
-            guard let childNode = topicGraph.nodeWithReference(childReference) else { return false }
+        let extendedSymbolChildren = topicGraph.edges[nodeReference.identifier]?.filter({ childIdentifier in
+            guard let childNode = topicGraph.nodeWithIdentifier(childIdentifier) else { return false }
             return childNode.kind.isExtendedSymbolKind
         }) ?? []
 
         // First recurse to clean up the tree depth-first.
-        for child in extendedSymbolChildren {
+        for child in extendedSymbolChildren.compactMap({ topicGraph.nodes[$0]?.reference }) {
             trimEmptyExtendedSymbolPages(under: child)
         }
 
@@ -2308,10 +2324,11 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
         {
             topicGraph.removeEdges(to: node)
             topicGraph.removeEdges(from: node)
-            topicGraph.edges.removeValue(forKey: nodeReference)
-            topicGraph.reverseEdges.removeValue(forKey: nodeReference)
+            topicGraph.edges.removeValue(forKey: nodeReference.identifier)
+            topicGraph.reverseEdges.removeValue(forKey: nodeReference.identifier)
 
             topicGraph.replaceNode(node, with: .init(
+                identifier: node.identifier,
                 reference: node.reference,
                 kind: node.kind,
                 source: node.source,
@@ -2333,7 +2350,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
             guard let topicGraphNode = topicGraph.nodeWithReference(reference),
                   let topicGraphParentNode = topicGraph.nodeWithReference(parentReference),
                   // Check that the node hasn't got any parents from manual curation
-                  topicGraph.reverseEdges[reference] == nil
+                  topicGraph.reverseEdges[reference.identifier] == nil
             else { return }
             topicGraph.addEdge(from: topicGraphParentNode, to: topicGraphNode)
             automaticallyCuratedSymbols.append((child: reference, parent: parentReference))
@@ -2367,7 +2384,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
             try crawler.crawlChildren(
                 of: reference,
                 relateNodes: {
-                    self.topicGraph.unsafelyAddEdge(source: $0, target: $1)
+                    self.topicGraph.unsafelyAddEdge(source: $0.identifier, target: $1.identifier)
                 }
             )
         }
@@ -2554,11 +2571,11 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
             return []
         }
         return topicGraph[node].compactMap {
-            guard let node = topicGraph.nodeWithReference($0) else {
+            guard let node = topicGraph.nodeWithIdentifier($0) else {
                 return nil
             }
             if kind == nil || node.kind == kind {
-                return ($0, node.kind)
+                return (node.reference, node.kind)
             }
             return nil
         }
@@ -2569,7 +2586,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
     /// - Parameter reference: The reference of the node to fetch parents for.
     /// - Returns: A list of the reference for the given node's parent nodes.
     public func parents(of reference: ResolvedTopicReference) -> [ResolvedTopicReference] {
-        return topicGraph.reverseEdges[reference] ?? []
+        return topicGraph.reverseEdges[reference.identifier]?.compactMap({ topicGraph.nodes[$0]?.reference }) ?? []
     }
     
     /// Returns the document URL for the given article or tutorial reference.
@@ -2586,7 +2603,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
     /// - Parameter reference: The identifier for the topic whose file URL to locate.
     /// - Returns: If the reference is a reference to a known Markdown document, this function returns the article's URL, otherwise `nil`.
     public func documentURL(for reference: ResolvedTopicReference) -> URL? {
-        if let node = topicGraph.nodes[reference], case .file(let url) = node.source {
+        if let node = topicGraph.nodes[reference.identifier], case .file(let url) = node.source {
             return url
         }
         return nil
@@ -2618,7 +2635,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
      - Returns: The title of the topic if it could be found, otherwise `nil`.
      */
     public func title(for reference: ResolvedTopicReference) -> String? {
-        return topicGraph.nodes[reference]?.title
+        return topicGraph.nodes[reference.identifier]?.title
     }
     
     /**
@@ -2748,7 +2765,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
     
     /// The references of all nodes in the topic graph.
     public var knownIdentifiers: [ResolvedTopicReference] {
-        return Array(topicGraph.nodes.keys)
+        return Array(topicGraph.nodes.values.map(\.reference))
     }
     
     /// The references of all the pages in the topic graph.

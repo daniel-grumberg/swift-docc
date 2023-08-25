@@ -12,14 +12,6 @@ import Foundation
 import SymbolKit
 import Markdown
 
-/// An opaque identifier that uniquely identifies a resolved entry in the path hierarchy,
-///
-/// Resolved identifiers cannot be inspected and can only be created by the path hierarchy.
-struct ResolvedIdentifier: Equatable, Hashable {
-    // This is currently implemented with a UUID. That detail should remain hidden and may change at any time.
-    private let storage = UUID()
-}
-
 /// A hierarchy of path components corresponding to the documentation hierarchy with disambiguation information at every level.
 ///
 /// The main purpose of the path hierarchy is finding documentation entities based on relative paths from other documentation entities with good handling of link disambiguation.
@@ -48,7 +40,7 @@ struct PathHierarchy {
     let tutorialOverviewContainer: Node
     
     /// A map of known documentation nodes based on their unique identifiers.
-    private(set) var lookup: [ResolvedIdentifier: Node]
+    private(set) var lookup: [UniqueTopicIdentifier: Node]
     
     // MARK: Creating a path hierarchy
     
@@ -186,7 +178,7 @@ struct PathHierarchy {
                         "Shouldn't create a new sparse node when symbol node already exist. This is an indication that a symbol is missing a relationship."
                     )
                     let component = Self.parse(pathComponent: component[...])
-                    let nodeWithoutSymbol = Node(name: component.name)
+                    let nodeWithoutSymbol = Node(name: component.name, identifier: UniqueTopicIdentifier(type: .sparseSymbol, id: component.full))
                     nodeWithoutSymbol.isDisfavoredInCollision = true
                     parent.add(child: nodeWithoutSymbol, kind: component.kind, hash: component.hash)
                     parent = nodeWithoutSymbol
@@ -203,11 +195,9 @@ struct PathHierarchy {
         
         // build the lookup list by traversing the hierarchy and adding identifiers to each node
         
-        var lookup = [ResolvedIdentifier: Node]()
+        var lookup = [UniqueTopicIdentifier: Node]()
         func descend(_ node: Node) {
-            assert(node.identifier == nil)
             if node.symbol != nil {
-                node.identifier = ResolvedIdentifier()
                 lookup[node.identifier] = node
             }
             for tree in node.children.values {
@@ -224,9 +214,8 @@ struct PathHierarchy {
         }
         
         func newNode(_ name: String) -> Node {
-            let id = ResolvedIdentifier()
-            let node = Node(name: name)
-            node.identifier = id
+            let id = UniqueTopicIdentifier(type: .container, id: name)
+            let node = Node(name: name, identifier: id)
             lookup[id] = node
             return node
         }
@@ -247,23 +236,21 @@ struct PathHierarchy {
     
     /// Adds an article to the path hierarchy.
     /// - Parameter name: The path component name of the article (the file name without the file extension).
-    /// - Returns: The new unique identifier that represent this article.
-    mutating func addArticle(name: String) -> ResolvedIdentifier {
-        return addNonSymbolChild(parent: articlesContainer.identifier, name: name, kind: "article")
+    mutating func addArticle(name: String, identifier: UniqueTopicIdentifier) {
+        addNonSymbolChild(parent: articlesContainer.identifier, name: name, identifier: identifier, kind: "article")
     }
     
     /// Adds a tutorial to the path hierarchy.
     /// - Parameter name: The path component name of the tutorial (the file name without the file extension).
     /// - Returns: The new unique identifier that represent this tutorial.
-    mutating func addTutorial(name: String) -> ResolvedIdentifier {
-        return addNonSymbolChild(parent: tutorialContainer.identifier, name: name, kind: "tutorial")
+    mutating func addTutorial(name: String, identifier: UniqueTopicIdentifier) {
+        addNonSymbolChild(parent: tutorialContainer.identifier, name: name, identifier: identifier, kind: "tutorial")
     }
     
     /// Adds a tutorial overview page to the path hierarchy.
     /// - Parameter name: The path component name of the tutorial overview (the file name without the file extension).
-    /// - Returns: The new unique identifier that represent this tutorial overview.
-    mutating func addTutorialOverview(name: String) -> ResolvedIdentifier {
-        return addNonSymbolChild(parent: tutorialOverviewContainer.identifier, name: name, kind: "technology")
+    mutating func addTutorialOverview(name: String, identifier: UniqueTopicIdentifier) {
+        addNonSymbolChild(parent: tutorialOverviewContainer.identifier, name: name, identifier: identifier, kind: "technology")
     }
     
     /// Adds a non-symbol child element to an existing element in the path hierarchy.
@@ -272,31 +259,23 @@ struct PathHierarchy {
     ///   - name: The path component name of the new element.
     ///   - kind: The kind of the new element
     /// - Returns: The new unique identifier that represent this element.
-    mutating func addNonSymbolChild(parent: ResolvedIdentifier, name: String, kind: String) -> ResolvedIdentifier {
+    mutating func addNonSymbolChild(parent: UniqueTopicIdentifier, name: String, identifier: UniqueTopicIdentifier, kind: String) {
         let parent = lookup[parent]!
         
-        let newReference = ResolvedIdentifier()
-        let newNode = Node(name: name)
-        newNode.identifier = newReference
-        self.lookup[newReference] = newNode
+        let newNode = Node(name: name, identifier: identifier)
+        self.lookup[identifier] = newNode
         parent.add(child: newNode, kind: kind, hash: nil)
-        
-        return newReference
     }
     
     /// Adds a non-symbol technology root.
     /// - Parameters:
     ///   - name: The path component name of the technology root.
     /// - Returns: The new unique identifier that represent the root.
-    mutating func addTechnologyRoot(name: String) -> ResolvedIdentifier {
-        let newReference = ResolvedIdentifier()
-        let newNode = Node(name: name)
-        newNode.identifier = newReference
-        self.lookup[newReference] = newNode
+    mutating func addTechnologyRoot(name: String, identifier: UniqueTopicIdentifier) {
+        let newNode = Node(name: name, identifier: identifier)
+        self.lookup[identifier] = newNode
         
         modules[name] = newNode
-        
-        return newReference
     }
 
     // MARK: Finding elements in the hierarchy
@@ -309,18 +288,16 @@ struct PathHierarchy {
     ///   - onlyFindSymbols: Whether or not only symbol matches should be found.
     /// - Returns: Returns the unique identifier for the found match or raises an error if no match can be found.
     /// - Throws: Raises a ``PathHierarchy/Error`` if no match can be found.
-    func find(path rawPath: String, parent: ResolvedIdentifier? = nil, onlyFindSymbols: Bool) throws -> ResolvedIdentifier {
+    func find(path rawPath: String, parent: UniqueTopicIdentifier? = nil, onlyFindSymbols: Bool) throws -> UniqueTopicIdentifier {
         let node = try findNode(path: rawPath, parentID: parent, onlyFindSymbols: onlyFindSymbols)
-        if node.identifier == nil {
-            throw Error.unfindableMatch(node)
-        }
         if onlyFindSymbols, node.symbol == nil {
             throw Error.nonSymbolMatchForSymbolLink
         }
+        
         return node.identifier
     }
     
-    private func findNode(path rawPath: String, parentID: ResolvedIdentifier?, onlyFindSymbols: Bool) throws -> Node {
+    private func findNode(path rawPath: String, parentID: UniqueTopicIdentifier?, onlyFindSymbols: Bool) throws -> Node {
         // The search for a documentation element can be though of as 3 steps:
         // - First, parse the path into structured path components.
         // - Second, find nodes that match the beginning of the path as starting points for the search
@@ -641,7 +618,7 @@ extension PathHierarchy {
     /// A node in the path hierarchy.
     final class Node {
         /// The unique identifier for this node.
-        fileprivate(set) var identifier: ResolvedIdentifier!
+        fileprivate(set) var identifier: UniqueTopicIdentifier!
         
         // Everything else is file-private or private.
         
@@ -666,6 +643,7 @@ extension PathHierarchy {
         
         /// Initializes a symbol node.
         fileprivate init(symbol: SymbolGraph.Symbol!) {
+            self.identifier = UniqueTopicIdentifier(type: .symbol, id: symbol.preciseIdentifier ?? "")
             self.symbol = symbol
             self.name = symbol.pathComponents.last!
             self.children = [:]
@@ -673,7 +651,8 @@ extension PathHierarchy {
         }
         
         /// Initializes a non-symbol node with a given name.
-        fileprivate init(name: String) {
+        fileprivate init(name: String, identifier: UniqueTopicIdentifier) {
+            self.identifier = identifier
             self.symbol = nil
             self.name = name
             self.children = [:]
@@ -924,8 +903,8 @@ extension PathHierarchy {
 
 extension PathHierarchy {
     /// Returns the list of top level symbols
-    func topLevelSymbols() -> [ResolvedIdentifier] {
-        var result: Set<ResolvedIdentifier> = []
+    func topLevelSymbols() -> [UniqueTopicIdentifier] {
+        var result: Set<UniqueTopicIdentifier> = []
         // Roots represent modules and only have direct symbol descendants.
         for root in modules.values {
             for (_, tree) in root.children {
@@ -1279,7 +1258,7 @@ extension PathHierarchy {
     
     /// Removes a node from the path hierarchy so that it can no longer be found.
     /// - Parameter id: The unique identifier for the node.
-    mutating func removeNodeWithID(_ id: ResolvedIdentifier) {
+    mutating func removeNodeWithID(_ id: UniqueTopicIdentifier) {
         // Remove the node from the lookup and unset its identifier
         lookup.removeValue(forKey: id)!.identifier = nil
     }

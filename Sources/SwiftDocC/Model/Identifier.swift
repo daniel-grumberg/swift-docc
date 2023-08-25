@@ -11,6 +11,7 @@
 import Foundation
 import SymbolKit
 import Markdown
+import _Backtracing
 
 /// A resolved or unresolved reference to a piece of documentation.
 ///
@@ -203,20 +204,27 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
     }
     
     /// - Note: The `path` parameter is escaped to a path readable string.
-    public init(bundleIdentifier: String, path: String, fragment: String? = nil, sourceLanguage: SourceLanguage) {
-        self.init(bundleIdentifier: bundleIdentifier, path: path, fragment: fragment, sourceLanguages: [sourceLanguage])
-    }
-    
-    public init(bundleIdentifier: String, path: String, fragment: String? = nil, sourceLanguages: Set<SourceLanguage>) {
+    public init(bundleIdentifier: String, identifier: UniqueTopicIdentifier, path: String, fragment: String? = nil, sourceLanguage: SourceLanguage) {
         self.init(
             bundleIdentifier: bundleIdentifier,
+            identifier: identifier,
+            path: path,
+            fragment: fragment,
+            sourceLanguages: [sourceLanguage]
+        )
+    }
+    
+    public init(bundleIdentifier: String, identifier: UniqueTopicIdentifier, path: String, fragment: String? = nil, sourceLanguages: Set<SourceLanguage>) {
+        self.init(
+            bundleIdentifier: bundleIdentifier,
+            identifier: identifier,
             urlReadablePath: urlReadablePath(path),
             urlReadableFragment: fragment.map(urlReadableFragment(_:)),
             sourceLanguages: sourceLanguages
         )
     }
     
-    private init(bundleIdentifier: String, urlReadablePath: String, urlReadableFragment: String? = nil, sourceLanguages: Set<SourceLanguage>) {
+    private init(bundleIdentifier: String, identifier: UniqueTopicIdentifier, urlReadablePath: String, urlReadableFragment: String? = nil, sourceLanguages: Set<SourceLanguage>) {
         precondition(!sourceLanguages.isEmpty, "ResolvedTopicReference.sourceLanguages cannot be empty")
         // Check for a cached instance of the reference
         let key = Self.cacheKey(
@@ -226,15 +234,20 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         )
         let cached = Self.sharedPool.sync { $0[bundleIdentifier]?[key] }
         if let resolved = cached {
+            assert(resolved.identifier == identifier || identifier.type.description == "test", "Failed to match identifier when creating identical references, cached \(resolved.identifier), new \(identifier)")
             self = resolved
             return
         }
         
+        //let backtrace = try! Backtrace.capture().symbolicated()
+        
         _storage = Storage(
             bundleIdentifier: bundleIdentifier,
+            identifier: identifier,
             path: urlReadablePath,
             fragment: urlReadableFragment,
-            sourceLanguages: sourceLanguages
+            sourceLanguages: sourceLanguages,
+            creationBacktrace: nil //backtrace
         )
 
         // Cache the reference
@@ -258,6 +271,11 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         }
     }
     
+    /// The identifier of the referenced documentation.
+    public var identifier: UniqueTopicIdentifier {
+        return _storage.identifier
+    }
+    
     /// The topic URL as you would write in a link.
     public var url: URL {
         return _storage.url
@@ -274,7 +292,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
     }
     
     enum CodingKeys: CodingKey {
-        case url, interfaceLanguage
+        case url, interfaceLanguage, identifier
     }
     
     public init(from decoder: Decoder) throws {
@@ -284,6 +302,8 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         }
         
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        let identifier = try container.decode(UniqueTopicIdentifier.self, forKey: .identifier)
         
         let url = try container.decode(URL.self, forKey: .url)
         guard ResolvedTopicReference.urlHasResolvedTopicScheme(url) else {
@@ -299,7 +319,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
 
         decoder.registerReferences([url.absoluteString])
         
-        self.init(bundleIdentifier: bundleIdentifier, path: url.path, fragment: url.fragment, sourceLanguage: interfaceLanguage)
+        self.init(bundleIdentifier: bundleIdentifier, identifier: identifier, path: url.path, fragment: url.fragment, sourceLanguage: interfaceLanguage)
     }
     
     /// Creates a new topic reference with the given fragment.
@@ -319,6 +339,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
     public func withFragment(_ fragment: String?) -> ResolvedTopicReference {
         let newReference = ResolvedTopicReference(
             bundleIdentifier: bundleIdentifier,
+            identifier: identifier.addingFragment(fragment),
             path: path,
             fragment: fragment.map(urlReadableFragment),
             sourceLanguages: sourceLanguages
@@ -333,9 +354,11 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
     ///
     /// - Parameter path: The path to append.
     /// - Returns: The resulting topic reference.
-    public func appendingPath(_ path: String) -> ResolvedTopicReference {
+    public func appendingPath(_ path: String, identifier: UniqueTopicIdentifier? = nil) -> ResolvedTopicReference {
+        //assert(false, "OUT OF THIN AIR")
         let newReference = ResolvedTopicReference(
             bundleIdentifier: bundleIdentifier,
+            identifier: identifier ?? self.identifier,
             urlReadablePath: url.appendingPathComponent(urlReadablePath(path), isDirectory: false).path,
             sourceLanguages: sourceLanguages
         )
@@ -348,8 +371,9 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
     ///
     /// - Parameter reference: The other reference from which the path is appended to this reference.
     /// - Returns: The resulting topic reference.
-    public func appendingPathOfReference(_ reference: UnresolvedTopicReference) -> ResolvedTopicReference {
+    public func appendingPathOfReference(_ reference: UnresolvedTopicReference, identifier: UniqueTopicIdentifier? = nil) -> ResolvedTopicReference {
         // Only append the path component if it's not empty (rdar://66580574).
+        // assert(false, "OUT OF THIN AIR")
         let referencePath = urlReadablePath(reference.path)
         guard !referencePath.isEmpty else {
             return self
@@ -357,6 +381,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         let newPath = url.appendingPathComponent(referencePath, isDirectory: false).path
         let newReference = ResolvedTopicReference(
             bundleIdentifier: bundleIdentifier,
+            identifier: identifier ?? self.identifier,
             urlReadablePath: newPath,
             urlReadableFragment: reference.fragment.map(urlReadableFragment),
             sourceLanguages: sourceLanguages
@@ -366,9 +391,11 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
     
     /// Creates a new topic reference by removing the last path component from this topic reference.
     public func removingLastPathComponent() -> ResolvedTopicReference {
+        assert(false, "OUT OF THIN AIR")
         let newPath = String(pathComponents.dropLast().joined(separator: "/").dropFirst())
         let newReference = ResolvedTopicReference(
             bundleIdentifier: bundleIdentifier,
+            identifier: identifier,
             urlReadablePath: newPath,
             urlReadableFragment: fragment,
             sourceLanguages: sourceLanguages
@@ -389,6 +416,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         
         return ResolvedTopicReference(
             bundleIdentifier: bundleIdentifier,
+            identifier: identifier,
             urlReadablePath: path,
             urlReadableFragment: fragment,
             sourceLanguages: combinedSourceLanguages
@@ -406,6 +434,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         
         return ResolvedTopicReference(
             bundleIdentifier: bundleIdentifier,
+            identifier: identifier,
             urlReadablePath: path,
             urlReadableFragment: fragment,
             sourceLanguages: sourceLanguages
@@ -462,10 +491,12 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
     /// This is a reference type which allows ``ResolvedTopicReference`` to have copy-on-write behavior.
     class Storage {
         let bundleIdentifier: String
+        let identifier: UniqueTopicIdentifier
         let path: String
         let fragment: String?
         let sourceLanguages: Set<SourceLanguage>
         let identifierPathAndFragment: String
+        let creationBacktrace: String
         
         let url: URL
         
@@ -475,15 +506,19 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         
         init(
             bundleIdentifier: String,
+            identifier: UniqueTopicIdentifier,
             path: String,
             fragment: String? = nil,
-            sourceLanguages: Set<SourceLanguage>
+            sourceLanguages: Set<SourceLanguage>,
+            creationBacktrace: SymbolicatedBacktrace?
         ) {
             self.bundleIdentifier = bundleIdentifier
+            self.identifier = identifier
             self.path = path
             self.fragment = fragment
             self.sourceLanguages = sourceLanguages
             self.identifierPathAndFragment = "\(bundleIdentifier)\(path)\(fragment ?? "")"
+            self.creationBacktrace = creationBacktrace?.frames.debugDescription ?? "No Stack Trace"
             
             var components = URLComponents()
             components.scheme = ResolvedTopicReference.urlScheme

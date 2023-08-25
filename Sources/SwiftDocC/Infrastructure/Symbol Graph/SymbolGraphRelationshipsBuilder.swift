@@ -41,7 +41,8 @@ struct SymbolGraphRelationshipsBuilder {
         context: DocumentationContext,
         symbolIndex: inout [String: ResolvedTopicReference],
         documentationCache: [ResolvedTopicReference: DocumentationNode],
-        engine: DiagnosticEngine
+        engine: DiagnosticEngine,
+        hierarchyBasedLinkResolver: PathHierarchyBasedLinkResolver
     ) {
         // Resolve source symbol
         guard let implementorNode = symbolIndex[edge.source].flatMap({ documentationCache[$0] }),
@@ -77,7 +78,8 @@ struct SymbolGraphRelationshipsBuilder {
         let parentName: String?
 
         if let reference = symbolIndex[edge.source],
-           let parentNode = try? context.entity(with: reference.removingLastPathComponent()),
+           let parentReference = hierarchyBasedLinkResolver.parent(of: reference),
+           let parentNode = try? context.entity(with: parentReference),
            let title = (parentNode.semantic as? Symbol)?.title
         {
             parentName = title

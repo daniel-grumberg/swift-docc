@@ -12,6 +12,13 @@ import XCTest
 @testable import SwiftDocC
 import Markdown
 
+extension TopicGraph.Node {
+    convenience init(reference: ResolvedTopicReference, kind: DocumentationNode.Kind, source: ContentLocation, title: String, isResolvable: Bool = true, isVirtual: Bool = false, isEmptyExtension: Bool = false) {
+        self.init(identifier: reference.identifier, reference: reference, kind: kind, source: source, title: title, isResolvable: isResolvable, isVirtual: isVirtual, isEmptyExtension: isEmptyExtension)
+    }
+
+}
+
 class TutorialArticleTests: XCTestCase {
     func testEmpty() throws {
         let source = "@Article"
@@ -396,7 +403,7 @@ TutorialArticle @1:1-42:2 title: 'Basic Augmented Reality App' time: '20'
     func testAnalyzeNode() throws {
         let title = "unreferenced-tutorial"
         let reference = ResolvedTopicReference(bundleIdentifier: "org.swift.docc.TopicGraphTests", path: "/\(title)", sourceLanguage: .swift)
-        let node = TopicGraph.Node(reference: reference, kind: .technology, source: .file(url: URL(fileURLWithPath: "/path/to/\(title)")), title: title)
+        let node = TopicGraph.Node(identifier: reference.identifier, reference: reference, kind: .technology, source: .file(url: URL(fileURLWithPath: "/path/to/\(title)")), title: title)
 
         let (_, context) = try testBundleAndContext(named: "TestBundle")
         context.topicGraph.addNode(node)
@@ -415,7 +422,7 @@ TutorialArticle @1:1-42:2 title: 'Basic Augmented Reality App' time: '20'
     func testAnalyzeExternalNode() throws {
         let title = "unreferenced-tutorial"
         let reference = ResolvedTopicReference(bundleIdentifier: "org.swift.docc.TopicGraphTests", path: "/\(title)", sourceLanguage: .swift)
-        let node = TopicGraph.Node(reference: reference, kind: .technology, source: .external, title: title)
+        let node = TopicGraph.Node(identifier: reference.identifier, reference: reference, kind: .technology, source: .external, title: title)
 
         let (_, context) = try testBundleAndContext(named: "TestBundle")
         context.topicGraph.addNode(node)
@@ -475,7 +482,7 @@ TutorialArticle @1:1-42:2 title: 'Basic Augmented Reality App' time: '20'
             XCTAssertEqual(engine.problems.count, 0)
 
             context.topicGraph.removeEdges(from: parentNode)
-            context.topicGraph.nodes.removeValue(forKey: parentNode.reference)
+            context.topicGraph.nodes.removeValue(forKey: parentNode.identifier)
             XCTAssert(context.parents(of: tutorialArticleNode.reference).isEmpty)
         }
 
@@ -491,7 +498,7 @@ TutorialArticle @1:1-42:2 title: 'Basic Augmented Reality App' time: '20'
             XCTAssertEqual(problem.diagnostic.identifier, "org.swift.docc.UnreferencedTutorialArticle")
 
             context.topicGraph.removeEdges(from: parentNode)
-            context.topicGraph.nodes.removeValue(forKey: parentNode.reference)
+            context.topicGraph.nodes.removeValue(forKey: parentNode.identifier)
             XCTAssert(context.parents(of: tutorialArticleNode.reference).isEmpty)
         }
     }

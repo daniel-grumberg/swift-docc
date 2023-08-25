@@ -13,6 +13,20 @@ import XCTest
 
 @testable import SwiftDocC
 
+extension UniqueTopicIdentifierType {
+    static let test = Self.init("test")
+}
+
+extension ResolvedTopicReference {
+    init(bundleIdentifier: String, path: String, fragment: String? = nil, sourceLanguage: SourceLanguage) {
+        self.init(bundleIdentifier: bundleIdentifier, identifier: UniqueTopicIdentifier(type: .test, id: path, bundleIdentifier: bundleIdentifier), path: path, fragment: fragment, sourceLanguage: sourceLanguage)
+    }
+    
+    init(bundleIdentifier: String, path: String, fragment: String? = nil, sourceLanguages: Set<SourceLanguage>) {
+        self.init(bundleIdentifier: bundleIdentifier, identifier: UniqueTopicIdentifier(type: .test, id: path, bundleIdentifier: bundleIdentifier), path: path, fragment: fragment, sourceLanguages: sourceLanguages)
+    }
+}
+
 class ResolvedTopicReferenceTests: XCTestCase {
     func testReferenceURL() {
         let firstTopicReference = ResolvedTopicReference(

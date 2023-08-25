@@ -325,6 +325,7 @@ public class DocumentationContentRenderer {
             // Sections don't have their own abstract so take the one of the container symbol.
             let containerReference = ResolvedTopicReference(
                 bundleIdentifier: reference.bundleIdentifier,
+                identifier: reference.identifier,
                 path: reference.path,
                 sourceLanguages: reference.sourceLanguages
             )
@@ -489,6 +490,7 @@ public class DocumentationContentRenderer {
                 if linkHost != reference.bundleIdentifier {
                     let externalReference = ResolvedTopicReference(
                         bundleIdentifier: linkHost,
+                        identifier: reference.identifier,
                         path: destination.path,
                         sourceLanguages: node.availableSourceLanguages
                     )
@@ -497,11 +499,13 @@ public class DocumentationContentRenderer {
                     }
                     return nil
                 }
-                return ResolvedTopicReference(
-                    bundleIdentifier: reference.bundleIdentifier,
-                    path: destination.path,
-                    sourceLanguages: node.availableSourceLanguages
-                )
+                
+                switch documentationContext.resolve(.unresolved(.init(topicURL: .init(destination)!)), in: reference, fromSymbolLink: link is SymbolLink) {
+                case .success(let resolvedReference):
+                    return resolvedReference
+                case.failure(_, _):
+                    return nil
+                }
             }
             
             resolvedTaskGroups.append(

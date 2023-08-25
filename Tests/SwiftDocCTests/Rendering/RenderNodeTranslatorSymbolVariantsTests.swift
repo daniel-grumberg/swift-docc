@@ -891,8 +891,8 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 )
                 
                 // Remove MyProtocol and MyClass's parents and make them children of the article instead.
-                context.topicGraph.reverseEdges[myProtocolReference] = nil
-                context.topicGraph.reverseEdges[myClassReference] = nil
+                context.topicGraph.reverseEdges[myProtocolReference.identifier] = nil
+                context.topicGraph.reverseEdges[myClassReference.identifier] = nil
                 
                 context.topicGraph.addEdge(
                     from: articleTopicGraphNode,

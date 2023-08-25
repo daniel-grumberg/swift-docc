@@ -95,6 +95,7 @@ struct DocumentationCurator {
         
         let reference = ResolvedTopicReference(
             bundleIdentifier: resolved.bundleIdentifier,
+            identifier: UniqueTopicIdentifier(type: .article, id: articleFilename, bundleIdentifier: resolved.bundleIdentifier),
             path: sourceArticlePath,
             sourceLanguages: resolved.sourceLanguages)
         
@@ -111,7 +112,7 @@ struct DocumentationCurator {
         
         // Add the curated node to the topic graph
         let node = currentArticle.topicGraphNode
-        let curatedNode = TopicGraph.Node(reference: reference, kind: node.kind, source: node.source, title: node.title)
+        let curatedNode = TopicGraph.Node(identifier: reference.identifier, reference: reference, kind: node.kind, source: node.source, title: node.title)
         context.topicGraph.addNode(curatedNode)
         
         // Move the article from the article cache to the documentation

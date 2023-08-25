@@ -199,6 +199,7 @@ class RenderNodeCodableTests: XCTestCase {
         )
         context.documentationCache[reference] = try DocumentationNode(reference: reference, article: article)
         let topicGraphNode = TopicGraph.Node(
+            identifier: reference.identifier,
             reference: reference,
             kind: .article,
             source: .file(url: URL(fileURLWithPath: "/path/to/article.md")),

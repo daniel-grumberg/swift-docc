@@ -31,6 +31,8 @@ enum GeneratedDocumentationTopics {
                 let parentReference: ResolvedTopicReference
                 /// A list of topic references for the collection.
                 var identifiers = [ResolvedTopicReference]()
+                /// A unique identifier for this collection.
+                let uniqueTopicIdentifier: UniqueTopicIdentifier
             }
         }
         
@@ -89,7 +91,17 @@ enum GeneratedDocumentationTopics {
             
             // Create a new default implementations provider, if needed.
             if !implementingTypes[reference]!.inheritedFromTypeName.keys.contains(fromType) {
-                implementingTypes[reference]!.inheritedFromTypeName[fromType] = Collections.APICollection(title: "\(typeSimpleName) Implementations", parentReference: reference)
+                implementingTypes[reference]!.inheritedFromTypeName[fromType] = Collections.APICollection(
+                    title: "\(typeSimpleName) Implementations",
+                    parentReference: reference,
+                    uniqueTopicIdentifier:
+                        UniqueTopicIdentifier(
+                            type: .collection,
+                            id: "\(extendedModuleName)/\(reference.identifier.id)/Implementations",
+                            bundleIdentifier: reference.bundleIdentifier,
+                            bundleDisplayName: reference.identifier.bundleDisplayName
+                        )
+                )
             }
             
             // Add the default implementation.
@@ -106,8 +118,16 @@ enum GeneratedDocumentationTopics {
         automaticCurationSourceLanguages = Set(identifiers.flatMap { identifier in context.sourceLanguages(for: identifier) })
         
         // Create the collection topic reference
+        let collectionIdentifier = UniqueTopicIdentifier(
+            type: .collection,
+            id: "\(title)",
+            bundleIdentifier: bundle.identifier,
+            bundleDisplayName: bundle.displayName
+        )
+        
         let collectionReference = ResolvedTopicReference(
             bundleIdentifier: bundle.identifier,
+            identifier: collectionIdentifier,
             path: NodeURLGenerator.Path.documentationCuration(
                 parentPath: parent.path,
                 articleName: title
@@ -116,7 +136,7 @@ enum GeneratedDocumentationTopics {
         )
         
         // Add the topic graph node
-        let collectionTopicGraphNode = TopicGraph.Node(reference: collectionReference, kind: .collection, source: .external, title: title, isResolvable: false)
+        let collectionTopicGraphNode = TopicGraph.Node(identifier: collectionIdentifier, reference: collectionReference, kind: .collection, source: .external, title: title, isResolvable: false)
         context.topicGraph.addNode(collectionTopicGraphNode)
 
         // Curate the collection task group under the collection parent type

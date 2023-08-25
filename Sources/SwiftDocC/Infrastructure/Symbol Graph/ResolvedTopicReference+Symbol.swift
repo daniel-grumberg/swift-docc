@@ -21,6 +21,7 @@ extension ResolvedTopicReference {
         
         self.init(
             bundleIdentifier: bundle.documentationRootReference.bundleIdentifier,
+            identifier: UniqueTopicIdentifier(type: .symbol, id: symbolReference.preciseIdentifier, bundleIdentifier: bundle.identifier, bundleDisplayName: bundle.displayName),
             path: bundle.documentationRootReference.appendingPath(moduleName + path).path,
             fragment: nil,
             sourceLanguages: symbolReference.interfaceLanguages

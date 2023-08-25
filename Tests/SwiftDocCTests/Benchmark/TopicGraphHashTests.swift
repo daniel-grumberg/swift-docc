@@ -51,7 +51,8 @@ class TopicGraphHashTests: XCTestCase {
         }
         
         // Here we'll add a completely new node and curated it in the topic graph
-        let newNode = TopicGraph.Node(reference: .init(bundleIdentifier: #function, path: "/newSymbol", sourceLanguage: .swift), kind: .article, source: .external, title: "External Article")
+        let newReference = ResolvedTopicReference(bundleIdentifier: #function, path: "/newSymbol", sourceLanguage: .swift)
+        let newNode = TopicGraph.Node(identifier: newReference.identifier, reference: newReference, kind: .article, source: .external, title: "External Article")
         context.topicGraph.addNode(newNode)
         // We can force unwrap below because we're guaranteed to find at least one node which is not `newNode`
         context.topicGraph.addEdge(from: context.topicGraph.nodes.values.first(where: { existingNode -> Bool in

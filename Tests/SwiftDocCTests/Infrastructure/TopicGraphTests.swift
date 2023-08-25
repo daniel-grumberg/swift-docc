@@ -107,7 +107,7 @@ class TopicGraphTests: XCTestCase {
             XCTAssertEqual(2, graph.nodes.count)
             
             // A -> B
-            XCTAssertEqual(graph[TestGraphs.testNodeWithTitle("A")], [TestGraphs.testNodeWithTitle("B").reference])
+            XCTAssertEqual(graph[TestGraphs.testNodeWithTitle("A")], [TestGraphs.testNodeWithTitle("B").identifier])
         }
     }
     
@@ -128,7 +128,7 @@ class TopicGraphTests: XCTestCase {
         XCTAssertEqual([], TestGraphs.withOneNode[TestGraphs.testNodeWithTitle("C")])
         
         // One edge
-        XCTAssertEqual([TestGraphs.testNodeWithTitle("B").reference], TestGraphs.withOneEdge[TestGraphs.testNodeWithTitle("A")])
+        XCTAssertEqual([TestGraphs.testNodeWithTitle("B").identifier], TestGraphs.withOneEdge[TestGraphs.testNodeWithTitle("A")])
         XCTAssertNotNil(TestGraphs.withOneEdge[TestGraphs.testNodeWithTitle("B")])
         XCTAssertEqual([], TestGraphs.withOneNode[TestGraphs.testNodeWithTitle("C")])
     }
@@ -145,9 +145,9 @@ class TopicGraphTests: XCTestCase {
         
         // A -> [B, C, D] in order.
         XCTAssertEqual([
-            TestGraphs.testNodeWithTitle("B").reference,
-            TestGraphs.testNodeWithTitle("C").reference,
-            TestGraphs.testNodeWithTitle("D").reference,
+            TestGraphs.testNodeWithTitle("B").identifier,
+            TestGraphs.testNodeWithTitle("C").identifier,
+            TestGraphs.testNodeWithTitle("D").identifier,
         ], graph[TestGraphs.testNodeWithTitle("A")])
     }
     

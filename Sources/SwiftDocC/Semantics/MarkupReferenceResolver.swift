@@ -86,7 +86,8 @@ struct MarkupReferenceResolver: MarkupRewriter {
                 return nil
             }
             
-            let uncuratedArticleMatch = context.uncuratedArticles[bundle.articlesDocumentationRootReference.appendingPathOfReference(unresolved)]?.source
+            let identifier = UniqueTopicIdentifier(type: .article, id: urlReadablePath(unresolved.path), bundleIdentifier: bundle.identifier)
+            let uncuratedArticleMatch = context.uncuratedArticles[bundle.articlesDocumentationRootReference.appendingPathOfReference(unresolved, identifier: identifier)]?.source
             problems.append(unresolvedReferenceProblem(reference: reference, source: source, range: range, severity: severity, uncuratedArticleMatch: uncuratedArticleMatch, errorInfo: error, fromSymbolLink: fromSymbolLink))
             return nil
         }
