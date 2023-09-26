@@ -19,12 +19,12 @@ extension ResolvedTopicReference {
     init(symbolReference: SymbolReference, moduleName: String, bundle: DocumentationBundle) {
         let path = symbolReference.path.isEmpty ? "" : "/" + symbolReference.path
         
-        self.init(
-            bundleIdentifier: bundle.documentationRootReference.bundleIdentifier,
-            identifier: UniqueTopicIdentifier(type: .symbol, id: symbolReference.preciseIdentifier, bundleIdentifier: bundle.identifier, bundleDisplayName: bundle.displayName),
-            path: bundle.documentationRootReference.appendingPath(moduleName + path).path,
-            fragment: nil,
-            sourceLanguages: symbolReference.interfaceLanguages
-        )
+        let identifier = UniqueTopicIdentifier(type: .symbol, id: symbolReference.preciseIdentifier, bundleIdentifier: bundle.identifier, bundleDisplayName: bundle.displayName)
+        self = bundle.documentationRootReference.appendingPath(moduleName + path, identifier: identifier).withSourceLanguages(symbolReference.interfaceLanguages)
+    }
+    
+    init(moduleName: String, bundle: DocumentationBundle, interfaceLanguages: Set<SourceLanguage>) {
+        let identifier = UniqueTopicIdentifier(type: .container, id: moduleName, bundleIdentifier: bundle.identifier, bundleDisplayName: bundle.displayName)
+        self = bundle.documentationRootReference.appendingPath(moduleName, identifier: identifier).withSourceLanguages(interfaceLanguages)
     }
 }

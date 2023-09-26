@@ -954,6 +954,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
                 // and we will emit warnings for those later on when we finalize the bundle discovery phase.
                 if result.value.title?.child(at: 0) is AnyLink {
                     documentationExtensions.append(result)
+                    reference.unsafeOverrideIdentifier(with: UniqueTopicIdentifier(type: .overridable, id: reference.identifier.id, bundleIdentifier: reference.bundleIdentifier))
                     
                     // Warn for an incorrect root page metadata directive.
                     if let technologyRoot = result.value.metadata?.technologyRoot {
@@ -1229,8 +1230,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
                             kind: SymbolGraph.Symbol.Kind(parsedIdentifier: .module, displayName: moduleKindDisplayName),
                             mixins: [:])
                     let moduleSymbolReference = SymbolReference(moduleName, interfaceLanguages: moduleInterfaceLanguages, defaultSymbol: moduleSymbol)
-//                    moduleReference = ResolvedTopicReference(symbolReference: moduleSymbolReference, moduleName: moduleName, bundle: bundle)
-                    moduleReference = ResolvedTopicReference(bundleIdentifier: bundle.identifier, identifier: UniqueTopicIdentifier(type: .container, id: "documentation"), path: moduleSymbolReference.path, sourceLanguages: moduleSymbolReference.interfaceLanguages)
+                    moduleReference = ResolvedTopicReference(moduleName: moduleName, bundle: bundle, interfaceLanguages: moduleInterfaceLanguages)
                     
                     addSymbolsToTopicGraph(symbolGraph: unifiedSymbolGraph, url: fileURL, symbolReferences: symbolReferences, moduleReference: moduleReference, bundle: bundle)
                     
@@ -1334,9 +1334,10 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
                         let reference = documentationExtension.topicGraphNode.reference
                         
                         let symbolPath = NodeURLGenerator.Path.documentation(path: url.components.path).stringValue
+                        let identifier = try? self.hierarchyBasedLinkResolver.pathHierarchy.find(path: symbolPath, onlyFindSymbols: true)
                         let symbolReference = ResolvedTopicReference(
                             bundleIdentifier: reference.bundleIdentifier,
-                            identifier: UniqueTopicIdentifier(type: .symbol, id: "\(symbolPath)", bundleIdentifier: bundle.identifier, bundleDisplayName: bundle.displayName),
+                            identifier: identifier ?? UniqueTopicIdentifier(),
                             path: symbolPath,
                             fragment: nil,
                             sourceLanguages: reference.sourceLanguages

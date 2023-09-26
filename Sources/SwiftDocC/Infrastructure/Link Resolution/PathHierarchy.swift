@@ -643,7 +643,11 @@ extension PathHierarchy {
         
         /// Initializes a symbol node.
         fileprivate init(symbol: SymbolGraph.Symbol!) {
-            self.identifier = UniqueTopicIdentifier(type: .symbol, id: symbol.preciseIdentifier ?? "")
+            if symbol.kind.identifier == .module {
+                self.identifier = UniqueTopicIdentifier(type: .container, id: symbol.preciseIdentifier ?? "")
+            } else {
+                self.identifier = UniqueTopicIdentifier(type: .symbol, id: symbol.preciseIdentifier ?? "")
+            }
             self.symbol = symbol
             self.name = symbol.pathComponents.last!
             self.children = [:]

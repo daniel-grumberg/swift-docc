@@ -296,7 +296,7 @@ final class PathHierarchyBasedLinkResolver {
                    let componentsCount = symbol.defaultSymbol?.pathComponents.count,
                    pathComponents.count == componentsCount
                 {
-                    let symbolReference = SymbolReference(pathComponents: pathComponents, interfaceLanguages: symbol.sourceLanguages)
+                    let symbolReference = SymbolReference(pathComponents: pathComponents, interfaceLanguages: symbol.sourceLanguages, identifier: uniqueIdentifier)
                     return ResolvedTopicReference(symbolReference: symbolReference, moduleName: moduleName, bundle: bundle)
                 }
                 
@@ -361,7 +361,7 @@ private final class FallbackResolverBasedLinkResolver {
             ])
         }
         // Try resolving in the local context (as child)
-        allCandidateURLs.append(parent.appendingPathOfReference(unresolvedReference).url)
+        allCandidateURLs.append(parent.appendingPathOfReference(unresolvedReference, identifier: UniqueTopicIdentifier.init(type: .unresolved, id: "", bundleIdentifier: parent.bundleIdentifier)).url)
         
         // To look for siblings we require at least a module (first)
         // and a symbol (second) path components.
@@ -373,7 +373,7 @@ private final class FallbackResolverBasedLinkResolver {
         // Check that the parent is not an article (ignoring if absolute or relative link)
         // because we cannot resolve in the parent context if it's not a symbol.
         if parent.path.hasPrefix(currentBundle.documentationRootReference.path) && parentPath.count > 2 {
-            let rootPath = currentBundle.documentationRootReference.appendingPath(parentPath[2])
+            let rootPath = currentBundle.documentationRootReference.appendingPath(parentPath[2], identifier: UniqueTopicIdentifier(type: .container, id: parentPath[2], bundleIdentifier: parent.bundleIdentifier))
             let resolvedInRoot = rootPath.url.appendingPathComponent(unresolvedReference.path)
             
             // Confirm here that we we're not already considering this link. We only need to specifically

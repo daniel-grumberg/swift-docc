@@ -325,7 +325,7 @@ public class DocumentationContentRenderer {
             // Sections don't have their own abstract so take the one of the container symbol.
             let containerReference = ResolvedTopicReference(
                 bundleIdentifier: reference.bundleIdentifier,
-                identifier: reference.identifier,
+                identifier: reference.identifier.removingFragment(),
                 path: reference.path,
                 sourceLanguages: reference.sourceLanguages
             )

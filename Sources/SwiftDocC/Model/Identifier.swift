@@ -194,6 +194,10 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         return sourceLanguages.contains(.swift) ? .swift : sourceLanguages.first!
     }
     
+    public func unsafeOverrideIdentifier(with identifier: UniqueTopicIdentifier) {
+        _storage.identifier = identifier
+    }
+    
     /// The source languages for which this topic is relevant.
     ///
     /// > Important: The source languages associated with the reference may not be the same as the available source languages of its
@@ -234,12 +238,13 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         )
         let cached = Self.sharedPool.sync { $0[bundleIdentifier]?[key] }
         if let resolved = cached {
-            assert(resolved.identifier == identifier || identifier.type.description == "test", "Failed to match identifier when creating identical references, cached \(resolved.identifier), new \(identifier)")
+            assert(resolved.identifier == identifier || ["test", "placeholder"].contains(identifier.type.description) || ["overridable", "unresolved", "placeholder"].contains(resolved.identifier.type.description), "Failed to match identifier when creating identical references (\(urlReadablePath)), cached \(resolved.identifier), new \(identifier)")
             self = resolved
             return
         }
         
-        //let backtrace = try! Backtrace.capture().symbolicated()
+        var backtrace: SymbolicatedBacktrace? = nil
+        if urlReadablePath == "/documentation/Something/Wrapper" { backtrace = try! Backtrace.capture().symbolicated() }
         
         _storage = Storage(
             bundleIdentifier: bundleIdentifier,
@@ -247,7 +252,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
             path: urlReadablePath,
             fragment: urlReadableFragment,
             sourceLanguages: sourceLanguages,
-            creationBacktrace: nil //backtrace
+            creationBacktrace: backtrace
         )
 
         // Cache the reference
@@ -355,7 +360,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
     /// - Parameter path: The path to append.
     /// - Returns: The resulting topic reference.
     public func appendingPath(_ path: String, identifier: UniqueTopicIdentifier? = nil) -> ResolvedTopicReference {
-        //assert(false, "OUT OF THIN AIR")
+        assert(identifier != nil, "OUT OF THIN AIR")
         let newReference = ResolvedTopicReference(
             bundleIdentifier: bundleIdentifier,
             identifier: identifier ?? self.identifier,
@@ -373,7 +378,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
     /// - Returns: The resulting topic reference.
     public func appendingPathOfReference(_ reference: UnresolvedTopicReference, identifier: UniqueTopicIdentifier? = nil) -> ResolvedTopicReference {
         // Only append the path component if it's not empty (rdar://66580574).
-        // assert(false, "OUT OF THIN AIR")
+         assert(identifier != nil, "OUT OF THIN AIR")
         let referencePath = urlReadablePath(reference.path)
         guard !referencePath.isEmpty else {
             return self
@@ -491,7 +496,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
     /// This is a reference type which allows ``ResolvedTopicReference`` to have copy-on-write behavior.
     class Storage {
         let bundleIdentifier: String
-        let identifier: UniqueTopicIdentifier
+        var identifier: UniqueTopicIdentifier
         let path: String
         let fragment: String?
         let sourceLanguages: Set<SourceLanguage>

@@ -135,10 +135,10 @@ public struct SymbolReference {
     ///   - interfaceLanguages: The source languages of the symbol.
     public init<SourceLanguages: Collection>(
         pathComponents: [String],
-        interfaceLanguages: SourceLanguages
+        interfaceLanguages: SourceLanguages,
+        identifier: String
     ) where SourceLanguages.Element == SourceLanguage {
-        assert(false, "Symbol reference garbage")
-        self.preciseIdentifier = "BOO"
+        self.preciseIdentifier = identifier
         self.path = pathComponents.joinedSymbolPathComponents
         self.interfaceLanguages = Set(interfaceLanguages)
     }
@@ -148,9 +148,9 @@ public struct SymbolReference {
     /// - Parameters:
     ///   - pathComponents: The relative path components from the module or framework to the symbol.
     ///   - interfaceLanguage: The source language of the symbol.
-    public init(pathComponents: [String], interfaceLanguage: SourceLanguage) {
+    public init(pathComponents: [String], interfaceLanguage: SourceLanguage, identifier: String) {
         assert(false, "Symbol reference garbage")
-        self.preciseIdentifier = "BOO"
+        self.preciseIdentifier = identifier
         self.path = pathComponents.joinedSymbolPathComponents
         self.interfaceLanguages = [interfaceLanguage]
     }

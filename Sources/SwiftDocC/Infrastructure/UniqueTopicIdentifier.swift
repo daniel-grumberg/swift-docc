@@ -24,6 +24,10 @@ public struct UniqueTopicIdentifierType: Hashable, Codable, Equatable, CustomStr
     /// Used to create a symbol topic identifier.
     public static let symbol = Self.init("symbol")
     static let sparseSymbol = Self.init("sparseSymbol")
+    static let overridable = Self.init("overridable")
+    static let unresolved = Self.init("unresolved")
+    /// Used to create a module topic identifier
+    public static let module = Self.init("module")
     /// Used to create a technology root topic identifier
     public static let technology = Self.init("technology")
     /// Used to create a non-symbol topic identifier.
@@ -192,7 +196,7 @@ public struct UniqueTopicIdentifierGenerator {
             return UniqueTopicIdentifier(type: .tutorial, id: urlReadableFileName, bundleIdentifier: bundle.identifier, bundleDisplayName: bundle.displayName)
         case let article as Article:
             return UniqueTopicIdentifier(
-                type: article.metadata?.technologyRoot != nil ? .technology : .article,
+                type: article.metadata?.technologyRoot != nil ? .container: .article,
                 id: urlReadableFileName, bundleIdentifier: bundle.identifier,
                 bundleDisplayName: bundle.displayName
             )
