@@ -290,6 +290,9 @@ struct PathHierarchy {
     /// - Throws: Raises a ``PathHierarchy/Error`` if no match can be found.
     func find(path rawPath: String, parent: UniqueTopicIdentifier? = nil, onlyFindSymbols: Bool) throws -> UniqueTopicIdentifier {
         let node = try findNode(path: rawPath, parentID: parent, onlyFindSymbols: onlyFindSymbols)
+        if node.identifier == nil {
+            throw Error.unfindableMatch(node)
+        }
         if onlyFindSymbols, node.symbol == nil {
             throw Error.nonSymbolMatchForSymbolLink
         }
