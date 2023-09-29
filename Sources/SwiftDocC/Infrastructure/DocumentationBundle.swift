@@ -172,10 +172,10 @@ public struct DocumentationBundle {
         self.customFooter = customFooter
         self.themeSettings = themeSettings
         self.rootReference = ResolvedTopicReference(bundleIdentifier: info.identifier, identifier: UniqueTopicIdentifier(type: .root, id: "", bundleIdentifier: info.identifier), path: "/", sourceLanguage: .swift)
-        self.documentationRootReference = ResolvedTopicReference(bundleIdentifier: info.identifier, identifier: UniqueTopicIdentifier(type: .container, id: "documentation", bundleIdentifier: info.identifier), path: NodeURLGenerator.Path.documentationFolder, sourceLanguage: .swift)
-        self.tutorialsRootReference = ResolvedTopicReference(bundleIdentifier: info.identifier, identifier: UniqueTopicIdentifier(type: .container, id: "tutorials", bundleIdentifier: info.identifier), path: NodeURLGenerator.Path.tutorialsFolder, sourceLanguage: .swift)
-        self.technologyTutorialsRootReference = tutorialsRootReference.appendingPath(urlReadablePath(info.displayName), identifier: UniqueTopicIdentifier(type: .container, id: "tutorials/\(info.displayName)", bundleIdentifier: info.identifier))
-        self.articlesDocumentationRootReference = documentationRootReference.appendingPath(urlReadablePath(info.displayName), identifier: UniqueTopicIdentifier(type: .container, id: info.displayName, bundleIdentifier: info.identifier))
+        self.documentationRootReference = ResolvedTopicReference(bundleIdentifier: info.identifier, identifier: UniqueTopicIdentifierGenerator.identifierForDocumentationRoot(bundleIdentifier: info.identifier), path: NodeURLGenerator.Path.documentationFolder, sourceLanguage: .swift)
+        self.tutorialsRootReference = ResolvedTopicReference(bundleIdentifier: info.identifier, identifier: UniqueTopicIdentifierGenerator.identifierForTutorialsRoot(bundleIdentifier: info.identifier), path: NodeURLGenerator.Path.tutorialsFolder, sourceLanguage: .swift)
+        self.technologyTutorialsRootReference = tutorialsRootReference.appendingPath(urlReadablePath(info.displayName), identifier: UniqueTopicIdentifierGenerator.identifierForTutorialTechnology(technologyName: info.displayName, bundleIdentifier: info.identifier))
+        self.articlesDocumentationRootReference = documentationRootReference.appendingPath(urlReadablePath(info.displayName), identifier: UniqueTopicIdentifierGenerator.identifierForArticlesRoot(bundleName: info.displayName, bundleIdentifier: info.identifier))
     }
     
     public private(set) var rootReference: ResolvedTopicReference

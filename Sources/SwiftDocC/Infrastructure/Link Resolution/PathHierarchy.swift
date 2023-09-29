@@ -213,15 +213,14 @@ struct PathHierarchy {
             descend(module)
         }
         
-        func newNode(_ name: String) -> Node {
-            let id = UniqueTopicIdentifier(type: .container, id: name)
+        func newNode(_ name: String, id: UniqueTopicIdentifier) -> Node {
             let node = Node(name: name, identifier: id)
             lookup[id] = node
             return node
         }
-        self.articlesContainer = roots[bundleName] ?? newNode(bundleName)
-        self.tutorialContainer = newNode(bundleName)
-        self.tutorialOverviewContainer = newNode("tutorials")
+        self.articlesContainer = roots[bundleName] ?? newNode(bundleName, id: UniqueTopicIdentifierGenerator.identifierForArticlesRoot(bundleName: bundleName))
+        self.tutorialContainer = newNode(bundleName, id: UniqueTopicIdentifierGenerator.identifierForTutorialTechnology(technologyName: bundleName))
+        self.tutorialOverviewContainer = newNode("tutorials", id: UniqueTopicIdentifierGenerator.identifierForTutorialsRoot())
         
         assert(
             lookup.allSatisfy({ $0.key == $0.value.identifier }),

@@ -165,6 +165,8 @@ struct TopicGraph {
                 reverseEdges[childID]!.remove(at: oldIndex)
                 reverseEdges[childID]!.append(newNode.identifier)
             }
+            
+            edges[newNode.identifier] = childEdges
         }
         
         if let parentEdges = reverseEdges[node.identifier] {
@@ -344,7 +346,7 @@ struct TopicGraph {
     func dump(startingAt node: Node, keyPath: KeyPath<TopicGraph.Node, String> = \.title, decorator: String = "") -> String {
         var result = ""
         result.append("\(decorator) \(node[keyPath: keyPath])\r\n")
-        if let childEdges = edges[node.identifier]?.sorted(by: \.description) {
+        if let childEdges = edges[node.identifier]?.sorted(by: { self.nodes[$0]!.reference.description < self.nodes[$1]!.reference.description }) {
             for (index, childID) in childEdges.enumerated() {
                 var decorator = decorator
                 if decorator.hasSuffix("├") {

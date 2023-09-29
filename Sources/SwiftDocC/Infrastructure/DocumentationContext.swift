@@ -682,6 +682,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
         for technologyResult in technologies {
             autoreleasepool {
                 let url = technologyResult.source
+                let technologyFilename = urlReadablePath(url.deletingPathExtension().lastPathComponent)
                 let unresolvedTechnology = technologyResult.value
                 var resolver = ReferenceResolver(context: self, bundle: bundle, source: url)
                 let technology = resolver.visit(unresolvedTechnology) as! Technology
@@ -714,12 +715,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
                 for volume in technology.volumes {
                     // Graph node: Volume
                     let volumeName = volume.name ?? anonymousVolumeName
-                    let volumeIdentifier = UniqueTopicIdentifier(
-                        type: .volume,
-                        id: "\(technologyNode.name)/\(volumeName)",
-                        bundleIdentifier: technologyNode.reference.bundleIdentifier,
-                        bundleDisplayName: technologyNode.reference.identifier.bundleDisplayName
-                    )
+                    let volumeIdentifier = UniqueTopicIdentifierGenerator.identifierForTutorialVolume(technologyName: technologyFilename, volumeName: volumeName, bundleIdentifier: bundle.identifier)
                     let volumeReference = technologyNode.reference.appendingPath(volumeName, identifier: volumeIdentifier)
                     let volumeNode = TopicGraph.Node(identifier: volumeIdentifier, reference: volumeReference, kind: .volume, source: .file(url: url), title: volumeName)
                     topicGraph.addNode(volumeNode)
@@ -732,14 +728,14 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
                     let baseName: String
                     if volume.name == nil {
                         baseNodeReference = technologyNode.reference
-                        baseName = "\(technologyNode.name)"
+                        baseName = technologyFilename
                     } else {
                         baseNodeReference = volumeNode.reference
-                        baseName = "\(technologyNode.name)/\(volumeName)"
+                        baseName = volumeIdentifier.id
                     }
 
                     for chapter in volume.chapters {
-                        let chapterIdentifier = UniqueTopicIdentifier(type: .chapter, id: "\(baseName)/\(chapter.name)" , bundleIdentifier: baseNodeReference.bundleIdentifier, bundleDisplayName: baseNodeReference.identifier.bundleDisplayName)
+                        let chapterIdentifier = UniqueTopicIdentifier(type: .chapter, id: "\(baseName)/\(urlReadablePath(chapter.name))" , bundleIdentifier: baseNodeReference.bundleIdentifier, bundleDisplayName: baseNodeReference.identifier.bundleDisplayName)
                         let chapterReference = baseNodeReference.appendingPath(chapter.name, identifier: chapterIdentifier)
                         let chapterNode = TopicGraph.Node(identifier: chapterIdentifier, reference: chapterReference, kind: .chapter, source: .file(url: url), title: chapter.name)
                         topicGraph.addNode(chapterNode)

@@ -120,7 +120,7 @@ public struct UniqueTopicIdentifier: Hashable, Codable, Equatable, CustomStringC
         return "\(bundleIdentifier ?? "")@\(type.description)@(\(id)\(fragmentString))"
     }
     
-    public init(type: UniqueTopicIdentifierType, id: String, bundleIdentifier: String? = nil, bundleDisplayName: String? = nil, fragment: String? = nil) {
+    public init(type: UniqueTopicIdentifierType, id: String, bundleIdentifier: String? = nil, bundleDisplayName: String? = nil, fragment: String? = nil, interfaceLanguage: SourceLanguage) {
         let cacheKey = Self.cacheKey(bundleIdentifier: bundleIdentifier, type: type, id: id, fragment: fragment)
         if let cached = Self.sharedPool.sync({ $0[cacheKey] }) {
             self = cached
@@ -156,7 +156,7 @@ public struct UniqueTopicIdentifier: Hashable, Codable, Equatable, CustomStringC
     public var debugDescription: String { description }
     
     public func addingFragment(_ fragment: String?) -> UniqueTopicIdentifier {
-        let newID = UniqueTopicIdentifier(type: type, id: id, bundleIdentifier: bundleIdentifier, bundleDisplayName: bundleDisplayName, fragment: fragment)
+        let newID = UniqueTopicIdentifier(type: type, id: id, bundleIdentifier: bundleIdentifier, bundleDisplayName: bundleDisplayName, fragment: fragment.map(urlReadableFragment))
         
         return newID
     }
@@ -186,22 +186,48 @@ public struct UniqueTopicIdentifier: Hashable, Codable, Equatable, CustomStringC
 
 public struct UniqueTopicIdentifierGenerator {
     public static func identifierForSemantic(_ semantic: Semantic, source: URL, bundle: DocumentationBundle) -> UniqueTopicIdentifier {
+        return identifierForSemantic(semantic, source: source, bundleIdentifier: bundle.identifier)
+    }
+    
+    public static func identifierForSemantic(_ semantic: Semantic, source: URL, bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
         let fileName = source.deletingPathExtension().lastPathComponent
         let urlReadableFileName = urlReadablePath(fileName)
         
         switch semantic {
         case is Technology:
-            return UniqueTopicIdentifier(type: .tutorialTechnology, id: urlReadableFileName, bundleIdentifier: bundle.identifier, bundleDisplayName: bundle.displayName)
+            return Self.identifierForTutorialTechnology(technologyName: urlReadableFileName, bundleIdentifier: bundleIdentifier)
         case is Tutorial, is TutorialArticle:
-            return UniqueTopicIdentifier(type: .tutorial, id: urlReadableFileName, bundleIdentifier: bundle.identifier, bundleDisplayName: bundle.displayName)
+            return UniqueTopicIdentifier(type: .tutorial, id: urlReadableFileName, bundleIdentifier: bundleIdentifier)
         case let article as Article:
             return UniqueTopicIdentifier(
                 type: article.metadata?.technologyRoot != nil ? .container: .article,
-                id: urlReadableFileName, bundleIdentifier: bundle.identifier,
-                bundleDisplayName: bundle.displayName
+                id: urlReadableFileName, bundleIdentifier: bundleIdentifier
             )
         default:
-            return UniqueTopicIdentifier(type: .placeholder, id: urlReadableFileName, bundleIdentifier: bundle.identifier, bundleDisplayName: bundle.displayName)
+            return UniqueTopicIdentifier(type: .placeholder, id: urlReadableFileName, bundleIdentifier: bundleIdentifier)
         }
+    }
+    
+    
+    
+    public static func identifierForDocumentationRoot(bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: .container, id: "documentation", bundleIdentifier: bundleIdentifier)
+    }
+    
+    public static func identifierForTutorialsRoot(bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: .container, id: "tutorials", bundleIdentifier: bundleIdentifier)
+    }
+    
+    public static func identifierForTutorialTechnology(technologyName: String, bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: .tutorialTechnology, id: urlReadablePath(technologyName), bundleIdentifier: bundleIdentifier)
+    }
+    
+    public static func identifierForTutorialVolume(technologyName: String, volumeName: String, bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        let technologyName = urlReadablePath(technologyName)
+        return UniqueTopicIdentifier(type: .volume, id: "\(technologyName)/\(urlReadablePath(volumeName))")
+    }
+    
+    public static func identifierForArticlesRoot(bundleName: String, bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: .container, id: bundleName, bundleIdentifier: bundleIdentifier)
     }
 }

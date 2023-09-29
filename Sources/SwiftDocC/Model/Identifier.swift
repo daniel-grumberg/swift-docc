@@ -244,7 +244,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         }
         
         var backtrace: SymbolicatedBacktrace? = nil
-        if urlReadablePath == "/documentation/Something/Wrapper" { backtrace = try! Backtrace.capture().symbolicated() }
+//        if urlReadablePath == "/tutorials/TestOverview/$volume" { backtrace = try! Backtrace.capture().symbolicated() }
         
         _storage = Storage(
             bundleIdentifier: bundleIdentifier,
@@ -308,7 +308,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        let identifier = try container.decode(UniqueTopicIdentifier.self, forKey: .identifier)
+        let identifier = try container.decodeIfPresent(UniqueTopicIdentifier.self, forKey: .identifier) ?? UniqueTopicIdentifier()
         
         let url = try container.decode(URL.self, forKey: .url)
         guard ResolvedTopicReference.urlHasResolvedTopicScheme(url) else {
@@ -360,7 +360,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
     /// - Parameter path: The path to append.
     /// - Returns: The resulting topic reference.
     public func appendingPath(_ path: String, identifier: UniqueTopicIdentifier? = nil) -> ResolvedTopicReference {
-        assert(identifier != nil, "OUT OF THIN AIR")
+//        assert(identifier != nil, "OUT OF THIN AIR")
         let newReference = ResolvedTopicReference(
             bundleIdentifier: bundleIdentifier,
             identifier: identifier ?? self.identifier,
@@ -378,7 +378,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
     /// - Returns: The resulting topic reference.
     public func appendingPathOfReference(_ reference: UnresolvedTopicReference, identifier: UniqueTopicIdentifier? = nil) -> ResolvedTopicReference {
         // Only append the path component if it's not empty (rdar://66580574).
-         assert(identifier != nil, "OUT OF THIN AIR")
+//         assert(identifier != nil, "OUT OF THIN AIR")
         let referencePath = urlReadablePath(reference.path)
         guard !referencePath.isEmpty else {
             return self
@@ -396,7 +396,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
     
     /// Creates a new topic reference by removing the last path component from this topic reference.
     public func removingLastPathComponent() -> ResolvedTopicReference {
-        assert(false, "OUT OF THIN AIR")
+//        assert(false, "OUT OF THIN AIR")
         let newPath = String(pathComponents.dropLast().joined(separator: "/").dropFirst())
         let newReference = ResolvedTopicReference(
             bundleIdentifier: bundleIdentifier,

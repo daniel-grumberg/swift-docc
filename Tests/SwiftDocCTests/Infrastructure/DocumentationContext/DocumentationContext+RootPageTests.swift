@@ -53,7 +53,7 @@ class DocumentationContext_RootPageTests: XCTestCase {
         
         // Verify the root was crawled
         XCTAssertEqual(context.topicGraph.edges[UniqueTopicIdentifier(type: .container, id: "ReleaseNotes")],
-                       [UniqueTopicIdentifier(type: .article, id: "ReleaseNotes 1.2")])
+                       [UniqueTopicIdentifier(type: .article, id: "ReleaseNotes-1.2")])
     }
 
     func testWarnForSidecarRootPage() throws {

@@ -126,45 +126,34 @@ final class PathHierarchyBasedLinkResolver {
     func addTechnology(_ technology: DocumentationContext.SemanticResult<Technology>) {
         let reference = technology.topicGraphNode.reference
         let technologyID = technology.topicGraphNode.identifier
+        let technologyIDName = urlReadablePath(technology.source.deletingPathExtension().lastPathComponent)
+
         
-        pathHierarchy.addTutorialOverview(name: urlReadablePath(technology.source.deletingPathExtension().lastPathComponent), identifier: technologyID)
+        pathHierarchy.addTutorialOverview(name: technologyIDName, identifier: technologyID)
         resolvedReferenceMap[technologyID] = reference
         
         var anonymousVolumeID: UniqueTopicIdentifier?
         for volume in technology.value.volumes {
             if anonymousVolumeID == nil, volume.name == nil {
-                anonymousVolumeID = UniqueTopicIdentifier(
-                    type: .volume,
-                    id: "\(technology.value.name)/$volume",
-                    bundleIdentifier: reference.identifier.bundleIdentifier,
-                    bundleDisplayName: reference.identifier.bundleDisplayName
-                )
+                anonymousVolumeID = UniqueTopicIdentifierGenerator.identifierForTutorialVolume(technologyName: technologyIDName, volumeName: "$volume", bundleIdentifier: technologyID.bundleIdentifier)
                 pathHierarchy.addNonSymbolChild(parent: technologyID, name: "$volume", identifier: anonymousVolumeID!, kind: "volume")
                 resolvedReferenceMap[anonymousVolumeID!] = reference.appendingPath("$volume", identifier: anonymousVolumeID)
             }
             
             let chapterParentID: UniqueTopicIdentifier
             let chapterParentReference: ResolvedTopicReference
-            let baseName: String
             if let name = volume.name {
-                baseName = "\(technology.value.name)/\(name)"
-                chapterParentID = UniqueTopicIdentifier(
-                    type: .volume,
-                    id: baseName,
-                    bundleIdentifier: reference.identifier.bundleIdentifier,
-                    bundleDisplayName: reference.identifier.bundleDisplayName
-                )
+                chapterParentID = UniqueTopicIdentifierGenerator.identifierForTutorialVolume(technologyName: technologyIDName, volumeName: name, bundleIdentifier: reference.identifier.bundleIdentifier)
                 pathHierarchy.addNonSymbolChild(parent: technologyID, name: name, identifier: chapterParentID, kind: "volume")
                 chapterParentReference = reference.appendingPath(name, identifier: chapterParentID)
                 resolvedReferenceMap[chapterParentID] = chapterParentReference
             } else {
-                baseName = "\(technology.value.name)"
                 chapterParentID = technologyID
                 chapterParentReference = reference
             }
             
             for chapter in volume.chapters {
-                let chapterID = UniqueTopicIdentifier(type: .chapter, id: "\(baseName)/\(chapter.name)", bundleIdentifier: reference.bundleIdentifier, bundleDisplayName: reference.identifier.bundleDisplayName)
+                let chapterID = UniqueTopicIdentifier(type: .chapter, id: "\(chapterParentID.id)/\(urlReadablePath(chapter.name))", bundleIdentifier: reference.bundleIdentifier, bundleDisplayName: reference.identifier.bundleDisplayName)
                 pathHierarchy.addNonSymbolChild(parent: technologyID, name: chapter.name, identifier: chapterID, kind: "volume")
                 resolvedReferenceMap[chapterID] = chapterParentReference.appendingPath(chapter.name, identifier: chapterID)
             }
