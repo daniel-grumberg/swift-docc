@@ -1620,7 +1620,10 @@ Root
         for identifier in context.knownPages {
             let source = context.documentURL(for: identifier)
             let entity = try context.entity(with: identifier)
-            let renderNode = try XCTUnwrap(converter.renderNode(for: entity, at: source))
+            if entity.reference.description.starts(with: "doc://org.swift.MixedLanguageFramework/tutorials/MixedLanguageFramework/Tutorial") {
+                let a = 2 + 2
+            }
+            let renderNode = try XCTUnwrap(converter.renderNode(for: entity, at: source), "Could not get render node for \(entity.reference)")
             try builder.index(renderNode: renderNode)
         }
 

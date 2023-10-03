@@ -109,7 +109,7 @@ struct TopicGraph {
         }
         
         func withReference(_ reference: ResolvedTopicReference) -> Node {
-            Node(identifier: identifier, reference: reference, kind: kind, source: source, title: title)
+            Node(identifier: reference.identifier, reference: reference, kind: kind, source: source, title: title)
         }
         
         func hash(into hasher: inout Hasher) {
@@ -149,11 +149,7 @@ struct TopicGraph {
     }
     
     mutating func updateReference(_ old: ResolvedTopicReference, newReference: ResolvedTopicReference) {
-        guard old != newReference else { return }
-        assert(old.identifier == newReference.identifier)
-        
-        let node = nodes[old.identifier]!
-        nodes.updateValue(node.withReference(newReference), forKey: old.identifier)
+        nodes[old.identifier] = nodes[old.identifier]?.withReference(newReference)
     }
     
     /// Replaces one node with another in the graph, and preserves the edges.

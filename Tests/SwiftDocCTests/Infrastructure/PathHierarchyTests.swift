@@ -1652,12 +1652,12 @@ class PathHierarchyTests: XCTestCase {
 }
 
 extension PathHierarchy {
-    func findNode(path rawPath: String, onlyFindSymbols: Bool, parent: UniqueTopicIdentifier? = nil) throws -> PathHierarchy.Node {
+    func findNode(path rawPath: String, onlyFindSymbols: Bool, parent: LanguageAwareUniqueTopicIdentifier? = nil) throws -> PathHierarchy.Node {
         let id = try find(path: rawPath, parent: parent, onlyFindSymbols: onlyFindSymbols)
         return lookup[id]!
     }
     
-    func findSymbol(path rawPath: String, parent: UniqueTopicIdentifier? = nil) throws -> SymbolGraph.Symbol {
+    func findSymbol(path rawPath: String, parent: LanguageAwareUniqueTopicIdentifier? = nil) throws -> SymbolGraph.Symbol {
         return try findNode(path: rawPath, onlyFindSymbols: true, parent: parent).symbol!
     }
 }

@@ -52,31 +52,9 @@ public struct UniqueTopicIdentifierType: Hashable, Codable, Equatable, CustomStr
 
 /// Unique identifier that describes a single piece of documentation regardless of where it is curated.
 public struct UniqueTopicIdentifier: Hashable, Codable, Equatable, CustomStringConvertible, CustomDebugStringConvertible {
-    private class _Storage {
-        /// The type of reference.
-        public let type: UniqueTopicIdentifierType
-        
-        /// The unique identifier string.
-        public let id: String
-        
-        public let bundleIdentifier: String?
-        
-        public let bundleDisplayName: String?
-        
-        /// Optionally represent a specifc location in the piece of documentation referenced by ``id``.
-        public let fragment: String?
-        
-        init(type: UniqueTopicIdentifierType, id: String, bundleIdentifier: String?, bundleDisplayName: String?, fragment: String?) {
-            self.type = type
-            self.id = id
-            self.bundleIdentifier = bundleIdentifier
-            self.bundleDisplayName = bundleDisplayName
-            self.fragment = fragment
-        }
-    }
     
     enum CodingKeys: CodingKey {
-        case bundleIdentifier, type, id, fragment
+        case bundleIdentifier, type, id, fragment, sourceLanguages
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -85,6 +63,7 @@ public struct UniqueTopicIdentifier: Hashable, Codable, Equatable, CustomStringC
         try container.encode(type, forKey: .type)
         try container.encode(id, forKey: .id)
         try container.encode(fragment, forKey: .fragment)
+        try container.encode(sourceLanguages, forKey: .sourceLanguages)
     }
     
     public init(from decoder: Decoder) throws {
@@ -93,17 +72,22 @@ public struct UniqueTopicIdentifier: Hashable, Codable, Equatable, CustomStringC
         let type = try container.decode(UniqueTopicIdentifierType.self, forKey: .type)
         let id = try container.decode(String.self, forKey: .id)
         let fragment = try container.decodeIfPresent(String.self, forKey: .fragment)
+        let sourceLanguages = try container.decode(Set<SourceLanguage>.self, forKey: .sourceLanguages)
         
-        self.init(type: type, id: id, bundleIdentifier: bundleIdentifier, fragment: fragment)
+        self.init(type: type, id: id, bundleIdentifier: bundleIdentifier, bundleDisplayName: nil, fragment: fragment, sourceLanguages: sourceLanguages)
     }
     
-    private let _storage: _Storage
+    fileprivate let _storage: _Storage
     
     /// The type of reference.
     public var type: UniqueTopicIdentifierType { _storage.type }
     
     /// The unique identifier string.
     public var id: String { _storage.id }
+    
+    public var sourceLanguages: Set<SourceLanguage> { _storage.sourceLanguages }
+    
+    public var sourceLanguage: SourceLanguage { sourceLanguages.contains(.swift) ? .swift: sourceLanguages.first! }
     
     public var bundleIdentifier: String? { _storage.bundleIdentifier }
     
@@ -114,29 +98,58 @@ public struct UniqueTopicIdentifier: Hashable, Codable, Equatable, CustomStringC
     
     static var sharedPool = Synchronized([String: UniqueTopicIdentifier]())
     
-    static func cacheKey(bundleIdentifier: String?, type: UniqueTopicIdentifierType, id: String, fragment: String?) -> String {
+    fileprivate static func cacheKey(
+        bundleIdentifier: String?,
+        type: UniqueTopicIdentifierType,
+        id: String,
+        sourceLanguages: Set<SourceLanguage>,
+        fragment: String?
+    ) -> String {
+        let sourceLanguagesString = sourceLanguages.map(\.id).sorted().joined(separator: "-")
         var fragmentString = ""
         if let fragment { fragmentString = "#\(fragment)" }
-        return "\(bundleIdentifier ?? "")@\(type.description)@(\(id)\(fragmentString))"
+        return "\(bundleIdentifier?.appending("@") ?? "")\(type.description)@(\(id)\(fragmentString))@\(sourceLanguagesString)"
     }
     
-    public init(type: UniqueTopicIdentifierType, id: String, bundleIdentifier: String? = nil, bundleDisplayName: String? = nil, fragment: String? = nil, interfaceLanguage: SourceLanguage) {
-        let cacheKey = Self.cacheKey(bundleIdentifier: bundleIdentifier, type: type, id: id, fragment: fragment)
+    public init(
+        type: UniqueTopicIdentifierType,
+        id: String,
+        bundleIdentifier: String? = nil,
+        bundleDisplayName: String? = nil,
+        fragment: String? = nil,
+        sourceLanguage: SourceLanguage = .swift
+    ) {
+        self.init(type: type, id: id, bundleIdentifier: bundleIdentifier, bundleDisplayName: bundleDisplayName, fragment: fragment, sourceLanguages: [sourceLanguage])
+    }
+    
+    /// Used to create a placeholder unique topic identifier.
+    init() {
+        self.init(type: .placeholder, id: "", sourceLanguage: .swift)
+    }
+    
+    public init(
+        type: UniqueTopicIdentifierType,
+        id: String,
+        bundleIdentifier: String? = nil,
+        bundleDisplayName: String? = nil,
+        fragment: String? = nil,
+        sourceLanguages: Set<SourceLanguage>
+    ) {
+        let cacheKey = Self.cacheKey(bundleIdentifier: bundleIdentifier, type: type, id: id, sourceLanguages: sourceLanguages, fragment: fragment)
         if let cached = Self.sharedPool.sync({ $0[cacheKey] }) {
             self = cached
             return
         }
         
-        _storage = _Storage(type: type, id: id, bundleIdentifier: bundleIdentifier, bundleDisplayName: bundleDisplayName, fragment: fragment)
+        _storage = _Storage(type: type, id: id, sourceLanguages: Set(sourceLanguages), bundleIdentifier: bundleIdentifier, bundleDisplayName: bundleDisplayName, fragment: fragment)
         
         Self.sharedPool.sync {
             $0[cacheKey] = self
         }
     }
     
-    /// Used to create a placeholder unique topic identifier.
-    init() {
-        self.init(type: .placeholder, id: "")
+    fileprivate init(withStorage _storage: _Storage) {
+        self._storage = _storage
     }
     
     public static func ==(lhs: UniqueTopicIdentifier, rhs: UniqueTopicIdentifier) -> Bool {
@@ -150,19 +163,33 @@ public struct UniqueTopicIdentifier: Hashable, Codable, Equatable, CustomStringC
     }
     
     public var description: String {
-        Self.cacheKey(bundleIdentifier: bundleIdentifier, type: type, id: id, fragment: fragment)
+        Self.cacheKey(bundleIdentifier: bundleIdentifier, type: type, id: id, sourceLanguages: sourceLanguages, fragment: fragment)
     }
     
     public var debugDescription: String { description }
     
     public func addingFragment(_ fragment: String?) -> UniqueTopicIdentifier {
-        let newID = UniqueTopicIdentifier(type: type, id: id, bundleIdentifier: bundleIdentifier, bundleDisplayName: bundleDisplayName, fragment: fragment.map(urlReadableFragment))
+        let newID = UniqueTopicIdentifier(type: type, id: id, bundleIdentifier: bundleIdentifier, bundleDisplayName: bundleDisplayName, fragment: fragment.map(urlReadableFragment), sourceLanguages: sourceLanguages)
         
         return newID
     }
     
     public func removingFragment() -> UniqueTopicIdentifier {
-        return UniqueTopicIdentifier(type: type, id: id, bundleIdentifier: bundleIdentifier, bundleDisplayName: bundleDisplayName)
+        return UniqueTopicIdentifier(type: type, id: id, bundleIdentifier: bundleIdentifier, bundleDisplayName: bundleDisplayName, sourceLanguages: sourceLanguages)
+    }
+    
+    public func addingSourceLanguages(_ addedSourceLanguages: Set<SourceLanguage>) -> UniqueTopicIdentifier {
+        let combinedSourceLanguages = sourceLanguages.union(addedSourceLanguages)
+        
+        guard combinedSourceLanguages != sourceLanguages else { return self }
+        
+        return UniqueTopicIdentifier(type: type, id: id, bundleIdentifier: bundleIdentifier, bundleDisplayName: bundleDisplayName, fragment: fragment, sourceLanguages: combinedSourceLanguages)
+    }
+    
+    public func withSourceLanguages(_ newSourceLanguages: Set<SourceLanguage>) -> UniqueTopicIdentifier {
+        guard sourceLanguages != newSourceLanguages else { return self }
+        
+        return UniqueTopicIdentifier(type: type, id: id, bundleIdentifier: bundleIdentifier, bundleDisplayName: bundleDisplayName, fragment: fragment, sourceLanguages: newSourceLanguages)
     }
     
     public func referenceForNonSymbol() -> ResolvedTopicReference {
@@ -231,3 +258,81 @@ public struct UniqueTopicIdentifierGenerator {
         return UniqueTopicIdentifier(type: .container, id: bundleName, bundleIdentifier: bundleIdentifier)
     }
 }
+
+fileprivate class _Storage {
+    /// The type of reference.
+    public let type: UniqueTopicIdentifierType
+    
+    /// The unique identifier string.
+    public let id: String
+    
+    public let sourceLanguages: Set<SourceLanguage>
+    
+    public let bundleIdentifier: String?
+    
+    public let bundleDisplayName: String?
+    
+    /// Optionally represent a specifc location in the piece of documentation referenced by ``id``.
+    public let fragment: String?
+    
+    init(type: UniqueTopicIdentifierType, id: String, sourceLanguages: Set<SourceLanguage>, bundleIdentifier: String?, bundleDisplayName: String?, fragment: String?) {
+        self.type = type
+        self.id = id
+        self.sourceLanguages = sourceLanguages
+        self.bundleIdentifier = bundleIdentifier
+        self.bundleDisplayName = bundleDisplayName
+        self.fragment = fragment
+    }
+}
+
+public struct LanguageAwareUniqueTopicIdentifier: Hashable, Equatable, CustomStringConvertible, CustomDebugStringConvertible {
+    private let _storage: _Storage
+    
+    /// The type of reference.
+    public var type: UniqueTopicIdentifierType { _storage.type }
+    
+    /// The unique identifier string.
+    public var id: String { _storage.id }
+    
+    public var sourceLanguages: Set<SourceLanguage> { _storage.sourceLanguages }
+    
+    public var sourceLanguage: SourceLanguage { sourceLanguages.contains(.swift) ? .swift: sourceLanguages.first! }
+    
+    public var bundleIdentifier: String? { _storage.bundleIdentifier }
+    
+    public var bundleDisplayName: String? { _storage.bundleDisplayName }
+    
+    /// Optionally represent a specifc location in the piece of documentation referenced by ``id``.
+    public var fragment: String? { _storage.fragment }
+    
+    public init(from id: UniqueTopicIdentifier) {
+        _storage = id._storage
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(type)
+        hasher.combine(id)
+        hasher.combine(fragment)
+        hasher.combine(sourceLanguages)
+    }
+    
+    public static func ==(lhs: LanguageAwareUniqueTopicIdentifier, rhs: LanguageAwareUniqueTopicIdentifier) -> Bool {
+        return lhs.type == rhs.type && lhs.id == rhs.id && lhs.fragment == rhs.fragment && lhs.sourceLanguages == rhs.sourceLanguages
+    }
+    
+    public var description: String {
+        UniqueTopicIdentifier.cacheKey(bundleIdentifier: bundleIdentifier, type: type, id: id, sourceLanguages: sourceLanguages, fragment: fragment)
+    }
+    
+    public var debugDescription: String { description }
+}
+    
+public extension UniqueTopicIdentifier {
+    var languageAware: LanguageAwareUniqueTopicIdentifier { LanguageAwareUniqueTopicIdentifier(from: self) }
+}
+
+public extension LanguageAwareUniqueTopicIdentifier {
+    var languageAgnostic: UniqueTopicIdentifier { UniqueTopicIdentifier(withStorage: _storage) }
+}
+
+

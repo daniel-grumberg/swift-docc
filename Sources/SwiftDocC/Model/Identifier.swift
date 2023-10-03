@@ -244,7 +244,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         }
         
         var backtrace: SymbolicatedBacktrace? = nil
-//        if urlReadablePath == "/tutorials/TestOverview/$volume" { backtrace = try! Backtrace.capture().symbolicated() }
+//        if urlReadablePath == "/tutorials/MixedLanguageFramework/Tutorial" { backtrace = try! Backtrace.capture().symbolicated() }
         
         _storage = Storage(
             bundleIdentifier: bundleIdentifier,
@@ -421,7 +421,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         
         return ResolvedTopicReference(
             bundleIdentifier: bundleIdentifier,
-            identifier: identifier,
+            identifier: identifier.withSourceLanguages(combinedSourceLanguages),
             urlReadablePath: path,
             urlReadableFragment: fragment,
             sourceLanguages: combinedSourceLanguages
@@ -439,7 +439,7 @@ public struct ResolvedTopicReference: Hashable, Codable, Equatable, CustomString
         
         return ResolvedTopicReference(
             bundleIdentifier: bundleIdentifier,
-            identifier: identifier,
+            identifier: identifier.withSourceLanguages(sourceLanguages),
             urlReadablePath: path,
             urlReadableFragment: fragment,
             sourceLanguages: sourceLanguages

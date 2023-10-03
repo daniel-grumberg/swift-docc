@@ -40,7 +40,7 @@ struct PathHierarchy {
     let tutorialOverviewContainer: Node
     
     /// A map of known documentation nodes based on their unique identifiers.
-    private(set) var lookup: [UniqueTopicIdentifier: Node]
+    private(set) var lookup: [LanguageAwareUniqueTopicIdentifier: Node]
     
     // MARK: Creating a path hierarchy
     
@@ -178,7 +178,7 @@ struct PathHierarchy {
                         "Shouldn't create a new sparse node when symbol node already exist. This is an indication that a symbol is missing a relationship."
                     )
                     let component = Self.parse(pathComponent: component[...])
-                    let nodeWithoutSymbol = Node(name: component.name, identifier: UniqueTopicIdentifier(type: .sparseSymbol, id: component.full))
+                    let nodeWithoutSymbol = Node(name: component.name, identifier: UniqueTopicIdentifier(type: .sparseSymbol, id: component.full, sourceLanguage: .swift).languageAware)
                     nodeWithoutSymbol.isDisfavoredInCollision = true
                     parent.add(child: nodeWithoutSymbol, kind: component.kind, hash: component.hash)
                     parent = nodeWithoutSymbol
@@ -195,7 +195,7 @@ struct PathHierarchy {
         
         // build the lookup list by traversing the hierarchy and adding identifiers to each node
         
-        var lookup = [UniqueTopicIdentifier: Node]()
+        var lookup = [LanguageAwareUniqueTopicIdentifier: Node]()
         func descend(_ node: Node) {
             if node.symbol != nil {
                 lookup[node.identifier] = node
@@ -214,8 +214,8 @@ struct PathHierarchy {
         }
         
         func newNode(_ name: String, id: UniqueTopicIdentifier) -> Node {
-            let node = Node(name: name, identifier: id)
-            lookup[id] = node
+            let node = Node(name: name, identifier: id.languageAware)
+            lookup[id.languageAware] = node
             return node
         }
         self.articlesContainer = roots[bundleName] ?? newNode(bundleName, id: UniqueTopicIdentifierGenerator.identifierForArticlesRoot(bundleName: bundleName))
@@ -236,6 +236,10 @@ struct PathHierarchy {
     /// Adds an article to the path hierarchy.
     /// - Parameter name: The path component name of the article (the file name without the file extension).
     mutating func addArticle(name: String, identifier: UniqueTopicIdentifier) {
+        addArticle(name: name, identifier: identifier.languageAware)
+    }
+    
+    mutating func addArticle(name: String, identifier: LanguageAwareUniqueTopicIdentifier) {
         addNonSymbolChild(parent: articlesContainer.identifier, name: name, identifier: identifier, kind: "article")
     }
     
@@ -243,14 +247,23 @@ struct PathHierarchy {
     /// - Parameter name: The path component name of the tutorial (the file name without the file extension).
     /// - Returns: The new unique identifier that represent this tutorial.
     mutating func addTutorial(name: String, identifier: UniqueTopicIdentifier) {
+        addTutorial(name: name, identifier: identifier.languageAware)
+    }
+    
+    mutating func addTutorial(name: String, identifier: LanguageAwareUniqueTopicIdentifier) {
         addNonSymbolChild(parent: tutorialContainer.identifier, name: name, identifier: identifier, kind: "tutorial")
     }
     
     /// Adds a tutorial overview page to the path hierarchy.
     /// - Parameter name: The path component name of the tutorial overview (the file name without the file extension).
     mutating func addTutorialOverview(name: String, identifier: UniqueTopicIdentifier) {
+        addTutorialOverview(name: name, identifier: identifier.languageAware)
+    }
+    
+    mutating func addTutorialOverview(name: String, identifier: LanguageAwareUniqueTopicIdentifier) {
         addNonSymbolChild(parent: tutorialOverviewContainer.identifier, name: name, identifier: identifier, kind: "technology")
     }
+    
     
     /// Adds a non-symbol child element to an existing element in the path hierarchy.
     /// - Parameters:
@@ -258,7 +271,7 @@ struct PathHierarchy {
     ///   - name: The path component name of the new element.
     ///   - kind: The kind of the new element
     /// - Returns: The new unique identifier that represent this element.
-    mutating func addNonSymbolChild(parent: UniqueTopicIdentifier, name: String, identifier: UniqueTopicIdentifier, kind: String) {
+    mutating func addNonSymbolChild(parent: LanguageAwareUniqueTopicIdentifier, name: String, identifier: LanguageAwareUniqueTopicIdentifier, kind: String) {
         let parent = lookup[parent]!
         
         let newNode = Node(name: name, identifier: identifier)
@@ -271,6 +284,10 @@ struct PathHierarchy {
     ///   - name: The path component name of the technology root.
     /// - Returns: The new unique identifier that represent the root.
     mutating func addTechnologyRoot(name: String, identifier: UniqueTopicIdentifier) {
+        addTechnologyRoot(name: name, identifier: identifier.languageAware)
+    }
+    
+    mutating func addTechnologyRoot(name: String, identifier: LanguageAwareUniqueTopicIdentifier) {
         let newNode = Node(name: name, identifier: identifier)
         self.lookup[identifier] = newNode
         
@@ -287,7 +304,7 @@ struct PathHierarchy {
     ///   - onlyFindSymbols: Whether or not only symbol matches should be found.
     /// - Returns: Returns the unique identifier for the found match or raises an error if no match can be found.
     /// - Throws: Raises a ``PathHierarchy/Error`` if no match can be found.
-    func find(path rawPath: String, parent: UniqueTopicIdentifier? = nil, onlyFindSymbols: Bool) throws -> UniqueTopicIdentifier {
+    func find(path rawPath: String, parent: LanguageAwareUniqueTopicIdentifier? = nil, onlyFindSymbols: Bool) throws -> LanguageAwareUniqueTopicIdentifier {
         let node = try findNode(path: rawPath, parentID: parent, onlyFindSymbols: onlyFindSymbols)
         if node.identifier == nil {
             throw Error.unfindableMatch(node)
@@ -299,7 +316,7 @@ struct PathHierarchy {
         return node.identifier
     }
     
-    private func findNode(path rawPath: String, parentID: UniqueTopicIdentifier?, onlyFindSymbols: Bool) throws -> Node {
+    private func findNode(path rawPath: String, parentID: LanguageAwareUniqueTopicIdentifier?, onlyFindSymbols: Bool) throws -> Node {
         // The search for a documentation element can be though of as 3 steps:
         // - First, parse the path into structured path components.
         // - Second, find nodes that match the beginning of the path as starting points for the search
@@ -620,7 +637,7 @@ extension PathHierarchy {
     /// A node in the path hierarchy.
     final class Node {
         /// The unique identifier for this node.
-        fileprivate(set) var identifier: UniqueTopicIdentifier!
+        fileprivate(set) var identifier: LanguageAwareUniqueTopicIdentifier!
         
         // Everything else is file-private or private.
         
@@ -645,10 +662,11 @@ extension PathHierarchy {
         
         /// Initializes a symbol node.
         fileprivate init(symbol: SymbolGraph.Symbol!) {
+            let sourceLanguage = SourceLanguage(knownLanguageIdentifier: symbol.identifier.interfaceLanguage)!
             if symbol.kind.identifier == .module {
-                self.identifier = UniqueTopicIdentifier(type: .container, id: symbol.preciseIdentifier ?? "")
+                self.identifier = UniqueTopicIdentifier(type: .container, id: symbol.preciseIdentifier ?? "", sourceLanguage: sourceLanguage).languageAware
             } else {
-                self.identifier = UniqueTopicIdentifier(type: .symbol, id: symbol.preciseIdentifier ?? "")
+                self.identifier = UniqueTopicIdentifier(type: .symbol, id: symbol.preciseIdentifier ?? "", sourceLanguage: sourceLanguage).languageAware
             }
             self.symbol = symbol
             self.name = symbol.pathComponents.last!
@@ -657,7 +675,7 @@ extension PathHierarchy {
         }
         
         /// Initializes a non-symbol node with a given name.
-        fileprivate init(name: String, identifier: UniqueTopicIdentifier) {
+        fileprivate init(name: String, identifier: LanguageAwareUniqueTopicIdentifier) {
             self.identifier = identifier
             self.symbol = nil
             self.name = name
@@ -909,8 +927,8 @@ extension PathHierarchy {
 
 extension PathHierarchy {
     /// Returns the list of top level symbols
-    func topLevelSymbols() -> [UniqueTopicIdentifier] {
-        var result: Set<UniqueTopicIdentifier> = []
+    func topLevelSymbols() -> [LanguageAwareUniqueTopicIdentifier] {
+        var result: Set<LanguageAwareUniqueTopicIdentifier> = []
         // Roots represent modules and only have direct symbol descendants.
         for root in modules.values {
             for (_, tree) in root.children {
@@ -1264,7 +1282,7 @@ extension PathHierarchy {
     
     /// Removes a node from the path hierarchy so that it can no longer be found.
     /// - Parameter id: The unique identifier for the node.
-    mutating func removeNodeWithID(_ id: UniqueTopicIdentifier) {
+    mutating func removeNodeWithID(_ id: LanguageAwareUniqueTopicIdentifier) {
         // Remove the node from the lookup and unset its identifier
         lookup.removeValue(forKey: id)!.identifier = nil
     }

@@ -735,7 +735,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
                     }
 
                     for chapter in volume.chapters {
-                        let chapterIdentifier = UniqueTopicIdentifier(type: .chapter, id: "\(baseName)/\(urlReadablePath(chapter.name))" , bundleIdentifier: baseNodeReference.bundleIdentifier, bundleDisplayName: baseNodeReference.identifier.bundleDisplayName)
+                        let chapterIdentifier = UniqueTopicIdentifier(type: .chapter, id: "\(baseName)/\(urlReadablePath(chapter.name))" , bundleIdentifier: baseNodeReference.bundleIdentifier, bundleDisplayName: baseNodeReference.identifier.bundleDisplayName, sourceLanguage: .swift)
                         let chapterReference = baseNodeReference.appendingPath(chapter.name, identifier: chapterIdentifier)
                         let chapterNode = TopicGraph.Node(identifier: chapterIdentifier, reference: chapterReference, kind: .chapter, source: .file(url: url), title: chapter.name)
                         topicGraph.addNode(chapterNode)
@@ -950,7 +950,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
                 // and we will emit warnings for those later on when we finalize the bundle discovery phase.
                 if result.value.title?.child(at: 0) is AnyLink {
                     documentationExtensions.append(result)
-                    reference.unsafeOverrideIdentifier(with: UniqueTopicIdentifier(type: .overridable, id: reference.identifier.id, bundleIdentifier: reference.bundleIdentifier))
+                    reference.unsafeOverrideIdentifier(with: UniqueTopicIdentifier(type: .overridable, id: reference.identifier.id, bundleIdentifier: reference.bundleIdentifier, sourceLanguage: .swift))
                     
                     // Warn for an incorrect root page metadata directive.
                     if let technologyRoot = result.value.metadata?.technologyRoot {
@@ -1333,7 +1333,7 @@ public class DocumentationContext: DocumentationContextDataProviderDelegate {
                         let identifier = try? self.hierarchyBasedLinkResolver.pathHierarchy.find(path: symbolPath, onlyFindSymbols: true)
                         let symbolReference = ResolvedTopicReference(
                             bundleIdentifier: reference.bundleIdentifier,
-                            identifier: identifier ?? UniqueTopicIdentifier(),
+                            identifier: identifier?.languageAgnostic ?? UniqueTopicIdentifier(),
                             path: symbolPath,
                             fragment: nil,
                             sourceLanguages: reference.sourceLanguages
