@@ -47,9 +47,9 @@ struct MarkupReferenceResolver: MarkupRewriter {
     var bundle: DocumentationBundle
     var source: URL?
     var problems = [Problem]()
-    var rootReference: ResolvedTopicReference
+    var rootReference: UniqueTopicIdentifier
     
-    init(context: DocumentationContext, bundle: DocumentationBundle, source: URL?, rootReference: ResolvedTopicReference) {
+    init(context: DocumentationContext, bundle: DocumentationBundle, source: URL?, rootReference: UniqueTopicIdentifier) {
         self.context = context
         self.bundle = bundle
         self.source = source
@@ -63,7 +63,7 @@ struct MarkupReferenceResolver: MarkupRewriter {
     // precise diagnostics.
     var problemForUnresolvedReference: ((_ unresolvedReference: UnresolvedTopicReference, _ source: URL?, _ range: SourceRange?, _ fromSymbolLink: Bool, _ underlyingErrorMessage: String) -> Problem?)? = nil
 
-    private mutating func resolve(reference: TopicReference, range: SourceRange?, severity: DiagnosticSeverity, fromSymbolLink: Bool = false) -> ResolvedTopicReference? {
+    private mutating func resolve(reference: TopicReference, range: SourceRange?, severity: DiagnosticSeverity, fromSymbolLink: Bool = false) -> UniqueTopicIdentifier? {
         switch context.resolve(reference, in: rootReference, fromSymbolLink: fromSymbolLink) {
         case .success(let resolved):
             // If the linked node is part of the topic graph,

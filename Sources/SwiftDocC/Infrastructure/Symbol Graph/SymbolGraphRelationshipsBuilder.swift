@@ -39,8 +39,8 @@ struct SymbolGraphRelationshipsBuilder {
         selector: UnifiedSymbolGraph.Selector,
         in bundle: DocumentationBundle,
         context: DocumentationContext,
-        symbolIndex: inout [String: ResolvedTopicReference],
-        documentationCache: [ResolvedTopicReference: DocumentationNode],
+        symbolIndex: inout [String: UniqueTopicIdentifier],
+        documentationCache: [UniqueTopicIdentifier: DocumentationNode],
         engine: DiagnosticEngine
     ) {
         // Resolve source symbol
@@ -77,7 +77,8 @@ struct SymbolGraphRelationshipsBuilder {
         let parentName: String?
 
         if let reference = symbolIndex[edge.source],
-           let parentNode = try? context.entity(with: reference.removingLastPathComponent()),
+           let parentReference = context.linkResolver.localResolver.parent(of: reference),
+           let parentNode = try? context.entity(with: parentReference),
            let title = (parentNode.semantic as? Symbol)?.title
         {
             parentName = title
@@ -122,8 +123,8 @@ struct SymbolGraphRelationshipsBuilder {
         edge: SymbolGraph.Relationship,
         selector: UnifiedSymbolGraph.Selector,
         in bundle: DocumentationBundle,
-        symbolIndex: inout [String: ResolvedTopicReference],
-        documentationCache: [ResolvedTopicReference: DocumentationNode],
+        symbolIndex: inout [String: UniqueTopicIdentifier],
+        documentationCache: [UniqueTopicIdentifier: DocumentationNode],
         engine: DiagnosticEngine
     ) {
         // Resolve source symbol
@@ -208,8 +209,8 @@ struct SymbolGraphRelationshipsBuilder {
         edge: SymbolGraph.Relationship,
         selector: UnifiedSymbolGraph.Selector,
         in bundle: DocumentationBundle,
-        symbolIndex: inout [String: ResolvedTopicReference],
-        documentationCache: [ResolvedTopicReference: DocumentationNode],
+        symbolIndex: inout [String: UniqueTopicIdentifier],
+        documentationCache: [UniqueTopicIdentifier: DocumentationNode],
         engine: DiagnosticEngine
     ) {
         // Resolve source symbol
@@ -275,8 +276,8 @@ struct SymbolGraphRelationshipsBuilder {
         edge: SymbolGraph.Relationship,
         selector: UnifiedSymbolGraph.Selector,
         in bundle: DocumentationBundle,
-        symbolIndex: inout [String: ResolvedTopicReference],
-        documentationCache: [ResolvedTopicReference: DocumentationNode],
+        symbolIndex: inout [String: UniqueTopicIdentifier],
+        documentationCache: [UniqueTopicIdentifier: DocumentationNode],
         engine: DiagnosticEngine
     ) {
         addProtocolRelationship(
@@ -301,8 +302,8 @@ struct SymbolGraphRelationshipsBuilder {
         edge: SymbolGraph.Relationship,
         selector: UnifiedSymbolGraph.Selector,
         in bundle: DocumentationBundle,
-        symbolIndex: inout [String: ResolvedTopicReference],
-        documentationCache: [ResolvedTopicReference: DocumentationNode],
+        symbolIndex: inout [String: UniqueTopicIdentifier],
+        documentationCache: [UniqueTopicIdentifier: DocumentationNode],
         engine: DiagnosticEngine
     ) {
         addProtocolRelationship(
@@ -328,8 +329,8 @@ struct SymbolGraphRelationshipsBuilder {
         edge: SymbolGraph.Relationship,
         selector: UnifiedSymbolGraph.Selector,
         in bundle: DocumentationBundle,
-        symbolIndex: inout [String: ResolvedTopicReference],
-        documentationCache: [ResolvedTopicReference: DocumentationNode],
+        symbolIndex: inout [String: UniqueTopicIdentifier],
+        documentationCache: [UniqueTopicIdentifier: DocumentationNode],
         engine: DiagnosticEngine, required: Bool
     ) {
         // Resolve source symbol
@@ -356,7 +357,7 @@ struct SymbolGraphRelationshipsBuilder {
     static func addInheritedDefaultImplementation(
         edge: SymbolGraph.Relationship,
         context: DocumentationContext, 
-        symbolIndex: inout [String: ResolvedTopicReference],
+        symbolIndex: inout [String: UniqueTopicIdentifier],
         moduleName: String,
         engine: DiagnosticEngine
     ) {
@@ -416,8 +417,8 @@ struct SymbolGraphRelationshipsBuilder {
         edge: SymbolGraph.Relationship,
         selector: UnifiedSymbolGraph.Selector,
         extendedModuleRelationships: [String : String],
-        symbolIndex: inout [String: ResolvedTopicReference],
-        documentationCache: [ResolvedTopicReference: DocumentationNode]
+        symbolIndex: inout [String: UniqueTopicIdentifier],
+        documentationCache: [UniqueTopicIdentifier: DocumentationNode]
     ) {
 
         // Utility function to look up a symbol identifier in the

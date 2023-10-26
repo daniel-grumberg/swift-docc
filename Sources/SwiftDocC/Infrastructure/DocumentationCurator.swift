@@ -22,24 +22,19 @@ struct DocumentationCurator {
     
     private(set) var problems = [Problem]()
     
-    init(in context: DocumentationContext, bundle: DocumentationBundle, initial: Set<ResolvedTopicReference> = []) {
+    init(in context: DocumentationContext, bundle: DocumentationBundle, initial: Set<UniqueTopicIdentifier> = []) {
         self.context = context
         self.bundle = bundle
         self.curatedNodes = initial
     }
     
     /// The list of topics that have been curated during the crawl.
-    private(set) var curatedNodes: Set<ResolvedTopicReference>
+    private(set) var curatedNodes: Set<UniqueTopicIdentifier>
     
     /// Tries to resolve a symbol link in the current module/context.
-    func referenceFromSymbolLink(link: SymbolLink, resolved: ResolvedTopicReference) -> ResolvedTopicReference? {
+    func referenceFromSymbolLink(link: SymbolLink, resolved: UniqueTopicIdentifier) -> UniqueTopicIdentifier? {
         guard let destination = link.destination else {
             return nil
-        }
-        
-        // Optimization for absolute links.
-        if let cached = context.referenceIndex[destination] {
-            return cached
         }
         
         // The symbol link may be written with a scheme and bundle identifier.
@@ -51,7 +46,7 @@ struct DocumentationCurator {
     }
     
     /// Tries to resolve a link in the current module/context.
-    mutating func referenceFromLink(link: Link, resolved: ResolvedTopicReference, source: URL?) -> ResolvedTopicReference? {
+    mutating func referenceFromLink(link: Link, resolved: UniqueTopicIdentifier, source: URL?) -> UniqueTopicIdentifier? {
         // Try a link to a topic
         guard let unresolved = link.destination.flatMap(ValidatedURL.init(parsingAuthoredLink:))?
             .requiring(scheme: ResolvedTopicReference.urlScheme)
@@ -93,10 +88,7 @@ struct DocumentationCurator {
         let articleFilename = unresolved.topicURL.components.path.components(separatedBy: "/").last!
         let sourceArticlePath = NodeURLGenerator.Path.article(bundleName: bundle.displayName, articleName: articleFilename).stringValue
         
-        let reference = ResolvedTopicReference(
-            bundleIdentifier: resolved.bundleIdentifier,
-            path: sourceArticlePath,
-            sourceLanguages: resolved.sourceLanguages)
+        let reference = UniqueTopicIdentifierGenerator.identifierForArticle(articleName: articleFilename, bundleIdentifier: resolved.bundleIdentifier)
         
         guard let currentArticle = self.context.uncuratedArticles[reference],
             let documentationNode = try? DocumentationNode(reference: reference, article: currentArticle.value) else { return nil }
@@ -126,7 +118,7 @@ struct DocumentationCurator {
         return reference
     }
     
-    private func isReference(_ childReference: ResolvedTopicReference, anAncestorOf nodeReference: ResolvedTopicReference) -> Bool {
+    private func isReference(_ childReference: UniqueTopicIdentifier, anAncestorOf nodeReference: UniqueTopicIdentifier) -> Bool {
         return context.pathsTo(nodeReference).contains { $0.contains(childReference) }
     }
     
@@ -135,7 +127,7 @@ struct DocumentationCurator {
     ///   - nodeReference: The root reference to start crawling.
     ///   - prepareForCuration: An optional closure to call just before walking the node's task group links.
     ///   - relateNodes: A closure to call when a parent <-> child relationship is found.
-    mutating func crawlChildren(of nodeReference: ResolvedTopicReference, prepareForCuration: (ResolvedTopicReference) -> Void = {_ in}, relateNodes: (ResolvedTopicReference, ResolvedTopicReference) -> Void) throws {
+    mutating func crawlChildren(of nodeReference: UniqueTopicIdentifier, prepareForCuration: (UniqueTopicIdentifier) -> Void = {_ in}, relateNodes: (UniqueTopicIdentifier, UniqueTopicIdentifier) -> Void) throws {
         // Keeping track if all articles have been curated.
         curatedNodes.insert(nodeReference)
 
@@ -196,7 +188,7 @@ struct DocumentationCurator {
         
         for (groupIndex, group) in taskGroups.enumerated() {
             for (linkIndex, link) in group.links.enumerated() {
-                let resolved: ResolvedTopicReference?
+                let resolved: UniqueTopicIdentifier?
                 switch link {
                 case let link as Link:
                     resolved = referenceFromLink(link: link, resolved: nodeReference, source: source())
@@ -231,18 +223,18 @@ struct DocumentationCurator {
                 }
                 
                 guard childDocumentationNode.kind != .module else {
-                    problems.append(Problem(diagnostic: Diagnostic(source: source(), severity: .warning, range: range(), identifier: "org.swift.docc.ModuleCuration", summary: "Linking to \((link.destination ?? "").singleQuoted) from a Topics group in \(nodeReference.absoluteString.singleQuoted) isn't allowed", explanation: "The former is a module, and modules only exist at the root"), possibleSolutions: []))
+                    problems.append(Problem(diagnostic: Diagnostic(source: source(), severity: .warning, range: range(), identifier: "org.swift.docc.ModuleCuration", summary: "Linking to \((link.destination ?? "").singleQuoted) from a Topics group in \(nodeReference.description.singleQuoted) isn't allowed", explanation: "The former is a module, and modules only exist at the root"), possibleSolutions: []))
                     continue
                 }
                 
                 // Verify we are not creating a graph cyclic relationship.
                 guard childReference != nodeReference else {
-                    problems.append(Problem(diagnostic: Diagnostic(source: source(), severity: .warning, range: range(), identifier: "org.swift.docc.CyclicReference", summary: "A symbol can't link to itself from within its Topics group in \(nodeReference.absoluteString.singleQuoted)"), possibleSolutions: []))
+                    problems.append(Problem(diagnostic: Diagnostic(source: source(), severity: .warning, range: range(), identifier: "org.swift.docc.CyclicReference", summary: "A symbol can't link to itself from within its Topics group in \(nodeReference.description.singleQuoted)"), possibleSolutions: []))
                     continue
                 }
                 
                 guard !isReference(childReference, anAncestorOf: nodeReference) else {
-                    problems.append(Problem(diagnostic: Diagnostic(source: source(), severity: .warning, range: range(), identifier: "org.swift.docc.CyclicReference", summary: "Linking to \((link.destination ?? "").singleQuoted) from a Topics group in \(nodeReference.absoluteString.singleQuoted) isn't allowed", explanation: "The former is an ancestor of the latter"), possibleSolutions: []))
+                    problems.append(Problem(diagnostic: Diagnostic(source: source(), severity: .warning, range: range(), identifier: "org.swift.docc.CyclicReference", summary: "Linking to \((link.destination ?? "").singleQuoted) from a Topics group in \(nodeReference.description.singleQuoted) isn't allowed", explanation: "The former is an ancestor of the latter"), possibleSolutions: []))
                     continue
                 }
                 

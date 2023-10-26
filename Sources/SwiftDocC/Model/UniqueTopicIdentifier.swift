@@ -1,0 +1,367 @@
+/*
+ This source file is part of the Swift.org open source project
+ Copyright (c) 2021-2023 Apple Inc. and the Swift project authors
+ Licensed under Apache License v2.0 with Runtime Library Exception
+ See https://swift.org/LICENSE.txt for license information
+ See https://swift.org/CONTRIBUTORS.txt for Swift project authors
+*/
+
+import Foundation
+
+/// Identifies the type of a ``UniqueTopicIdentifier``.
+public struct UniqueTopicIdentifierType: Hashable, Codable, Equatable, CustomStringConvertible, CustomDebugStringConvertible {
+    private let _storage: String
+
+    /// Create a new resolved reference type, prefer to use one of the predefined types such as ``symbol`` when possible.
+    public init(_ type: String) {
+        self._storage = type
+    }
+
+    /// Used to create a topic identifier for the root page
+    public static let root = Self.init("root")
+    public static let documentationRoot = Self.init("documentationRoot")
+    public static let articleRoot = Self.init("articleRoot")
+    public static let tutorialsRoot = Self.init("tutorialRoot")
+    /// Used to create a symbol topic identifier.
+    public static let symbol = Self.init("symbol")
+    static let sparseSymbol = Self.init("sparseSymbol")
+    static let overridable = Self.init("overridable")
+    static let unresolved = Self.init("unresolved")
+    /// Used to create a module topic identifier
+    public static let module = Self.init("module")
+    /// Used to create a technology root topic identifier
+    public static let technology = Self.init("technology")
+    /// Used to create a non-symbol topic identifier.
+    public static let article = Self.init("article")
+    /// Used to create a topic identifier for an automatically generated collection article.
+    public static let collection = Self.init("collection")
+    /// Used to create a topic identifier for a tutorial technology.
+    public static let tutorialTechnology = Self.init("tutorialTechnology")
+    /// Used to create a topic identifier for a tutorial.
+    public static let tutorial = Self.init("tutorial")
+    /// Used to create a topic identifier for a top level container.
+    public static let container = Self.init("container")
+    /// Used to create topic identifier for a tutorial volume
+    public static let volume = Self.init("volume")
+    /// Used to create topic identifier for a tutorial chapter
+    public static let chapter = Self.init("chapter")
+    /// Used to create a topic reference for an external page, or one that can't be modelled with path hierarchy based link resolution
+    public static let external = Self.init("external")
+    
+    static let placeholder = Self.init("placeholder")
+
+    public var description: String { _storage }
+    public var debugDescription: String { _storage }
+}
+
+/// Unique identifier that describes a single piece of documentation regardless of where it is curated.
+public struct UniqueTopicIdentifier: Hashable, Codable, Equatable, CustomStringConvertible, CustomDebugStringConvertible {
+
+    enum CodingKeys: CodingKey {
+        case bundleIdentifier, type, id, fragment, sourceLanguages
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(bundleIdentifier, forKey: .bundleIdentifier)
+        try container.encode(type, forKey: .type)
+        try container.encode(id, forKey: .id)
+        try container.encode(fragment, forKey: .fragment)
+        try container.encode(sourceLanguages, forKey: .sourceLanguages)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let bundleIdentifier = try container.decode(String.self, forKey: .bundleIdentifier)
+        let type = try container.decode(UniqueTopicIdentifierType.self, forKey: .type)
+        let id = try container.decode(String.self, forKey: .id)
+        let fragment = try container.decodeIfPresent(String.self, forKey: .fragment)
+        let sourceLanguages = try container.decode(Set<SourceLanguage>.self, forKey: .sourceLanguages)
+
+        self.init(type: type, id: id, bundleIdentifier: bundleIdentifier, bundleDisplayName: nil, fragment: fragment, sourceLanguages: sourceLanguages)
+    }
+
+    fileprivate let _storage: _Storage
+
+    /// The type of reference.
+    public var type: UniqueTopicIdentifierType { _storage.type }
+
+    /// The unique identifier string.
+    public var id: String { _storage.id }
+
+    public var sourceLanguages: Set<SourceLanguage> { _storage.sourceLanguages }
+
+    public var sourceLanguage: SourceLanguage { sourceLanguages.contains(.swift) ? .swift: sourceLanguages.first! }
+
+    public var bundleIdentifier: String { _storage.bundleIdentifier }
+
+    /// Optionally represent a specifc location in the piece of documentation referenced by ``id``.
+    public var fragment: String? { _storage.fragment }
+
+    static var sharedPool = Synchronized([String: UniqueTopicIdentifier]())
+
+    fileprivate static func cacheKey(
+        bundleIdentifier: String?,
+        type: UniqueTopicIdentifierType,
+        id: String,
+        sourceLanguages: Set<SourceLanguage>,
+        fragment: String?
+    ) -> String {
+        let sourceLanguagesString = sourceLanguages.map(\.id).sorted().joined(separator: "-")
+        var fragmentString = ""
+        if let fragment { fragmentString = "#\(fragment)" }
+        return "\(bundleIdentifier?.appending("@") ?? "")\(type.description)@(\(id)\(fragmentString))@\(sourceLanguagesString)"
+    }
+
+    public init(
+        type: UniqueTopicIdentifierType,
+        id: String,
+        bundleIdentifier: String? = nil,
+        bundleDisplayName: String? = nil,
+        fragment: String? = nil,
+        sourceLanguage: SourceLanguage = .swift
+    ) {
+        self.init(type: type, id: id, bundleIdentifier: bundleIdentifier, bundleDisplayName: bundleDisplayName, fragment: fragment, sourceLanguages: [sourceLanguage])
+    }
+
+    /// Used to create a placeholder unique topic identifier.
+    init() {
+        self.init(type: .placeholder, id: "", sourceLanguage: .swift)
+    }
+
+    public init(
+        type: UniqueTopicIdentifierType,
+        id: String,
+        bundleIdentifier: String? = nil,
+        bundleDisplayName: String? = nil,
+        fragment: String? = nil,
+        sourceLanguages: Set<SourceLanguage>
+    ) {
+        let cacheKey = Self.cacheKey(bundleIdentifier: bundleIdentifier, type: type, id: id, sourceLanguages: sourceLanguages, fragment: fragment)
+        if let cached = Self.sharedPool.sync({ $0[cacheKey] }) {
+            self = cached
+            return
+        }
+
+        _storage = _Storage(type: type, id: id, sourceLanguages: Set(sourceLanguages), bundleIdentifier: bundleIdentifier, bundleDisplayName: bundleDisplayName, fragment: fragment)
+
+        Self.sharedPool.sync {
+            $0[cacheKey] = self
+        }
+    }
+
+    fileprivate init(withStorage _storage: _Storage) {
+        self._storage = _storage
+    }
+
+    public static func ==(lhs: UniqueTopicIdentifier, rhs: UniqueTopicIdentifier) -> Bool {
+        return lhs.type == rhs.type && lhs.id == rhs.id && lhs.fragment == rhs.fragment
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(type)
+        hasher.combine(id)
+        hasher.combine(fragment)
+    }
+
+    public var description: String {
+        Self.cacheKey(bundleIdentifier: bundleIdentifier, type: type, id: id, sourceLanguages: sourceLanguages, fragment: fragment)
+    }
+
+    public var debugDescription: String { description }
+
+    public func addingFragment(_ fragment: String?) -> UniqueTopicIdentifier {
+        let newID = UniqueTopicIdentifier(type: type, id: id, bundleIdentifier: bundleIdentifier, fragment: fragment.map(urlReadableFragment), sourceLanguages: sourceLanguages)
+
+        return newID
+    }
+
+    public func removingFragment() -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: type, id: id, bundleIdentifier: bundleIdentifier, sourceLanguages: sourceLanguages)
+    }
+    
+    public func withFragment(_ fragment: String?) -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: type, id: id, bundleIdentifier: bundleIdentifier, fragment: fragment.map(urlReadableFragment), sourceLanguages: sourceLanguages)
+    }
+
+    public func addingSourceLanguages(_ addedSourceLanguages: Set<SourceLanguage>) -> UniqueTopicIdentifier {
+        let combinedSourceLanguages = sourceLanguages.union(addedSourceLanguages)
+
+        guard combinedSourceLanguages != sourceLanguages else { return self }
+
+        return UniqueTopicIdentifier(type: type, id: id, bundleIdentifier: bundleIdentifier, fragment: fragment, sourceLanguages: combinedSourceLanguages)
+    }
+
+    public func withSourceLanguages(_ newSourceLanguages: Set<SourceLanguage>) -> UniqueTopicIdentifier {
+        guard sourceLanguages != newSourceLanguages else { return self }
+
+        return UniqueTopicIdentifier(type: type, id: id, bundleIdentifier: bundleIdentifier, fragment: fragment, sourceLanguages: newSourceLanguages)
+    }
+    
+    public func referenceForNonSymbol() -> ResolvedTopicReference {
+//        let path: String
+//        switch type {
+//        case .tutorialTechnology:
+//            path = NodeURLGenerator.Path.technology(technologyName: id).stringValue
+//        case .tutorial:
+//            path = NodeURLGenerator.Path.tutorial(bundleName: bundleDisplayName!, tutorialName: id).stringValue
+//        case .technology:
+//            path = NodeURLGenerator.Path.documentation(path: id).stringValue
+//        case .article:
+//            path = NodeURLGenerator.Path.article(bundleName: bundleDisplayName!, articleName: id).stringValue
+//        default:
+//            fatalError("Attempting to generate a resolved reference we can not do.")
+//        }
+
+        return ResolvedTopicReference(bundleIdentifier: bundleIdentifier, path: "", fragment: fragment, sourceLanguages: sourceLanguages)
+    }
+    
+    public func url() -> URL {
+        assert(type == .external)
+        var components = URLComponents()
+        components.scheme = ResolvedTopicReference.urlScheme
+        components.host = bundleIdentifier
+        components.path = id
+        components.fragment = fragment
+        return components.url!
+    }
+}
+
+public struct UniqueTopicIdentifierGenerator {
+    public static func identifierForSemantic(_ semantic: Semantic, source: URL, bundle: DocumentationBundle) -> UniqueTopicIdentifier {
+        return identifierForSemantic(semantic, source: source, bundleIdentifier: bundle.identifier)
+    }
+
+    public static func identifierForSemantic(_ semantic: Semantic, source: URL, bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        let fileName = source.deletingPathExtension().lastPathComponent
+        let urlReadableFileName = urlReadablePath(fileName)
+
+        switch semantic {
+        case is Technology:
+            return Self.identifierForTutorialTechnology(technologyName: urlReadableFileName, bundleIdentifier: bundleIdentifier)
+        case is Tutorial, is TutorialArticle:
+            return UniqueTopicIdentifier(type: .tutorial, id: urlReadableFileName, bundleIdentifier: bundleIdentifier)
+        case let article as Article:
+            if article.metadata?.technologyRoot != nil {
+                return Self.identifierForArticlesRoot(articleName: urlReadableFileName, bundleIdentifier: bundleIdentifier)
+            } else {
+                return Self.identifierForArticle(articleName: urlReadableFileName, bundleIdentifier: bundleIdentifier)
+            }
+        default:
+            return UniqueTopicIdentifier(type: .placeholder, id: urlReadableFileName, bundleIdentifier: bundleIdentifier)
+        }
+    }
+
+    public static func identifierForDocumentationRoot(bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: .documentationRoot, id: "", bundleIdentifier: bundleIdentifier)
+    }
+
+    public static func identifierForTutorialsRoot(bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: .tutorialsRoot, id: "", bundleIdentifier: bundleIdentifier)
+    }
+
+    public static func identifierForTutorialTechnology(technologyName: String, bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: .tutorialTechnology, id: urlReadablePath(technologyName), bundleIdentifier: bundleIdentifier)
+    }
+
+    public static func identifierForTutorialVolume(technologyName: String, volumeName: String, bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        let technologyName = urlReadablePath(technologyName)
+        return UniqueTopicIdentifier(type: .volume, id: "\(technologyName)/\(urlReadablePath(volumeName))", bundleIdentifier: bundleIdentifier)
+    }
+    
+    public static func identifierForTutorialChapter(parentName: String, chapterName: String, bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        let parentName = urlReadablePath(parentName)
+        return UniqueTopicIdentifier(type: .chapter, id: "\(parentName)/\(chapterName)", bundleIdentifier: bundleIdentifier)
+    }
+
+    public static func identifierForArticlesRoot(articleName: String, bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: .articleRoot, id: articleName, bundleIdentifier: bundleIdentifier)
+    }
+    
+    public static func identifierForArticle(articleName: String, bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: .article, id: articleName, bundleIdentifier: bundleIdentifier)
+    }
+    
+    public static func identifierForExternal(url: String, bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: .external, id: url, bundleIdentifier: bundleIdentifier)
+    }
+    
+    public static func identifierForCollection(name: String, parent: UniqueTopicIdentifier, bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: .collection, id: "\(parent.id)/\(name)", bundleIdentifier: bundleIdentifier)
+    }
+    
+    public static func identifierForSymbol(preciseIdentifier: String, bundleIdentifier: String? = nil) -> UniqueTopicIdentifier {
+        return UniqueTopicIdentifier(type: .symbol, id: preciseIdentifier, bundleIdentifier: bundleIdentifier)
+    }
+}
+
+fileprivate class _Storage {
+    /// The type of reference.
+    public let type: UniqueTopicIdentifierType
+
+    /// The unique identifier string.
+    public let id: String
+
+    public let sourceLanguages: Set<SourceLanguage>
+
+    public let bundleIdentifier: String
+
+    /// Optionally represent a specifc location in the piece of documentation referenced by ``id``.
+    public let fragment: String?
+
+    init(type: UniqueTopicIdentifierType, id: String, sourceLanguages: Set<SourceLanguage>, bundleIdentifier: String, fragment: String?) {
+        self.type = type
+        self.id = id
+        self.sourceLanguages = sourceLanguages
+        self.bundleIdentifier = bundleIdentifier
+        self.fragment = fragment
+    }
+}
+
+public struct LanguageAwareUniqueTopicIdentifier: Hashable, Equatable, CustomStringConvertible, CustomDebugStringConvertible {
+    private let _storage: _Storage
+
+    /// The type of reference.
+    public var type: UniqueTopicIdentifierType { _storage.type }
+
+    /// The unique identifier string.
+    public var id: String { _storage.id }
+
+    public var sourceLanguages: Set<SourceLanguage> { _storage.sourceLanguages }
+
+    public var sourceLanguage: SourceLanguage { sourceLanguages.contains(.swift) ? .swift: sourceLanguages.first! }
+
+    public var bundleIdentifier: String? { _storage.bundleIdentifier }
+
+    /// Optionally represent a specifc location in the piece of documentation referenced by ``id``.
+    public var fragment: String? { _storage.fragment }
+
+    public init(from id: UniqueTopicIdentifier) {
+        _storage = id._storage
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(type)
+        hasher.combine(id)
+        hasher.combine(fragment)
+        hasher.combine(sourceLanguages)
+    }
+
+    public static func ==(lhs: LanguageAwareUniqueTopicIdentifier, rhs: LanguageAwareUniqueTopicIdentifier) -> Bool {
+        return lhs.type == rhs.type && lhs.id == rhs.id && lhs.fragment == rhs.fragment && lhs.sourceLanguages == rhs.sourceLanguages
+    }
+
+    public var description: String {
+        UniqueTopicIdentifier.cacheKey(bundleIdentifier: bundleIdentifier, type: type, id: id, sourceLanguages: sourceLanguages, fragment: fragment)
+    }
+
+    public var debugDescription: String { description }
+}
+
+public extension UniqueTopicIdentifier {
+    var languageAware: LanguageAwareUniqueTopicIdentifier { LanguageAwareUniqueTopicIdentifier(from: self) }
+}
+
+public extension LanguageAwareUniqueTopicIdentifier {
+    var languageAgnostic: UniqueTopicIdentifier { UniqueTopicIdentifier(withStorage: _storage) }
+}

@@ -99,7 +99,7 @@ enum GeneratedDocumentationTopics {
     
     private static let defaultImplementationGroupTitle = "Default Implementations"
     
-    private static func createCollectionNode(parent: ResolvedTopicReference, title: String, identifiers: [ResolvedTopicReference], context: DocumentationContext, bundle: DocumentationBundle) throws {
+    private static func createCollectionNode(parent: UniqueTopicIdentifier, title: String, identifiers: [UniqueTopicIdentifier], context: DocumentationContext, bundle: DocumentationBundle) throws {
         let automaticCurationSourceLanguage: SourceLanguage
         let automaticCurationSourceLanguages: Set<SourceLanguage>
         automaticCurationSourceLanguage = identifiers.first?.sourceLanguage ?? .swift

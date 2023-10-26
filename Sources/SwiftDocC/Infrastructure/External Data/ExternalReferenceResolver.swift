@@ -55,7 +55,7 @@ public protocol ExternalReferenceResolver {
     ///
     /// - Parameter reference: The external reference that this resolver previously resolved.
     /// - Returns: A node with the documentation content for the referenced topic.
-    func entity(with reference: ResolvedTopicReference) throws -> DocumentationNode
+    func entity(with reference: UniqueTopicIdentifier) throws -> DocumentationNode
     
     /// Returns the web URL for the external topic.
     ///
@@ -63,5 +63,5 @@ public protocol ExternalReferenceResolver {
     ///
     /// - Parameter reference: The external reference that this resolver previously resolved.
     /// - Returns: The web URL for the resolved external reference.
-    func urlForResolvedReference(_ reference: ResolvedTopicReference) -> URL
+    func urlForResolvedReference(_ reference: UniqueTopicIdentifier) -> URL
 }

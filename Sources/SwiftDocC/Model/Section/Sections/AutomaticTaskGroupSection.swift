@@ -25,6 +25,6 @@ struct AutomaticTaskGroupSection {
     }
     
     let title: String
-    var references: [ResolvedTopicReference]
+    var references: [UniqueTopicIdentifier]
     let renderPositionPreference: PositionPreference
 }

@@ -49,7 +49,7 @@ public class LinkResolver {
     ///   - isCurrentlyResolvingSymbolLink: Whether or not the documentation link is a symbol link.
     ///   - context: The documentation context to resolve the link in.
     /// - Returns: The result of resolving the reference.
-    func resolve(_ unresolvedReference: UnresolvedTopicReference, in parent: ResolvedTopicReference, fromSymbolLink isCurrentlyResolvingSymbolLink: Bool, context: DocumentationContext) -> TopicReferenceResolutionResult {
+    func resolve(_ unresolvedReference: UnresolvedTopicReference, in parent: UniqueTopicIdentifier, fromSymbolLink isCurrentlyResolvingSymbolLink: Bool, context: DocumentationContext) -> TopicReferenceResolutionResult {
         // Check if the unresolved reference is external
         if let bundleID = unresolvedReference.bundleIdentifier,
            !context.registeredBundles.contains(where: { bundle in
@@ -106,9 +106,9 @@ public class LinkResolver {
 private final class FallbackResolverBasedLinkResolver {
     var cachedResolvedFallbackReferences = Synchronized<[String: ResolvedTopicReference]>([:])
     
-    func resolve(_ unresolvedReference: UnresolvedTopicReference, in parent: ResolvedTopicReference, fromSymbolLink isCurrentlyResolvingSymbolLink: Bool, context: DocumentationContext) -> ResolvedTopicReference? {
+    func resolve(_ unresolvedReference: UnresolvedTopicReference, in parent: UniqueTopicIdentifier, fromSymbolLink isCurrentlyResolvingSymbolLink: Bool, context: DocumentationContext) -> ResolvedTopicReference? {
         // Check if a fallback reference resolver should resolve this
-        let referenceBundleIdentifier = unresolvedReference.bundleIdentifier ?? parent.bundleIdentifier
+        let referenceBundleIdentifier = unresolvedReference.bundleIdentifier ?? parent.bundleIdentifier!
         guard !context.fallbackReferenceResolvers.isEmpty,
               let knownBundleIdentifier = context.registeredBundles.first(where: { $0.identifier == referenceBundleIdentifier || urlReadablePath($0.displayName) == referenceBundleIdentifier })?.identifier,
               let fallbackResolver = context.fallbackReferenceResolvers[knownBundleIdentifier]

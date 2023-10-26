@@ -14,7 +14,7 @@ import Markdown
 /// Section of a document that can be linked to.
 public struct AnchorSection {
     /// The unique reference to the section.
-    public var reference: ResolvedTopicReference
+    public var reference: UniqueTopicIdentifier
     
     /// The title of the section.
     public var title: String

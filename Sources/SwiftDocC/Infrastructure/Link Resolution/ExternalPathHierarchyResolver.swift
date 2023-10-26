@@ -18,12 +18,12 @@ final class ExternalPathHierarchyResolver {
     private(set) var pathHierarchy: PathHierarchy!
     
     /// A map from the path hierarchies identifiers to resolved references.
-    private var resolvedReferences = [ResolvedIdentifier: ResolvedTopicReference]()
+    private var resolvedReferences = [ResolvedIdentifier: UniqueTopicIdentifier]()
     /// A map from symbol's unique identifiers to their resolved references.
-    private var symbols: [String: ResolvedTopicReference]
+    private var symbols: [String: UniqueTopicIdentifier]
     
     /// The content for each external entity.
-    private var content: [ResolvedTopicReference: LinkDestinationSummary]
+    private var content: [UniqueTopicIdentifier: LinkDestinationSummary]
     
     /// Attempts to resolve an unresolved reference.
     ///
@@ -40,7 +40,7 @@ final class ExternalPathHierarchyResolver {
             }
             
             guard content[foundReference] != nil else {
-                return .failure(unresolvedReference, .init("Resolved \(foundReference.url.withoutHostAndPortAndScheme().absoluteString.singleQuoted) but don't have any content to display for it."))
+                return .failure(unresolvedReference, .init("Resolved \(URL(string: foundReference.id)!.withoutHostAndPortAndScheme().absoluteString.singleQuoted) but don't have any content to display for it."))
             }
             
             return .success(foundReference)
@@ -93,7 +93,7 @@ final class ExternalPathHierarchyResolver {
     /// Returns the external entity for a reference that was successfully resolved by this external resolver.
     ///
     /// - Important: Passing a resolved reference that wasn't resolved by this resolver will result in a fatal error.
-    func entity(_ reference: ResolvedTopicReference) -> ExternalEntity {
+    func entity(_ reference: UniqueTopicIdentifier) -> ExternalEntity {
         guard let resolvedInformation = content[reference] else {
             fatalError("The resolver should only be asked for entities that it resolved.")
         }
@@ -127,8 +127,8 @@ final class ExternalPathHierarchyResolver {
         entityInformation linkDestinationSummaries: [LinkDestinationSummary]
     ) {
         // First, read the linkable entities and build up maps of USR -> Reference and Reference -> Content.
-        var entities = [ResolvedTopicReference: LinkDestinationSummary]()
-        var symbols = [String: ResolvedTopicReference]()
+        var entities = [UniqueTopicIdentifier: LinkDestinationSummary]()
+        var symbols = [String: UniqueTopicIdentifier]()
         entities.reserveCapacity(linkDestinationSummaries.count)
         symbols.reserveCapacity(linkDestinationSummaries.count)
         for entity in linkDestinationSummaries {
@@ -138,9 +138,10 @@ final class ExternalPathHierarchyResolver {
                 fragment: entity.referenceURL.fragment,
                 sourceLanguage: entity.language
             )
-            entities[reference] = entity
+            let uid = UniqueTopicIdentifierGenerator.identifierForExternal(url: entity.referenceURL.path, bundleIdentifier: entity.referenceURL.host!).addingFragment(entity.referenceURL.fragment).withSourceLanguages([entity.language])
+            entities[uid] = entity
             if let usr = entity.usr {
-                symbols[usr] = reference
+                symbols[usr] = uid
             }
         }
         self.content = entities
@@ -157,7 +158,7 @@ final class ExternalPathHierarchyResolver {
                     continue
                 }
                 let identifier = identifiers[index]
-                self.resolvedReferences[identifier] = ResolvedTopicReference(bundleIdentifier: fileRepresentation.bundleID, path: url.path, fragment: url.fragment, sourceLanguage: .swift)
+                self.resolvedReferences[identifier] = UniqueTopicIdentifierGenerator.identifierForExternal(url: url.path, bundleIdentifier: fileRepresentation.bundleID).addingFragment(url.fragment).withSourceLanguages([.swift])//ResolvedTopicReference(bundleIdentifier: fileRepresentation.bundleID, path: url.path, fragment: url.fragment, sourceLanguage: .swift)
             }
         }
         // Finally, the Identifier -> Symbol mapping can be constructed by iterating over the nodes and looking up the reference for each USR.

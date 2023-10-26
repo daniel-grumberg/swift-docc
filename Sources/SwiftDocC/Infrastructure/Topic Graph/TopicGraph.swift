@@ -70,7 +70,7 @@ struct TopicGraph {
         }
         
         /// The reference to the `DocumentationNode` this node represents.
-        let reference: ResolvedTopicReference
+        let reference: UniqueTopicIdentifier
         
         /// The kind of node.
         let kind: DocumentationNode.Kind
@@ -90,7 +90,7 @@ struct TopicGraph {
         /// If true, the topic has been removed from the hierarchy due to being an extension whose children have been curated elsewhere.
         let isEmptyExtension: Bool
         
-        init(reference: ResolvedTopicReference, kind: DocumentationNode.Kind, source: ContentLocation, title: String, isResolvable: Bool = true, isVirtual: Bool = false, isEmptyExtension: Bool = false) {
+        init(reference: UniqueTopicIdentifier, kind: DocumentationNode.Kind, source: ContentLocation, title: String, isResolvable: Bool = true, isVirtual: Bool = false, isEmptyExtension: Bool = false) {
             self.reference = reference
             self.kind = kind
             self.source = source
@@ -100,7 +100,7 @@ struct TopicGraph {
             self.isEmptyExtension = isEmptyExtension
         }
         
-        func withReference(_ reference: ResolvedTopicReference) -> Node {
+        func withReference(_ reference: UniqueTopicIdentifier) -> Node {
             Node(
                 reference: reference,
                 kind: kind,
@@ -123,12 +123,12 @@ struct TopicGraph {
     }
         
     /// The nodes in the graph.
-    var nodes: [ResolvedTopicReference: Node]
+    var nodes: [UniqueTopicIdentifier: Node]
     
     /// The edges in the graph.
-    var edges: [ResolvedTopicReference: [ResolvedTopicReference]]
+    var edges: [UniqueTopicIdentifier: [UniqueTopicIdentifier]]
     /// A reversed lookup of the graph's edges.
-    var reverseEdges: [ResolvedTopicReference: [ResolvedTopicReference]]
+    var reverseEdges: [UniqueTopicIdentifier: [UniqueTopicIdentifier]]
     
     /// Create an empty topic graph.
     init() {
@@ -184,7 +184,7 @@ struct TopicGraph {
     }
     
     /// Updates the node with the given reference with a new reference.
-    mutating func updateReference(_ reference: ResolvedTopicReference, newReference: ResolvedTopicReference) {
+    mutating func updateReference(_ reference: UniqueTopicIdentifier, newReference: UniqueTopicIdentifier) {
         nodes[reference] = nodes[reference]?.withReference(newReference)
     }
     
@@ -193,7 +193,7 @@ struct TopicGraph {
     /// - Parameters:
     ///   - source: A source for the new edge.
     ///   - target: A target for the new edge.
-    mutating func unsafelyAddEdge(source: ResolvedTopicReference, target: ResolvedTopicReference) {
+    mutating func unsafelyAddEdge(source: UniqueTopicIdentifier, target: UniqueTopicIdentifier) {
         precondition(source != target, "Attempting to add edge between two equal nodes. \nsource: \(source)\ntarget: \(target)\n")
         
         // Do not add the edge if it exists already.
@@ -255,7 +255,7 @@ struct TopicGraph {
     /// - Parameters:
     ///   - source: The parent reference in the edge.
     ///   - target: The child reference in the edge.
-    mutating func removeEdge(fromReference source: ResolvedTopicReference, toReference target: ResolvedTopicReference) {
+    mutating func removeEdge(fromReference source: UniqueTopicIdentifier, toReference target: UniqueTopicIdentifier) {
         guard var nodeEdges = edges[source],
             let index = nodeEdges.firstIndex(of: target) else {
             return
@@ -268,12 +268,12 @@ struct TopicGraph {
     }
 
     /// Returns a ``Node`` in the graph with the given `reference` if it exists.
-    func nodeWithReference(_ reference: ResolvedTopicReference) -> Node? {
+    func nodeWithReference(_ reference: UniqueTopicIdentifier) -> Node? {
         return nodes[reference]
     }
     
     /// Returns the targets of the given ``Node``.
-    subscript(node: Node) -> [ResolvedTopicReference] {
+    subscript(node: Node) -> [UniqueTopicIdentifier] {
         return edges[node.reference] ?? []
     }
     
@@ -318,11 +318,11 @@ struct TopicGraph {
     }
 
     /// Returns true if a node exists with the given reference and it's set as linkable.
-    func isLinkable(_ reference: ResolvedTopicReference) -> Bool {
+    func isLinkable(_ reference: UniqueTopicIdentifier) -> Bool {
         // Sections (represented by the node path + fragment with the section name)
         // don't have nodes in the topic graph so we verify that
         // the path without the fragment is resolvable.
-        return nodeWithReference(reference.withFragment(nil))?.isResolvable == true
+        return nodeWithReference(reference.removingFragment())?.isResolvable == true
     }
     
     /// Generates a hierarchical dump of the topic graph, starting at the given node.
@@ -343,7 +343,7 @@ struct TopicGraph {
     func dump(startingAt node: Node, keyPath: KeyPath<TopicGraph.Node, String> = \.title, decorator: String = "") -> String {
         var result = ""
         result.append("\(decorator) \(node[keyPath: keyPath])\r\n")
-        if let childEdges = edges[node.reference]?.sorted(by: { $0.path < $1.path }) {
+        if let childEdges = edges[node.reference]?.sorted(by: { $0.description < $1.description }) {
             for (index, childRef) in childEdges.enumerated() {
                 var decorator = decorator
                 if decorator.hasSuffix("├") {

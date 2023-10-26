@@ -41,7 +41,7 @@ public protocol FallbackReferenceResolver {
     /// ## See Also
     /// - ``ExternalReferenceResolver/resolve(_:sourceLanguage:)``
     func entityIfPreviouslyResolved(
-        with reference: ResolvedTopicReference
+        with reference: UniqueTopicIdentifier
     ) throws -> DocumentationNode?
     
     /// Returns the web URL for the external topic.
@@ -55,6 +55,6 @@ public protocol FallbackReferenceResolver {
     /// ## See Also
     /// - ``ExternalReferenceResolver/urlForResolvedReference(_:)``
     func urlForResolvedReferenceIfPreviouslyResolved(
-        _ reference: ResolvedTopicReference
+        _ reference: UniqueTopicIdentifier
     ) -> URL?
 }

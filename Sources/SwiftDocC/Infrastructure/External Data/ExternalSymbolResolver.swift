@@ -53,7 +53,7 @@ public protocol ExternalSymbolResolver {
     ///
     /// - Parameter reference:The external symbol reference that this resolver previously resolved.
     /// - Returns: The web URL for the resolved external symbol.
-    func urlForResolvedSymbol(reference: ResolvedTopicReference) -> URL?
+    func urlForResolvedSymbol(reference: UniqueTopicIdentifier) -> URL?
     
     /// Attempts to find the precise identifier for an authored symbol reference.
     ///

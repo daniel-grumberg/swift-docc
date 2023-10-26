@@ -18,7 +18,7 @@ import SymbolKit
 /// to look up nodes by their unique ``reference``.
 public struct DocumentationNode {
     /// The unique reference to the node.
-    public var reference: ResolvedTopicReference
+    public var reference: UniqueTopicIdentifier
     
     /// The type of node.
     public var kind: Kind
@@ -135,7 +135,7 @@ public struct DocumentationNode {
     ///   - markup: The markup that makes up the content for the node.
     ///   - semantic: The parsed documentation structure that's described by the documentation content.
     ///   - platformNames: The names of the platforms for which the node is available.
-    public init(reference: ResolvedTopicReference, kind: Kind, sourceLanguage: SourceLanguage, availableSourceLanguages: Set<SourceLanguage>? = nil, name: Name, markup: Markup, semantic: Semantic?, platformNames: Set<String>? = nil, isVirtual: Bool = false) {
+    public init(reference: UniqueTopicIdentifier, kind: Kind, sourceLanguage: SourceLanguage, availableSourceLanguages: Set<SourceLanguage>? = nil, name: Name, markup: Markup, semantic: Semantic?, platformNames: Set<String>? = nil, isVirtual: Bool = false) {
         self.reference = reference
         self.kind = kind
         self.sourceLanguage = sourceLanguage
@@ -182,7 +182,7 @@ public struct DocumentationNode {
     ///   - symbol: The symbol to create a documentation node for.
     ///   - platformName: The name of the platforms for which the node is available.
     ///   - moduleName: The name of the module that the symbol belongs to.
-    init(reference: ResolvedTopicReference, unifiedSymbol: UnifiedSymbolGraph.Symbol, moduleData: SymbolGraph.Module, moduleReference: ResolvedTopicReference) {
+    init(reference: UniqueTopicIdentifier, unifiedSymbol: UnifiedSymbolGraph.Symbol, moduleData: SymbolGraph.Module, moduleReference: UniqueTopicIdentifier) {
         self.reference = reference
         
         guard let defaultSymbol = unifiedSymbol.defaultSymbol else {
@@ -554,12 +554,12 @@ public struct DocumentationNode {
         }
     }
 
-    @available(*, deprecated, message: "Use init(reference:symbol:platformName:moduleReference:article:engine:bystanderModules:) instead")
-    public init(reference: ResolvedTopicReference, symbol: SymbolGraph.Symbol, platformName: String?, moduleName: String, article: Article?, engine: DiagnosticEngine) {
-        let assumedModuleReference = ResolvedTopicReference(bundleIdentifier: reference.bundleIdentifier, path: reference.pathComponents.prefix(2).joined(separator: "/"), sourceLanguage: reference.sourceLanguage)
-        self.init(reference: reference, symbol: symbol, platformName: platformName, moduleReference: assumedModuleReference, article: article, engine: engine)
-    }
-    
+//    @available(*, deprecated, message: "Use init(reference:symbol:platformName:moduleReference:article:engine:bystanderModules:) instead")
+//    public init(reference: ResolvedTopicReference, symbol: SymbolGraph.Symbol, platformName: String?, moduleName: String, article: Article?, engine: DiagnosticEngine) {
+//        let assumedModuleReference = ResolvedTopicReference(bundleIdentifier: reference.bundleIdentifier, path: reference.pathComponents.prefix(2).joined(separator: "/"), sourceLanguage: reference.sourceLanguage)
+//        self.init(reference: reference, symbol: symbol, platformName: platformName, moduleReference: assumedModuleReference, article: article, engine: engine)
+//    }
+//    
     /// Initializes a documentation node to represent a symbol from a symbol graph.
     ///
     /// - Parameters:
@@ -570,7 +570,7 @@ public struct DocumentationNode {
     ///   - article: The documentation extension content for this symbol.
     ///   - engine:The engine that collects any problems encountered during initialization.
     ///   - bystanderModules: An optional list of cross-import module names.
-    public init(reference: ResolvedTopicReference, symbol: SymbolGraph.Symbol, platformName: String?, moduleReference: ResolvedTopicReference, article: Article?, engine: DiagnosticEngine) {
+    public init(reference: UniqueTopicIdentifier, symbol: SymbolGraph.Symbol, platformName: String?, moduleReference: UniqueTopicIdentifier, article: Article?, engine: DiagnosticEngine) {
         self.reference = reference
         
         guard reference.sourceLanguage == .swift else {
@@ -675,7 +675,7 @@ public struct DocumentationNode {
     ///   - reference: The unique reference to the node.
     ///   - article: The documentation extension content for this symbol.
     ///   - problems: A mutable collection of problems to update with any problem encountered while initializing the node.
-    init(reference: ResolvedTopicReference, article: Article) throws {
+    init(reference: UniqueTopicIdentifier, article: Article) throws {
         guard let articleMarkup = article.markup else {
             throw Error.missingMarkup
         }

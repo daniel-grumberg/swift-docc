@@ -36,8 +36,8 @@ public enum TopicReference: Hashable, CustomStringConvertible {
     case resolved(TopicReferenceResolutionResult)
     
     /// A topic reference that has successfully been resolved to known documentation.
-    internal static func successfullyResolved(_ reference: ResolvedTopicReference) -> TopicReference {
-        return .resolved(.success(reference))
+    internal static func successfullyResolved(_ identifier: UniqueTopicIdentifier) -> TopicReference {
+        return .resolved(.success(identifier))
     }
     
     public var description: String {
@@ -53,7 +53,7 @@ public enum TopicReference: Hashable, CustomStringConvertible {
 /// A topic reference that has been resolved, either successfully or not.
 public enum TopicReferenceResolutionResult: Hashable, CustomStringConvertible {
     /// A topic reference that has successfully been resolved to known documentation.
-    case success(ResolvedTopicReference)
+    case success(UniqueTopicIdentifier)
     /// A topic reference that has failed to resolve to known documentation and an error message with information about why the reference failed to resolve.
     case failure(UnresolvedTopicReference, TopicReferenceResolutionErrorInfo)
     

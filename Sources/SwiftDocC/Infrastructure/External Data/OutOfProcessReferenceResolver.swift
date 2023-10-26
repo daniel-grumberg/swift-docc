@@ -128,12 +128,7 @@ public class OutOfProcessReferenceResolver: ExternalReferenceResolver, FallbackR
                 let metadata = try resolveInformationForTopicURL(unresolvedTopicURL)
                 // Don't do anything with this URL. The external URL will be resolved during conversion to render nodes
                 return .success(
-                    ResolvedTopicReference(
-                        bundleIdentifier: bundleIdentifier,
-                        path: unresolvedReference.path,
-                        fragment: unresolvedReference.fragment,
-                        sourceLanguages: sourceLanguages(for: metadata)
-                    )
+                    UniqueTopicIdentifierGenerator.identifierForExternal(url: unresolvedReference.path, bundleIdentifier: bundleIdentifier).withFragment(unresolvedReference.fragment).withSourceLanguages(sourceLanguages(for: metadata))
                 )
             } catch let error {
                 return .failure(unresolvedReference, TopicReferenceResolutionErrorInfo(error))
@@ -150,8 +145,8 @@ public class OutOfProcessReferenceResolver: ExternalReferenceResolver, FallbackR
     ///
     /// - Parameter reference: The external reference that this resolver previously resolved.
     /// - Returns: A node with the documentation content for the referenced topic.
-    public func entity(with reference: ResolvedTopicReference) throws -> DocumentationNode {
-        guard let resolvedInformation = referenceCache[reference.url] else {
+    public func entity(with reference: UniqueTopicIdentifier) throws -> DocumentationNode {
+        guard let resolvedInformation = referenceCache[reference.url()] else {
             fatalError("A topic reference that has already been resolved should always exist in the cache.")
         }
         
@@ -199,8 +194,8 @@ public class OutOfProcessReferenceResolver: ExternalReferenceResolver, FallbackR
     ///
     /// - Parameter reference: The external reference that this resolver previously resolved.
     /// - Returns: The web URL for the resolved external reference.
-    public func urlForResolvedReference(_ reference: ResolvedTopicReference) -> URL {
-        guard let resolvedInformation = referenceCache[reference.url] else {
+    public func urlForResolvedReference(_ reference: UniqueTopicIdentifier) -> URL {
+        guard let resolvedInformation = referenceCache[reference.url()] else {
             fatalError("A topic reference that has already been resolved should always exist in the cache.")
         }
         return resolvedInformation.url
@@ -208,16 +203,16 @@ public class OutOfProcessReferenceResolver: ExternalReferenceResolver, FallbackR
     
     // MARK: Fallback Reference Resolver
     
-    public func entityIfPreviouslyResolved(with reference: ResolvedTopicReference) throws -> DocumentationNode? {
+    public func entityIfPreviouslyResolved(with reference: UniqueTopicIdentifier) throws -> DocumentationNode? {
         hasResolvedReference(reference) ? try entity(with: reference) : nil
     }
     
-    public func urlForResolvedReferenceIfPreviouslyResolved(_ reference: ResolvedTopicReference) -> URL? {
+    public func urlForResolvedReferenceIfPreviouslyResolved(_ reference: UniqueTopicIdentifier) -> URL? {
         hasResolvedReference(reference) ? urlForResolvedReference(reference) : nil
     }
     
-    private func hasResolvedReference(_ reference: ResolvedTopicReference) -> Bool {
-        referenceCache.keys.contains(reference.url)
+    private func hasResolvedReference(_ reference: UniqueTopicIdentifier) -> Bool {
+        referenceCache.keys.contains(reference.url())
     }
     
     // MARK: External Symbol Resolver
@@ -235,11 +230,7 @@ public class OutOfProcessReferenceResolver: ExternalReferenceResolver, FallbackR
         
         // Construct a resolved reference for this symbol. It uses a known bundle identifier and the symbol's precise identifier so that the
         // already resolved information can be looked up when determining the URL for this symbol.
-        let reference = ResolvedTopicReference(
-            bundleIdentifier: symbolBundleIdentifier,
-            path: "/" + preciseIdentifier,
-            sourceLanguages: sourceLanguages(for: resolvedInformation)
-        )
+        let reference = UniqueTopicIdentifierGenerator.identifierForExternal(url: "/" + preciseIdentifier, bundleIdentifier: symbolBundleIdentifier).withSourceLanguages(sourceLanguages(for: resolvedInformation))
         
         let symbol = OutOfProcessReferenceResolver.symbolSemantic(
             kind: resolvedInformation.kind,
@@ -317,11 +308,11 @@ public class OutOfProcessReferenceResolver: ExternalReferenceResolver, FallbackR
     ///
     /// - Parameter reference:The external symbol reference that this resolver previously resolved.
     /// - Returns: The web URL for the resolved external symbol.
-    public func urlForResolvedSymbol(reference: ResolvedTopicReference) -> URL? {
-        guard reference.bundleIdentifier == symbolBundleIdentifier, let preciseIdentifier = reference.pathComponents.last else {
+    public func urlForResolvedSymbol(reference: UniqueTopicIdentifier) -> URL? {
+        guard reference.bundleIdentifier == symbolBundleIdentifier else {
             return nil
         }
-        guard let resolvedInformation = symbolCache[preciseIdentifier] else {
+        guard let resolvedInformation = symbolCache[reference.id.removingLeadingSlash] else {
             // Any non-symbol reference would return `nil` above.
             // Any symbol reference would come from a resolved symbol entity, so it will always exist in the cache.
             fatalError("A symbol reference that has already been resolved should always exist in the cache.")
@@ -344,7 +335,7 @@ public class OutOfProcessReferenceResolver: ExternalReferenceResolver, FallbackR
             url = unresolved.topicURL.url
         case .resolved(.success(let resolved)):
             guard resolved.bundleIdentifier == symbolBundleIdentifier else { return nil }
-            url = resolved.url
+            url = resolved.url()
         }
         
         return url.pathComponents.last
@@ -970,7 +961,7 @@ extension OutOfProcessReferenceResolver {
             navigatorVariants: .empty,
             roleHeadingVariants: .init(values: [:], defaultVariantValue: ""), // This information isn't used anywhere since this node doesn't have its own page, it's just referenced from other pages.
             platformNameVariants: .empty,
-            moduleReference: ResolvedTopicReference(bundleIdentifier: "", path: "", sourceLanguage: language), // This information isn't used anywhere since the `urlForResolvedReference(reference:)` specifies the URL for this node.
+            moduleReference: UniqueTopicIdentifier(),
             externalIDVariants: .empty,
             accessLevelVariants: .empty,
             availabilityVariants: .init(values: [:], defaultVariantValue: availability),

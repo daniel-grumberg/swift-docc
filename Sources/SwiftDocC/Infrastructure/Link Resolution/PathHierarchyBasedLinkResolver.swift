@@ -17,7 +17,7 @@ final class PathHierarchyBasedLinkResolver {
     private(set) var pathHierarchy: PathHierarchy!
     
     /// Map between resolved identifiers and resolved topic references.
-    private(set) var resolvedReferenceMap = BidirectionalMap<ResolvedIdentifier, ResolvedTopicReference>()
+    private(set) var resolvedReferenceMap = BidirectionalMap<ResolvedIdentifier, UniqueTopicIdentifier>()
     
     /// Initializes a link resolver with a given path hierarchy.
     init(pathHierarchy: PathHierarchy) {
@@ -26,7 +26,7 @@ final class PathHierarchyBasedLinkResolver {
     
     /// Remove all matches from a given documentation bundle from the link resolver.
     func unregisterBundle(identifier: BundleIdentifier) {
-        var newMap = BidirectionalMap<ResolvedIdentifier, ResolvedTopicReference>()
+        var newMap = BidirectionalMap<ResolvedIdentifier, UniqueTopicIdentifier>()
         for (id, reference) in resolvedReferenceMap {
             if reference.bundleIdentifier == identifier {
                 pathHierarchy.removeNodeWithID(id)
@@ -35,6 +35,20 @@ final class PathHierarchyBasedLinkResolver {
             }
         }
         resolvedReferenceMap = newMap
+    }
+    
+    func moduleUniqueIdentifier(for moduleName: String) -> UniqueTopicIdentifier? {
+        guard let moduleIdentifier = pathHierarchy.modules[moduleName]?.identifier else { return nil }
+        return resolvedReferenceMap[moduleIdentifier]
+    }
+    
+    func parent(of reference: UniqueTopicIdentifier) -> UniqueTopicIdentifier? {
+        guard let resolvedID = resolvedReferenceMap[reference],
+              let parentID = pathHierarchy.lookup[resolvedID]?.parent?.identifier else {
+            return nil
+        }
+        
+        return resolvedReferenceMap[parentID]
     }
     
     /// Creates a path string—that can be used to find documentation in the path hierarchy—from an unresolved topic reference,
@@ -46,7 +60,7 @@ final class PathHierarchyBasedLinkResolver {
     }
     
     /// Traverse all the pairs of symbols and their parents.
-    func traverseSymbolAndParentPairs(_ observe: (_ symbol: ResolvedTopicReference, _ parent: ResolvedTopicReference) -> Void) {
+    func traverseSymbolAndParentPairs(_ observe: (_ symbol: UniqueTopicIdentifier, _ parent: UniqueTopicIdentifier) -> Void) {
         for (id, node) in pathHierarchy.lookup {
             guard node.symbol != nil else { continue }
             
@@ -59,26 +73,35 @@ final class PathHierarchyBasedLinkResolver {
     }
     
     /// Returns a list of all the top level symbols.
-    func topLevelSymbols() -> [ResolvedTopicReference] {
+    func topLevelSymbols() -> [UniqueTopicIdentifier] {
         return pathHierarchy.topLevelSymbols().map { resolvedReferenceMap[$0]! }
     }
     
     /// Returns a list of all module symbols.
-    func modules() -> [ResolvedTopicReference] {
+    func modules() -> [UniqueTopicIdentifier] {
         return pathHierarchy.modules.values.map { resolvedReferenceMap[$0.identifier]! }
     }
     
     // MARK: - Adding non-symbols
     
+    private(set) var tutorialContainerID: UniqueTopicIdentifier!
+    private(set) var articlesContainerID: UniqueTopicIdentifier!
+    private(set) var tutorialRootContainerID: UniqueTopicIdentifier!
+    
     /// Map the resolved identifiers to resolved topic references for a given bundle's article, tutorial, and technology root pages.
     func addMappingForRoots(bundle: DocumentationBundle) {
-        resolvedReferenceMap[pathHierarchy.tutorialContainer.identifier] = bundle.technologyTutorialsRootReference
-        resolvedReferenceMap[pathHierarchy.articlesContainer.identifier] = bundle.articlesDocumentationRootReference
-        resolvedReferenceMap[pathHierarchy.tutorialOverviewContainer.identifier] = bundle.tutorialsRootReference
+        tutorialContainerID = UniqueTopicIdentifierGenerator.identifierForTutorialTechnology(technologyName: bundle.displayName, bundleIdentifier: bundle.identifier)
+        resolvedReferenceMap[pathHierarchy.tutorialContainer.identifier] = tutorialContainerID
+        
+         articlesContainerID = UniqueTopicIdentifierGenerator.identifierForArticlesRoot(articleName: bundle.displayName, bundleIdentifier: bundle.identifier)
+        resolvedReferenceMap[pathHierarchy.articlesContainer.identifier] = articlesContainerID
+        
+        tutorialRootContainerID = UniqueTopicIdentifierGenerator.identifierForTutorialsRoot(bundleIdentifier: bundle.identifier)
+        resolvedReferenceMap[pathHierarchy.tutorialOverviewContainer.identifier] = tutorialRootContainerID
     }
     
     /// Map the resolved identifiers to resolved topic references for all symbols in the given symbol index.
-    func addMappingForSymbols(symbolIndex: [String: ResolvedTopicReference]) {
+    func addMappingForSymbols(symbolIndex: [String: UniqueTopicIdentifier]) {
         for (id, node) in pathHierarchy.lookup {
             guard let symbol = node.symbol, let reference = symbolIndex[symbol.identifier.precise] else {
                 continue
@@ -88,36 +111,46 @@ final class PathHierarchyBasedLinkResolver {
     }
     
     /// Adds a tutorial and its landmarks to the path hierarchy.
-    func addTutorial(_ tutorial: DocumentationContext.SemanticResult<Tutorial>) {
+    func addTutorial(_ tutorial: DocumentationContext.SemanticResult<Tutorial>, bundleIdentifier: BundleIdentifier) {
         addTutorial(
-            reference: tutorial.topicGraphNode.reference,
+            identifier: 
+                UniqueTopicIdentifierGenerator.identifierForSemantic(
+                    tutorial.value,
+                    source: tutorial.source,
+                    bundleIdentifier: bundleIdentifier
+                ),
             source: tutorial.source,
             landmarks: tutorial.value.landmarks
         )
     }
     
     /// Adds a tutorial article and its landmarks to the path hierarchy.
-    func addTutorialArticle(_ tutorial: DocumentationContext.SemanticResult<TutorialArticle>) {
+    func addTutorialArticle(_ tutorial: DocumentationContext.SemanticResult<TutorialArticle>, bundleIdentifier: BundleIdentifier) {
         addTutorial(
-            reference: tutorial.topicGraphNode.reference,
+            identifier: 
+                UniqueTopicIdentifierGenerator.identifierForSemantic(
+                    tutorial.value,
+                    source: tutorial.source,
+                    bundleIdentifier: bundleIdentifier
+                ),
             source: tutorial.source,
             landmarks: tutorial.value.landmarks
         )
     }
     
-    private func addTutorial(reference: ResolvedTopicReference, source: URL, landmarks: [Landmark]) {
+    private func addTutorial(identifier: UniqueTopicIdentifier, source: URL, landmarks: [Landmark]) {
         let tutorialID = pathHierarchy.addTutorial(name: urlReadablePath(source.deletingPathExtension().lastPathComponent))
-        resolvedReferenceMap[tutorialID] = reference
+        resolvedReferenceMap[tutorialID] = identifier
         
         for landmark in landmarks {
             let landmarkID = pathHierarchy.addNonSymbolChild(parent: tutorialID, name: urlReadableFragment(landmark.title), kind: "landmark")
-            resolvedReferenceMap[landmarkID] = reference.withFragment(landmark.title)
+            resolvedReferenceMap[landmarkID] = identifier.addingFragment(landmark.title)
         }
     }
     
     /// Adds a technology and its volumes and chapters to the path hierarchy.
-    func addTechnology(_ technology: DocumentationContext.SemanticResult<Technology>) {
-        let reference = technology.topicGraphNode.reference
+    func addTechnology(_ technology: DocumentationContext.SemanticResult<Technology>, bundleIdentifier: BundleIdentifier) {
+        let reference = UniqueTopicIdentifierGenerator.identifierForSemantic(technology.value, source: technology.source, bundleIdentifier: bundleIdentifier)
 
         let technologyID = pathHierarchy.addTutorialOverview(name: urlReadablePath(technology.source.deletingPathExtension().lastPathComponent))
         resolvedReferenceMap[technologyID] = reference
@@ -126,14 +159,14 @@ final class PathHierarchyBasedLinkResolver {
         for volume in technology.value.volumes {
             if anonymousVolumeID == nil, volume.name == nil {
                 anonymousVolumeID = pathHierarchy.addNonSymbolChild(parent: technologyID, name: "$volume", kind: "volume")
-                resolvedReferenceMap[anonymousVolumeID!] = reference.appendingPath("$volume")
+                resolvedReferenceMap[anonymousVolumeID!] = UniqueTopicIdentifierGenerator.identifierForTutorialVolume(technologyName: reference.id, volumeName: "$volume", bundleIdentifier: bundleIdentifier)
             }
             
             let chapterParentID: ResolvedIdentifier
-            let chapterParentReference: ResolvedTopicReference
+            let chapterParentReference: UniqueTopicIdentifier
             if let name = volume.name {
                 chapterParentID = pathHierarchy.addNonSymbolChild(parent: technologyID, name: name, kind: "volume")
-                chapterParentReference = reference.appendingPath(name)
+                chapterParentReference = UniqueTopicIdentifierGenerator.identifierForTutorialVolume(technologyName: reference.id, volumeName: name, bundleIdentifier: bundleIdentifier)
                 resolvedReferenceMap[chapterParentID] = chapterParentReference
             } else {
                 chapterParentID = technologyID
@@ -142,34 +175,34 @@ final class PathHierarchyBasedLinkResolver {
             
             for chapter in volume.chapters {
                 let chapterID = pathHierarchy.addNonSymbolChild(parent: technologyID, name: chapter.name, kind: "volume")
-                resolvedReferenceMap[chapterID] = chapterParentReference.appendingPath(chapter.name)
+                resolvedReferenceMap[chapterID] = UniqueTopicIdentifierGenerator.identifierForTutorialChapter(parentName: chapterParentReference.id, chapterName: chapter.name, bundleIdentifier: bundleIdentifier)
             }
         }
     }
     
     /// Adds a technology root article and its headings to the path hierarchy.
-    func addRootArticle(_ article: DocumentationContext.SemanticResult<Article>, anchorSections: [AnchorSection]) {
+    func addRootArticle(_ article: DocumentationContext.SemanticResult<Article>, anchorSections: [AnchorSection], bundleIdentifier: BundleIdentifier) {
         let articleID = pathHierarchy.addTechnologyRoot(name: article.source.deletingPathExtension().lastPathComponent)
-        resolvedReferenceMap[articleID] = article.topicGraphNode.reference
+        resolvedReferenceMap[articleID] = UniqueTopicIdentifierGenerator.identifierForSemantic(article.value, source: article.source, bundleIdentifier: bundleIdentifier)
         addAnchors(anchorSections, to: articleID)
     }
     
     /// Adds an article and its headings to the path hierarchy.
-    func addArticle(_ article: DocumentationContext.SemanticResult<Article>, anchorSections: [AnchorSection]) {
+    func addArticle(_ article: DocumentationContext.SemanticResult<Article>, anchorSections: [AnchorSection], bundleIdentifier: BundleIdentifier) {
         let articleID = pathHierarchy.addArticle(name: article.source.deletingPathExtension().lastPathComponent)
-        resolvedReferenceMap[articleID] = article.topicGraphNode.reference
+        resolvedReferenceMap[articleID] = UniqueTopicIdentifierGenerator.identifierForSemantic(article.value, source: article.source, bundleIdentifier: bundleIdentifier)
         addAnchors(anchorSections, to: articleID)
     }
     
     /// Adds an article and its headings to the path hierarchy.
-    func addArticle(filename: String, reference: ResolvedTopicReference, anchorSections: [AnchorSection]) {
+    func addArticle(filename: String, reference: UniqueTopicIdentifier, anchorSections: [AnchorSection]) {
         let articleID = pathHierarchy.addArticle(name: filename)
         resolvedReferenceMap[articleID] = reference
         addAnchors(anchorSections, to: articleID)
     }
     
     /// Adds the headings for all symbols in the symbol index to the path hierarchy.
-    func addAnchorForSymbols(symbolIndex: [String: ResolvedTopicReference], documentationCache: [ResolvedTopicReference: DocumentationNode]) {
+    func addAnchorForSymbols(symbolIndex: [String: UniqueTopicIdentifier], documentationCache: [UniqueTopicIdentifier: DocumentationNode]) {
         for (id, node) in pathHierarchy.lookup {
             guard let symbol = node.symbol, let reference = symbolIndex[symbol.identifier.precise], let node = documentationCache[reference] else { continue }
             addAnchors(node.anchorSections, to: id)
@@ -179,15 +212,17 @@ final class PathHierarchyBasedLinkResolver {
     private func addAnchors(_ anchorSections: [AnchorSection], to parent: ResolvedIdentifier) {
         for anchor in anchorSections {
             let identifier = pathHierarchy.addNonSymbolChild(parent: parent, name: anchor.reference.fragment!, kind: "anchor")
-            resolvedReferenceMap[identifier] = anchor.reference
+            resolvedReferenceMap[identifier] = resolvedReferenceMap[parent]?.addingFragment(anchor.reference.fragment!)
         }
     }
     
     /// Adds a task group on a given page to the documentation hierarchy.
-    func addTaskGroup(named name: String, reference: ResolvedTopicReference, to parent: ResolvedTopicReference) {
+    func addTaskGroup(named name: String, to parent: UniqueTopicIdentifier) -> UniqueTopicIdentifier {
         let parentID = resolvedReferenceMap[parent]!
         let taskGroupID = pathHierarchy.addNonSymbolChild(parent: parentID, name: urlReadablePath(name), kind: "taskGroup")
+        let reference = UniqueTopicIdentifierGenerator.identifierForCollection(name: name, parent: parent, bundleIdentifier: parent.bundleIdentifier)
         resolvedReferenceMap[taskGroupID] = reference
+        return reference
     }
     
     // MARK: Reference resolving
@@ -200,7 +235,7 @@ final class PathHierarchyBasedLinkResolver {
     ///   - isCurrentlyResolvingSymbolLink: Whether or not the documentation link is a symbol link.
     ///   - context: The documentation context to resolve the link in.
     /// - Returns: The result of resolving the reference.
-    func resolve(_ unresolvedReference: UnresolvedTopicReference, in parent: ResolvedTopicReference, fromSymbolLink isCurrentlyResolvingSymbolLink: Bool, context: DocumentationContext) throws -> TopicReferenceResolutionResult {
+    func resolve(_ unresolvedReference: UnresolvedTopicReference, in parent: UniqueTopicIdentifier, fromSymbolLink isCurrentlyResolvingSymbolLink: Bool, context: DocumentationContext) throws -> TopicReferenceResolutionResult {
         let parentID = resolvedReferenceMap[parent]
         let found = try pathHierarchy.find(path: Self.path(for: unresolvedReference), parent: parentID, onlyFindSymbols: isCurrentlyResolvingSymbolLink)
         guard let foundReference = resolvedReferenceMap[found] else {
@@ -236,35 +271,19 @@ final class PathHierarchyBasedLinkResolver {
     /// - Parameters:
     ///   - symbolGraph: The complete symbol graph to walk through.
     ///   - bundle: The bundle to use when creating symbol references.
-    func referencesForSymbols(in unifiedGraphs: [String: UnifiedSymbolGraph], bundle: DocumentationBundle, context: DocumentationContext) -> [SymbolGraph.Symbol.Identifier: ResolvedTopicReference] {
+    func referencesForSymbols(in unifiedGraphs: [String: UnifiedSymbolGraph], bundle: DocumentationBundle, context: DocumentationContext) -> [SymbolGraph.Symbol.Identifier: UniqueTopicIdentifier] {
         let disambiguatedPaths = pathHierarchy.caseInsensitiveDisambiguatedPaths(includeDisambiguationForUnambiguousChildren: true, includeLanguage: true)
         
-        var result: [SymbolGraph.Symbol.Identifier: ResolvedTopicReference] = [:]
+        var result: [SymbolGraph.Symbol.Identifier: UniqueTopicIdentifier] = [:]
         
         for (moduleName, symbolGraph) in unifiedGraphs {
-            let paths: [ResolvedTopicReference?] = Array(symbolGraph.symbols.values).concurrentMap { unifiedSymbol -> ResolvedTopicReference? in
+            let references: [UniqueTopicIdentifier?] = Array(symbolGraph.symbols.values).concurrentMap { unifiedSymbol -> UniqueTopicIdentifier? in
                 let symbol = unifiedSymbol
                 let uniqueIdentifier = unifiedSymbol.uniqueIdentifier
                 
-                if let pathComponents = context.knownDisambiguatedSymbolPathComponents?[uniqueIdentifier],
-                   let componentsCount = symbol.defaultSymbol?.pathComponents.count,
-                   pathComponents.count == componentsCount
-                {
-                    let symbolReference = SymbolReference(pathComponents: pathComponents, interfaceLanguages: symbol.sourceLanguages)
-                    return ResolvedTopicReference(symbolReference: symbolReference, moduleName: moduleName, bundle: bundle)
-                }
-                
-                guard let path = disambiguatedPaths[uniqueIdentifier] else {
-                    return nil
-                }
-                
-                return ResolvedTopicReference(
-                    bundleIdentifier: bundle.documentationRootReference.bundleIdentifier,
-                    path: NodeURLGenerator.Path.documentationFolder + path,
-                    sourceLanguages: symbol.sourceLanguages
-                )
+                return UniqueTopicIdentifierGenerator.identifierForSymbol(preciseIdentifier: uniqueIdentifier, bundleIdentifier: bundle.identifier).withSourceLanguages(symbol.sourceLanguages)
             }
-            for (symbol, reference) in zip(symbolGraph.symbols.values, paths) {
+            for (symbol, reference) in zip(symbolGraph.symbols.values, references) {
                 guard let reference = reference else { continue }
                 result[symbol.defaultIdentifier] = reference
             }

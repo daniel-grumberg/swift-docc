@@ -114,7 +114,7 @@ public final class Symbol: Semantic, Abstracted, Redirected, AutomaticTaskGroups
     internal(set) public var platformNameVariants: DocumentationDataVariants<PlatformName>
     
     /// The reference to the documentation node that represents this symbol's module symbol.
-    internal(set) public var moduleReference: ResolvedTopicReference
+    internal(set) public var moduleReference: UniqueTopicIdentifier
 
     /// The name of the module extension in which the symbol is defined, in each language variant the symbol is available in
     public var extendedModuleVariants: DocumentationDataVariants<String> {
@@ -247,7 +247,7 @@ public final class Symbol: Semantic, Abstracted, Redirected, AutomaticTaskGroups
         navigatorVariants: DocumentationDataVariants<[SymbolGraph.Symbol.DeclarationFragments.Fragment]>,
         roleHeadingVariants: DocumentationDataVariants<String>,
         platformNameVariants: DocumentationDataVariants<PlatformName>,
-        moduleReference: ResolvedTopicReference,
+        moduleReference: UniqueTopicIdentifier,
         requiredVariants: DocumentationDataVariants<Bool> = .init(defaultVariantValue: false),
         externalIDVariants: DocumentationDataVariants<String>,
         accessLevelVariants: DocumentationDataVariants<String>,

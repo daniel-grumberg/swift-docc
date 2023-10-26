@@ -98,20 +98,20 @@ struct ReferenceResolver: SemanticVisitor {
     /// Problems found while trying to resolve references.
     var problems = [Problem]()
     
-    var rootReference: ResolvedTopicReference
+    var rootReference: UniqueTopicIdentifier
     
     /// If the documentation is inherited, the reference of the parent symbol.
-    var inheritanceParentReference: ResolvedTopicReference?
+    var inheritanceParentReference: UniqueTopicIdentifier?
     
-    init(context: DocumentationContext, bundle: DocumentationBundle, source: URL?, rootReference: ResolvedTopicReference? = nil, inheritanceParentReference: ResolvedTopicReference? = nil) {
+    init(context: DocumentationContext, bundle: DocumentationBundle, source: URL?, rootReference: UniqueTopicIdentifier? = nil, inheritanceParentReference: UniqueTopicIdentifier? = nil) {
         self.context = context
         self.bundle = bundle
         self.source = source
-        self.rootReference = rootReference ?? bundle.rootReference
+        self.rootReference = rootReference ?? UniqueTopicIdentifier(type: .root, id: "", bundleIdentifier: bundle.identifier)
         self.inheritanceParentReference = inheritanceParentReference
     }
     
-    mutating func resolve(_ reference: TopicReference, in parent: ResolvedTopicReference, range: SourceRange?, severity: DiagnosticSeverity) -> TopicReferenceResolutionResult {
+    mutating func resolve(_ reference: TopicReference, in parent: UniqueTopicIdentifier, range: SourceRange?, severity: DiagnosticSeverity) -> TopicReferenceResolutionResult {
         switch context.resolve(reference, in: parent) {
         case .success(let resolved):
             return .success(resolved)
