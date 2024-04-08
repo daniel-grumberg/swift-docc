@@ -23,6 +23,7 @@ struct DirectiveIndex {
         Links.self,
         ImageMedia.self,
         VideoMedia.self,
+        Outer.self,
     ]
     
     static let topLevelTutorialDirectives: [AutomaticDirectiveConvertible.Type] = [
