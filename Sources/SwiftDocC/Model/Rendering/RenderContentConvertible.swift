@@ -24,28 +24,30 @@ extension RenderableDirectiveConvertible {
         _ blockDirective: BlockDirective,
         with contentCompiler: inout RenderContentCompiler
     ) -> [RenderContent] {
-        guard let directive = Self.init(
-            from: blockDirective,
-            for: contentCompiler.bundle,
-            in: contentCompiler.context
-        ) else {
+        guard
+            let directive = Self.init(
+                from: blockDirective,
+                for: contentCompiler.bundle,
+                in: contentCompiler.context
+            )
+        else {
             return []
         }
-        
+
         return directive.render(with: &contentCompiler)
     }
 }
 
 struct AnyRenderableDirectiveConvertibleType {
     var underlyingType: RenderableDirectiveConvertible.Type
-    
+
     func render(
         _ blockDirective: BlockDirective,
         with contentCompiler: inout RenderContentCompiler
     ) -> [RenderContent] {
         return underlyingType.render(blockDirective, with: &contentCompiler)
     }
-    
+
     var directiveName: String {
         return underlyingType.directiveName
     }

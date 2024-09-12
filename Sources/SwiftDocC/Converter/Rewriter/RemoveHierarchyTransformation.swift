@@ -10,18 +10,20 @@
 
 import Foundation
 
-/**
-    This transformation removes the hierarchy information from a render node JSON,
-    also getting rid of the dead references. It's useful to save space when the
-    hierarchy information is not a key information to preserve.
-*/
+/// This transformation removes the hierarchy information from a render node JSON,
+/// also getting rid of the dead references. It's useful to save space when the
+/// hierarchy information is not a key information to preserve.
 public struct RemoveHierarchyTransformation: RenderNodeTransforming {
     public init() {}
 
-    public func transform(renderNode: RenderNode, context: RenderNodeTransformationContext)
-        -> RenderNodeTransformationResult {
+    public func transform(
+        renderNode: RenderNode,
+        context: RenderNodeTransformationContext
+    )
+        -> RenderNodeTransformationResult
+    {
         var (renderNode, context) = (renderNode, context)
-        
+
         let identifiersInHierarchy: [String] = {
             switch renderNode.hierarchy {
             case .reference(let reference):
@@ -32,7 +34,7 @@ public struct RemoveHierarchyTransformation: RenderNodeTransforming {
                 return []
             }
         }()
-        
+
         // Remove hierarchy.
         renderNode.hierarchy = nil
 

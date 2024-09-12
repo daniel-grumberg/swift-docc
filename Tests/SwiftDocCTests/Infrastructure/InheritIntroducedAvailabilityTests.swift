@@ -8,9 +8,10 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import SymbolKit
+import XCTest
+
+@testable import SwiftDocC
 
 private extension SymbolGraph.Symbol {
     var availability: SymbolGraph.Symbol.Availability? {
@@ -33,15 +34,15 @@ private extension SymbolGraph.Symbol {
 class InheritIntroducedAvailabilityTests: XCTestCase {
     typealias Domain = SymbolGraph.Symbol.Availability.Domain
     typealias Version = SymbolGraph.SemanticVersion
-    
+
     var testBundle: DocumentationBundle!
     var context: DocumentationContext!
-    
+
     override func setUpWithError() throws {
         try super.setUpWithError()
         (testBundle, context) = try testBundleAndContext(named: "TestBundle")
     }
-    
+
     override func tearDown() {
         testBundle = nil
         context = nil
@@ -53,9 +54,12 @@ class InheritIntroducedAvailabilityTests: XCTestCase {
     func testMacOSOnlyDeprecated() {
         let macOSOnlyDeprecated =
             context.documentationCache["s:14FillIntroduced19macOSOnlyDeprecatedyyF"]!
-                .symbol!.availability!.availability.first {
-            $0.domain?.rawValue == PlatformName.macOS.rawValue
-        }!
+            .symbol!
+            .availability!
+            .availability
+            .first {
+                $0.domain?.rawValue == PlatformName.macOS.rawValue
+            }!
 
         // From Info.plist, filled
         XCTAssertEqual(Version(major: 10, minor: 9, patch: 0), macOSOnlyDeprecated.introducedVersion)
@@ -70,9 +74,12 @@ class InheritIntroducedAvailabilityTests: XCTestCase {
         // Don't overwrite existing `macOS, introduced: 10.15`
         let macOSOnlyIntroduced =
             context.documentationCache["s:14FillIntroduced09macOSOnlyB0yyF"]!
-                .symbol!.availability!.availability.first {
-            $0.domain?.rawValue == PlatformName.macOS.rawValue
-        }!
+            .symbol!
+            .availability!
+            .availability
+            .first {
+                $0.domain?.rawValue == PlatformName.macOS.rawValue
+            }!
 
         // From symbol graph, don't overwrite
         XCTAssertEqual(Version(major: 10, minor: 10, patch: 0), macOSOnlyIntroduced.introducedVersion)
@@ -83,9 +90,12 @@ class InheritIntroducedAvailabilityTests: XCTestCase {
     func testiOSOnlyDeprecated() {
         let iOSOnlyDeprecated =
             context.documentationCache["s:14FillIntroduced17iOSOnlyDeprecatedyyF"]!
-                .symbol!.availability!.availability.first {
-            $0.domain?.rawValue == PlatformName.iOS.rawValue
-        }!
+            .symbol!
+            .availability!
+            .availability
+            .first {
+                $0.domain?.rawValue == PlatformName.iOS.rawValue
+            }!
 
         // From Info.plist, filled
         XCTAssertEqual(Version(major: 11, minor: 1, patch: 0), iOSOnlyDeprecated.introducedVersion)
@@ -100,9 +110,12 @@ class InheritIntroducedAvailabilityTests: XCTestCase {
         // Don't overwrite existing `macOS, introduced: 10.15`
         let iOSOnlyIntroduced =
             context.documentationCache["s:14FillIntroduced07iOSOnlyB0yyF"]!
-                .symbol!.availability!.availability.first {
-            $0.domain?.rawValue == PlatformName.iOS.rawValue
-        }!
+            .symbol!
+            .availability!
+            .availability
+            .first {
+                $0.domain?.rawValue == PlatformName.iOS.rawValue
+            }!
 
         // From symbol graph, don't overwrite
         XCTAssertEqual(Version(major: 13, minor: 0, patch: 0), iOSOnlyIntroduced.introducedVersion)
@@ -113,9 +126,12 @@ class InheritIntroducedAvailabilityTests: XCTestCase {
     func testCatalystOnlyDeprecated() {
         let catalystOnlyDeprecated =
             context.documentationCache["s:14FillIntroduced25macCatalystOnlyDeprecatedyyF"]!
-                .symbol!.availability!.availability.first {
-            $0.domain?.rawValue == PlatformName.catalyst.rawValue
-        }!
+            .symbol!
+            .availability!
+            .availability
+            .first {
+                $0.domain?.rawValue == PlatformName.catalyst.rawValue
+            }!
 
         // From Info.plist, filled from iOS
         XCTAssertEqual(Version(major: 11, minor: 1, patch: 0), catalystOnlyDeprecated.introducedVersion)
@@ -130,9 +146,12 @@ class InheritIntroducedAvailabilityTests: XCTestCase {
         // Don't overwrite existing `macOS, introduced: 10.15`
         let catalystOnlyIntroduced =
             context.documentationCache["s:14FillIntroduced015macCatalystOnlyB0yyF"]!
-                .symbol!.availability!.availability.first {
-            $0.domain?.rawValue == PlatformName.catalyst.rawValue
-        }!
+            .symbol!
+            .availability!
+            .availability
+            .first {
+                $0.domain?.rawValue == PlatformName.catalyst.rawValue
+            }!
 
         // From symbol graph, don't overwrite
         XCTAssertEqual(Version(major: 13, minor: 0, patch: 0), catalystOnlyIntroduced.introducedVersion)
@@ -164,10 +183,8 @@ class InheritIntroducedAvailabilityTests: XCTestCase {
             Domain.watchOS,
         ])
 
-        for item in iOSMacOSOnly.symbol!.availability!.availability {
-            if domainsThatShouldntHaveIntroduced.contains(item.domain!.rawValue) {
-                XCTAssertNil(item.introducedVersion)
-            }
+        for item in iOSMacOSOnly.symbol!.availability!.availability where domainsThatShouldntHaveIntroduced.contains(item.domain!.rawValue) {
+            XCTAssertNil(item.introducedVersion)
         }
     }
 }

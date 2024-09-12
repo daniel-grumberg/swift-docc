@@ -12,7 +12,7 @@ import Foundation
 import SwiftDocC
 
 extension Action {
-    
+
     /// Creates a new unique directory, with an optional template, inside of specified container.
     /// - Parameters:
     ///   - container: The container directory to create a new directory within.
@@ -21,7 +21,7 @@ extension Action {
     /// - Returns: The URL of the new unique directory.
     static func createUniqueDirectory(inside container: URL, template: URL?, fileManager: FileManagerProtocol) throws -> URL {
         let targetURL = container.appendingPathComponent(ProcessInfo.processInfo.globallyUniqueString)
-        
+
         if let template {
             // If a template directory has been provided, create the temporary build folder with its contents
             // Ensure that the container exists
@@ -33,7 +33,7 @@ extension Action {
         }
         return targetURL
     }
-    
+
     /// Moves a file or directory from the specified location to a new location.
     /// - Parameters:
     ///   - source: The file or directory to move.
@@ -42,15 +42,15 @@ extension Action {
     static func moveOutput(from source: URL, to destination: URL, fileManager: FileManagerProtocol) throws {
         // We only need to move output if it exists
         guard fileManager.fileExists(atPath: source.path) else { return }
-        
+
         if fileManager.fileExists(atPath: destination.path) {
             try fileManager.removeItem(at: destination)
         }
-        
+
         try ensureThatParentFolderExist(for: destination, fileManager: fileManager)
         try fileManager.moveItem(at: source, to: destination)
     }
-    
+
     private static func ensureThatParentFolderExist(for location: URL, fileManager: FileManagerProtocol) throws {
         let parentFolder = location.deletingLastPathComponent()
         if !fileManager.directoryExists(atPath: parentFolder.path) {

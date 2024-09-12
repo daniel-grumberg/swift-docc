@@ -10,25 +10,23 @@
 
 import Foundation
 
-/**
- A documentation bundle.
-
- A documentation bundle stores all of the authored content and metadata for a collection of topics and/or frameworks.
-
- No content data is immediately loaded when creating a `DocumentationBundle` except for its `Info.plist`. Its purpose is to provide paths on disk for documentation resources.
-
- ## Topics
- ### Bundle Metadata
-
- - ``displayName``
- - ``identifier``
- - ``version``
- */
+/// A documentation bundle.
+///
+/// A documentation bundle stores all of the authored content and metadata for a collection of topics and/or frameworks.
+///
+/// No content data is immediately loaded when creating a `DocumentationBundle` except for its `Info.plist`. Its purpose is to provide paths on disk for documentation resources.
+///
+/// ## Topics
+/// ### Bundle Metadata
+///
+/// - ``displayName``
+/// - ``identifier``
+/// - ``version``
 public struct DocumentationBundle {
     public enum PropertyListError: DescribedError {
         case invalidVersionString(String)
         case keyNotFound(String)
-        
+
         public var errorDescription: String {
             switch self {
             case .invalidVersionString(let versionString):
@@ -38,17 +36,17 @@ public struct DocumentationBundle {
             }
         }
     }
-    
+
     /// Information about this documentation bundle that's unrelated to its documentation content.
     public let info: Info
-    
+
     /**
      The bundle's human-readable display name.
      */
     public var displayName: String {
         info.displayName
     }
-    
+
     /**
      The documentation bundle identifier.
 
@@ -66,17 +64,17 @@ public struct DocumentationBundle {
     public var version: String? {
         info.version
     }
-    
+
     /// Code listings extracted from the documented modules' source, indexed by their identifier.
     @available(*, deprecated, message: "This deprecated API will be removed after 6.1 is released")
     public var attributedCodeListings: [String: AttributedCodeListing] = [:]
-    
+
     /// Symbol Graph JSON files for the modules documented by this bundle.
     public let symbolGraphURLs: [URL]
-    
+
     /// DocC Markup files of the bundle.
     public let markupURLs: [URL]
-    
+
     /// Miscellaneous resources of the bundle.
     public let miscResourceURLs: [URL]
 
@@ -88,14 +86,14 @@ public struct DocumentationBundle {
 
     /// A custom JSON settings file used to theme renderer output.
     public let themeSettings: URL?
-    
+
     /**
     A URL prefix to be appended to the relative presentation URL.
-    
+
     This is used when a bundle's documentation is hosted in a known location.
     */
     public let baseURL: URL
-    
+
     /// Creates a documentation bundle.
     ///
     /// - Parameters:
@@ -131,8 +129,14 @@ public struct DocumentationBundle {
         self.technologyTutorialsRootReference = tutorialsRootReference.appendingPath(urlReadablePath(info.displayName))
         self.articlesDocumentationRootReference = documentationRootReference.appendingPath(urlReadablePath(info.displayName))
     }
-    
-    @available(*, deprecated, renamed: "init(info:baseURL:symbolGraphURLs:markupURLs:miscResourceURLs:customHeader:customFooter:themeSettings:)", message: "Use 'init(info:baseURL:symbolGraphURLs:markupURLs:miscResourceURLs:customHeader:customFooter:themeSettings:)' instead. This deprecated API will be removed after 6.1 is released")
+
+    @available(
+        *,
+        deprecated,
+        renamed: "init(info:baseURL:symbolGraphURLs:markupURLs:miscResourceURLs:customHeader:customFooter:themeSettings:)",
+        message:
+            "Use 'init(info:baseURL:symbolGraphURLs:markupURLs:miscResourceURLs:customHeader:customFooter:themeSettings:)' instead. This deprecated API will be removed after 6.1 is released"
+    )
     public init(
         info: Info,
         baseURL: URL = URL(string: "/")!,
@@ -144,10 +148,19 @@ public struct DocumentationBundle {
         customFooter: URL? = nil,
         themeSettings: URL? = nil
     ) {
-        self.init(info: info, baseURL: baseURL, symbolGraphURLs: symbolGraphURLs, markupURLs: markupURLs, miscResourceURLs: miscResourceURLs, customHeader: customHeader, customFooter: customFooter, themeSettings: themeSettings)
+        self.init(
+            info: info,
+            baseURL: baseURL,
+            symbolGraphURLs: symbolGraphURLs,
+            markupURLs: markupURLs,
+            miscResourceURLs: miscResourceURLs,
+            customHeader: customHeader,
+            customFooter: customFooter,
+            themeSettings: themeSettings
+        )
         self.attributedCodeListings = attributedCodeListings
     }
-    
+
     public private(set) var rootReference: ResolvedTopicReference
 
     /// Default path to resolve symbol links.
@@ -158,7 +171,7 @@ public struct DocumentationBundle {
 
     /// Default path to resolve tutorials.
     public var technologyTutorialsRootReference: ResolvedTopicReference
-    
+
     /// Default path to resolve articles.
     public var articlesDocumentationRootReference: ResolvedTopicReference
 }

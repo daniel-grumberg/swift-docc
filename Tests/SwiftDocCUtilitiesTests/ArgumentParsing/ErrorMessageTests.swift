@@ -8,31 +8,32 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
 import Foundation
+import XCTest
+
 @testable import SwiftDocCUtilities
 
 class ErrorMessageTests: XCTestCase {
-    
+
     func testInvalidParameterMessageError() throws {
         // create source bundle directory
         let sourceURL = try createTemporaryDirectory(named: "documentation")
         try "".write(to: sourceURL.appendingPathComponent("Info.plist"), atomically: true, encoding: .utf8)
-        
+
         // create renderer template directory
         let rendererDirectory = try createTemporaryDirectory()
         try "".write(to: rendererDirectory.appendingPathComponent("index.html"), atomically: true, encoding: .utf8)
-        
+
         do {
             SetEnvironmentVariable(TemplateOption.environmentVariableKey, rendererDirectory.path)
             let _ = try Docc.Convert.parse([
-                sourceURL.path,
+                sourceURL.path
             ])
         } catch {
             // TODO: This catch isn't thrown. This test should be fixed.
             XCTAssertEqual(error.localizedDescription, "Invalid value for parameter 'html-template-dir'. /non_existing_folder is not a directory.")
         }
-        
+
     }
 
 }

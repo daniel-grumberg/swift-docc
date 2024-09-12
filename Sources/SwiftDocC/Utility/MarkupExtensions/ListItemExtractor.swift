@@ -8,8 +8,8 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import Markdown
 import Foundation
+import Markdown
 
 /// The list of tags that can appear at the start of a list item to indicate
 /// some meaning in the markup, taken from Swift documentation comments. These
@@ -49,22 +49,22 @@ private let simpleListItemTags = [
 ]
 
 struct TaggedListItemExtractor: MarkupRewriter {
-    var parameters = [Parameter]()
-    var dictionaryKeys = [DictionaryKey]()
-    var httpResponses = [HTTPResponse]()
-    var httpParameters = [HTTPParameter]()
+    var parameters: [Parameter] = []
+    var dictionaryKeys: [DictionaryKey] = []
+    var httpResponses: [HTTPResponse] = []
+    var httpParameters: [HTTPParameter] = []
     var httpBody: HTTPBody? = nil
-    var returns = [Return]()
-    var `throws` = [Throw]()
-    var otherTags = [SimpleTag]()
-    var possiblePropertyListValues = [PropertyListPossibleValuesSection.PossibleValue]()
+    var returns: [Return] = []
+    var `throws`: [Throw] = []
+    var otherTags: [SimpleTag] = []
+    var possiblePropertyListValues: [PropertyListPossibleValuesSection.PossibleValue] = []
 
     init() {}
-    
+
     mutating func visitDocument(_ document: Document) -> Markup? {
         // Rewrite top level "- Note:" list elements to Note Aside elements. This happens during a Document level visit because the document is
         // the parent of the top level UnorderedList and is where the Aside elements should be added to become a sibling to the UnorderedList.
-        var result = [Markup]()
+        var result: [Markup] = []
 
         for child in document.children {
             // Only rewrite top-level unordered lists. Anything else is unmodified.
@@ -76,7 +76,7 @@ struct TaggedListItemExtractor: MarkupRewriter {
             // Separate all the "- Note:" elements from the other list items.
             let (noteItems, otherListItems) = unorderedList.listItems.categorize(where: { item -> [BlockMarkup]? in
                 guard let tagName = item.extractTag()?.rawTag.lowercased(),
-                      Aside.Kind.allCases.contains(where: { $0.rawValue.lowercased() == tagName })
+                    Aside.Kind.allCases.contains(where: { $0.rawValue.lowercased() == tagName })
                 else {
                     return nil
                 }
@@ -95,9 +95,9 @@ struct TaggedListItemExtractor: MarkupRewriter {
         // After extracting the "- Note:" list elements, proceed to visit all markup to do local rewrites.
         return Document(result.compactMap { visit($0) as? BlockMarkup })
     }
-    
+
     mutating func visitUnorderedList(_ unorderedList: UnorderedList) -> Markup? {
-        var newItems = [ListItem]()
+        var newItems: [ListItem] = []
         for item in unorderedList.listItems {
             guard let newItem = visit(item) as? ListItem else {
                 continue
@@ -109,7 +109,7 @@ struct TaggedListItemExtractor: MarkupRewriter {
         }
         return UnorderedList(newItems)
     }
-    
+
     mutating func visitListItem(_ listItem: ListItem) -> Markup? {
         /*
          This rewriter only extracts list items that are at the "top level", i.e.:
@@ -122,7 +122,8 @@ struct TaggedListItemExtractor: MarkupRewriter {
          */
         do {
             guard let parent = listItem.parent,
-                  parent.parent == nil || parent.parent is Document else {
+                parent.parent == nil || parent.parent is Document
+            else {
                 return listItem
             }
         }
@@ -130,56 +131,56 @@ struct TaggedListItemExtractor: MarkupRewriter {
         guard let extractedTag = listItem.extractTag() else {
             return listItem
         }
-        
+
         switch extractedTag.knownTag {
         case .returns:
             // - Returns: ...
             returns.append(.init(extractedTag))
-            
+
         case .throws:
             // "Throws" asides are currently (still) parsed as blockquote-style asides
             return listItem
-            
+
         case .parameter(let name):
             // - Parameter x: ...
             parameters.append(.init(extractedTag, name: name, isStandalone: true))
-            
+
         case .parameters:
             // - Parameters:
             //   - x: ...
             //   - y: ...
             parameters.append(contentsOf: listItem.extractInnerTagOutline().map { .init($0, name: $0.rawTag, isStandalone: false) })
-            
+
         case .dictionaryKey(let name):
             // - DictionaryKey x: ...
             dictionaryKeys.append(.init(extractedTag, name: name))
-            
+
         case .dictionaryKeys:
             // - DictionaryKeys:
             //   - x: ...
             //   - y: ...
             dictionaryKeys.append(contentsOf: listItem.extractInnerTagOutline().map { .init($0, name: $0.rawTag) })
-        
+
         case .possibleValue(let name):
             // - DictionaryKey x: ...
             possiblePropertyListValues.append(.init(extractedTag, name: name))
-            
+
         case .possibleValues:
             // - DictionaryKeys:
             //   - x: ...
             //   - y: ...
             possiblePropertyListValues.append(contentsOf: listItem.extractInnerTagOutline().map { .init($0, name: $0.rawTag) })
-            
+
         case .httpResponse(let name):
             // - HTTPResponse x: ...
             httpResponses.append(.init(extractedTag, name: name))
-            
+
         case .httpResponses:
             // - HTTPResponses:
             //   - x: ...
             //   - y: ...
             httpResponses.append(contentsOf: listItem.extractInnerTagOutline().map { .init($0, name: $0.rawTag) })
-            
+
         case .httpBody:
             // - HTTPBody: ...
             if httpBody == nil {
@@ -187,17 +188,17 @@ struct TaggedListItemExtractor: MarkupRewriter {
             } else {
                 httpBody?.contents = extractedTag.contents
             }
-            
+
         case .httpParameter(let name):
             // - HTTPParameter x: ...
             httpParameters.append(.init(extractedTag, name: name))
-            
+
         case .httpParameters:
             // - HTTPParameters:
             //   - x: ...
             //   - y: ...
-            httpParameters.append(contentsOf: listItem.extractInnerTagOutline().map { .init($0, name: $0.rawTag)})
-            
+            httpParameters.append(contentsOf: listItem.extractInnerTagOutline().map { .init($0, name: $0.rawTag) })
+
         case .httpBodyParameter(let name):
             // - HTTPBodyParameter x: ...
             let parameter = HTTPParameter(extractedTag, name: name)
@@ -206,7 +207,7 @@ struct TaggedListItemExtractor: MarkupRewriter {
             } else {
                 httpBody?.parameters.append(parameter)
             }
-            
+
         case .httpBodyParameters:
             // - HTTPBodyParameters:
             //   - x: ...
@@ -217,15 +218,15 @@ struct TaggedListItemExtractor: MarkupRewriter {
             } else {
                 httpBody?.parameters.append(contentsOf: parameters)
             }
-            
+
         case nil where simpleListItemTags.contains(extractedTag.rawTag.lowercased()):
             otherTags.append(.init(extractedTag, name: extractedTag.rawTag))
-            
+
         case nil:
             // No match, leave this list item alone
             return listItem
         }
-        
+
         // Return `nil` to indicate that this list item was extracted as a tag.
         return nil
     }
@@ -255,7 +256,7 @@ private struct ExtractedTag {
     var contents: [Markup]
     /// The range of the tag and its content
     var range: SourceRange?
-    
+
     init(rawTag: String, tagRange: SourceRange?, contents: [Markup], range: SourceRange?) {
         self.rawTag = rawTag
         self.knownTag = .init(rawTag)
@@ -263,18 +264,18 @@ private struct ExtractedTag {
         self.contents = contents
         self.range = range
     }
-    
+
     enum KnownTag {
         case returns
         case `throws`
         case parameter(String)
         case parameters
-        
+
         case dictionaryKey(String)
         case dictionaryKeys
         case possibleValue(String)
         case possibleValues
-        
+
         case httpBody
         case httpResponse(String)
         case httpResponses
@@ -282,11 +283,11 @@ private struct ExtractedTag {
         case httpParameters
         case httpBodyParameter(String)
         case httpBodyParameters
-        
+
         init?(_ string: String) {
             let separatorIndex = string.firstIndex(where: \.isWhitespace) ?? string.endIndex
             let secondComponent = String(string[separatorIndex...].drop(while: \.isWhitespace))
-            
+
             switch string[..<separatorIndex].lowercased() {
             case "returns":
                 self = .returns
@@ -326,7 +327,7 @@ private struct ExtractedTag {
 }
 
 private extension ListItem {
-    
+
     /// Creates a single "tag" from the list item's content.
     ///
     /// For example, the list item markup:
@@ -340,15 +341,15 @@ private extension ListItem {
     /// If the list item doesn't start with a paragraph of text containing a colon (`:`) on the first line, this function returns `nil`.
     func extractTag() -> ExtractedTag? {
         guard childCount > 0,
-              let paragraph = child(at: 0) as? Paragraph,
-              let (name, nameRange, remainderOfFirstParagraph) = paragraph.inlineChildren.splitNameAndContent()
+            let paragraph = child(at: 0) as? Paragraph,
+            let (name, nameRange, remainderOfFirstParagraph) = paragraph.inlineChildren.splitNameAndContent()
         else {
             return nil
         }
-        
+
         return ExtractedTag(rawTag: name, tagRange: nameRange, contents: remainderOfFirstParagraph + children.dropFirst(), range: range)
     }
-    
+
     /// Creates a list of "tag" elements from a tag outline (a list item of list items).
     ///
     /// For example, the list item outline markup:
@@ -369,7 +370,7 @@ private extension ListItem {
                 // If it's not, that content is dropped.
                 continue
             }
-            
+
             // Those sublist items are assumed to be a valid `- ___: ...` tag form or else they are dropped.
             for child in list.children {
                 guard let listItem = child as? ListItem, let extractedTag = listItem.extractTag() else {
@@ -406,15 +407,15 @@ private extension Sequence<InlineMarkup> {
             newInlineContent.append(more)
         }
         let newContent: [Markup] = [Paragraph(newInlineContent)]
-        
+
         let nameRange: SourceRange? = initialTextNode.range.map { fullRange in
             var start = fullRange.lowerBound
             start.column += initialText.utf8.distance(from: initialText.startIndex, to: nameStartIndex)
             var end = start
             end.column += tagName.utf8.count
-            return start ..< end
+            return start..<end
         }
-        
+
         return (String(tagName), nameRange, newContent)
     }
 }
@@ -431,8 +432,8 @@ private extension ExtractedTag {
                 let end = tagRange.upperBound
                 var start = end
                 start.column -= name.utf8.count
-                
-                return start ..< end
+
+                return start..<end
             }
         }
     }
@@ -449,7 +450,7 @@ private extension Parameter {
         self.init(name: name, nameRange: tag.nameRange(name: name), contents: tag.contents, range: tag.range, isStandalone: isStandalone)
     }
 }
-  
+
 private extension DictionaryKey {
     init(_ tag: ExtractedTag, name: String) {
         self.init(name: name, contents: tag.contents)

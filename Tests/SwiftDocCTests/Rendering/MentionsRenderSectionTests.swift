@@ -10,6 +10,7 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftDocC
 
 class MentionsRenderSectionTests: XCTestCase {

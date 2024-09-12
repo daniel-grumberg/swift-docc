@@ -9,8 +9,8 @@
 */
 
 import Foundation
-import XCTest
 import Markdown
+import XCTest
 
 @testable import SwiftDocC
 
@@ -24,7 +24,7 @@ class CallToActionTests: XCTestCase {
         let (bundle, context) = try testBundleAndContext(named: "SampleBundle")
 
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(CallToAction.directiveName, directive.name)
             let callToAction = CallToAction(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNil(callToAction)
@@ -44,7 +44,7 @@ class CallToActionTests: XCTestCase {
             let (bundle, context) = try testBundleAndContext(named: "SampleBundle")
 
             directive.map { directive in
-                var problems = [Problem]()
+                var problems: [Problem] = []
                 XCTAssertEqual(CallToAction.directiveName, directive.name)
                 let callToAction = CallToAction(from: directive, source: nil, for: bundle, in: context, problems: &problems)
                 XCTAssertNil(callToAction)
@@ -66,7 +66,7 @@ class CallToActionTests: XCTestCase {
             let (bundle, context) = try testBundleAndContext(named: "SampleBundle")
 
             directive.map { directive in
-                var problems = [Problem]()
+                var problems: [Problem] = []
                 XCTAssertEqual(CallToAction.directiveName, directive.name)
                 let callToAction = CallToAction(from: directive, source: nil, for: bundle, in: context, problems: &problems)
                 XCTAssertNil(callToAction)
@@ -88,7 +88,7 @@ class CallToActionTests: XCTestCase {
         let (bundle, context) = try testBundleAndContext(named: "SampleBundle")
 
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(CallToAction.directiveName, directive.name)
             let callToAction = CallToAction(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNil(callToAction)
@@ -107,7 +107,7 @@ class CallToActionTests: XCTestCase {
             let (bundle, context) = try testBundleAndContext(named: "SampleBundle")
 
             directive.map { directive in
-                var problems = [Problem]()
+                var problems: [Problem] = []
                 XCTAssertEqual(CallToAction.directiveName, directive.name)
                 let callToAction = CallToAction(from: directive, source: nil, for: bundle, in: context, problems: &problems)
                 XCTAssertNotNil(callToAction)
@@ -117,7 +117,7 @@ class CallToActionTests: XCTestCase {
 
         let validLinks: [String] = [
             "url: \"https://example.com/sample.zip\"",
-            "file: \"Downloads/plus.svg\""
+            "file: \"Downloads/plus.svg\"",
         ]
 
         var validLabels: [String] = [
@@ -143,11 +143,11 @@ class CallToActionTests: XCTestCase {
 
             let (bundle, context) = try testBundleAndContext(named: "SampleBundle")
 
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(CallToAction.directiveName, directive.name)
             let callToAction = try XCTUnwrap(CallToAction(from: directive, source: nil, for: bundle, in: context, problems: &problems))
             XCTAssert(problems.isEmpty)
-            
+
             XCTAssertEqual(callToAction.buttonLabel(for: nil), expectedDefaultLabel)
             XCTAssertEqual(callToAction.buttonLabel(for: .article), expectedDefaultLabel)
             XCTAssertEqual(callToAction.buttonLabel(for: .sampleCode), expectedSampleCodeLabel)
@@ -165,7 +165,7 @@ class CallToActionTests: XCTestCase {
                 expectedDefaultLabel = "Visit"
                 expectedSampleCodeLabel = "View Source"
             }
-            
+
             validLabels.append(("purpose: \(buttonKind)", expectedDefaultLabel, expectedSampleCodeLabel))
             // Ensure that adding a label argument overrides the kind's default label
             validLabels.append(("purpose: \(buttonKind), label: \"Button\"", "Button", "Button"))

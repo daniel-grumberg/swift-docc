@@ -8,12 +8,12 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import SwiftDocC
 import Foundation
+import SwiftDocC
 
 extension InitAction {
     /// Creates a init action from the options given in the init command.
-    /// 
+    ///
     /// - Parameter initOptions: The init options this `InitAction` will be based on.
     public init(
         fromInitOptions initOptions: InitOptions

@@ -14,7 +14,7 @@ import SwiftDocC
 extension MergeAction {
     struct RootRenderReferences {
         var documentation, tutorials: [TopicRenderReference]
-        
+
         fileprivate var all: [TopicRenderReference] {
             documentation + tutorials
         }
@@ -25,7 +25,7 @@ extension MergeAction {
             !documentation.isEmpty && !tutorials.isEmpty
         }
     }
-    
+
     func readRootNodeRenderReferencesIn(dataDirectory: URL) throws -> RootRenderReferences {
         func inner(url: URL) throws -> [TopicRenderReference] {
             try fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [])
@@ -33,7 +33,7 @@ extension MergeAction {
                     guard $0.pathExtension == "json" else {
                         return nil
                     }
-                    
+
                     let data = try fileManager.contents(of: $0)
                     return try JSONDecoder().decode(RootNodeRenderReference.self, from: data)
                         .renderReference
@@ -42,13 +42,13 @@ extension MergeAction {
                     lhs.title < rhs.title
                 })
         }
-        
+
         return .init(
             documentation: try inner(url: dataDirectory.appendingPathComponent("documentation", isDirectory: true)),
-            tutorials:     try inner(url: dataDirectory.appendingPathComponent("tutorials", isDirectory: true))
+            tutorials: try inner(url: dataDirectory.appendingPathComponent("tutorials", isDirectory: true))
         )
     }
-    
+
     func makeSynthesizedLandingPage(
         name: String,
         reference: ResolvedTopicReference,
@@ -57,19 +57,20 @@ extension MergeAction {
         rootRenderReferences: RootRenderReferences
     ) -> RenderNode {
         var renderNode = RenderNode(identifier: reference, kind: .article)
-        
-        renderNode.topicSectionsStyle = switch topicsStyle {
-            case .list:         .list
-            case .compactGrid:  .compactGrid
+
+        renderNode.topicSectionsStyle =
+            switch topicsStyle {
+            case .list: .list
+            case .compactGrid: .compactGrid
             case .detailedGrid: .detailedGrid
-            case .hidden:       .hidden
-        }
+            case .hidden: .hidden
+            }
         renderNode.metadata.title = name
         renderNode.metadata.roleHeading = roleHeading
         renderNode.metadata.role = "collection"
         renderNode.hierarchy = nil
         renderNode.sections = []
-        
+
         if rootRenderReferences.containsBothKinds {
             // If the combined archive contains both documentation and tutorial content, create separate topic sections for each.
             renderNode.topicSections = [
@@ -79,17 +80,17 @@ extension MergeAction {
         } else {
             // Otherwise, create a single unnamed topic section
             renderNode.topicSections = [
-                .init(title: nil, abstract: nil, discussion: nil, identifiers: (rootRenderReferences.all).map(\.identifier.identifier)),
+                .init(title: nil, abstract: nil, discussion: nil, identifiers: (rootRenderReferences.all).map(\.identifier.identifier))
             ]
         }
-        
+
         for renderReference in rootRenderReferences.documentation {
             renderNode.references[renderReference.identifier.identifier] = renderReference
         }
         for renderReference in rootRenderReferences.tutorials {
             renderNode.references[renderReference.identifier.identifier] = renderReference
         }
-        
+
         return renderNode
     }
 }
@@ -98,14 +99,14 @@ extension MergeAction {
 private struct RootNodeRenderReference: Decodable {
     /// The decoded root node render reference
     var renderReference: TopicRenderReference
-    
+
     enum CodingKeys: CodingKey {
         // The only render node keys that should be needed
         case identifier, references
         // Extra render node keys in case we need to re-create the render reference from page content.
         case metadata, abstract, kind
     }
-    
+
     struct StringCodingKey: CodingKey {
         var stringValue: String
         init?(stringValue: String) {
@@ -116,14 +117,14 @@ private struct RootNodeRenderReference: Decodable {
             fatalError("`SparseRenderNode.StringCodingKey` only support string values")
         }
     }
-    
+
     init(from decoder: any Decoder) throws {
         // Instead of decoding the full render node, we only decode the information that's needed.
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        
+
         let identifier = try container.decode(ResolvedTopicReference.self, forKey: .identifier)
         let rawIdentifier = identifier.url.absoluteString
-        
+
         // Every node should include a reference to the root page.
         // For reference documentation, this is because the root appears as a link in the breadcrumbs on every page.
         // For tutorials, this is because the tutorial table of content appears as a link in the top navigator.
@@ -136,11 +137,11 @@ private struct RootNodeRenderReference: Decodable {
                 return
             }
         }
-        
+
         // If for some unexpected reason this wasn't true, for example because of an unknown page kind,
         // we can create a new topic reference by decoding a little bit more information from the render node.
         let metadata = try container.decode(RenderMetadata.self, forKey: .metadata)
-        
+
         renderReference = TopicRenderReference(
             identifier: RenderReferenceIdentifier(rawIdentifier),
             title: metadata.title ?? identifier.lastPathComponent,

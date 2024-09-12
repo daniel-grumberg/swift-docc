@@ -24,8 +24,8 @@ struct DeclarationsSectionTranslator: RenderSectionTranslator {
     /// Set the common fragments for the given symbol references.
     func setCommonFragments(
         references: [ResolvedTopicReference],
-        fragments: [SymbolGraph.Symbol.DeclarationFragments.Fragment])
-    {
+        fragments: [SymbolGraph.Symbol.DeclarationFragments.Fragment]
+    ) {
         Self.commonFragmentsMap.sync({ map in
             for reference in references {
                 map[reference] = fragments
@@ -57,7 +57,8 @@ struct DeclarationsSectionTranslator: RenderSectionTranslator {
 
         setCommonFragments(
             references: [mainDeclaration.reference] + overloadDeclarations.map(\.reference),
-            fragments: commonFragments)
+            fragments: commonFragments
+        )
 
         return commonFragments
     }
@@ -138,10 +139,14 @@ struct DeclarationsSectionTranslator: RenderSectionTranslator {
                 for overloadDeclaration in overloadDeclarations {
                     let translatedDeclaration = translateDeclaration(
                         overloadDeclaration.declaration,
-                        commonFragments: commonFragments)
-                    otherDeclarations.append(.init(
-                        tokens: translatedDeclaration,
-                        identifier: overloadDeclaration.reference.absoluteString))
+                        commonFragments: commonFragments
+                    )
+                    otherDeclarations.append(
+                        .init(
+                            tokens: translatedDeclaration,
+                            identifier: overloadDeclaration.reference.absoluteString
+                        )
+                    )
 
                     // Add a topic reference to the overload
                     renderNodeTranslator.collectedTopicReferences.append(
@@ -154,8 +159,9 @@ struct DeclarationsSectionTranslator: RenderSectionTranslator {
 
             func collectOverloadDeclarations(from overloads: Symbol.Overloads) -> [OverloadDeclaration]? {
                 let declarations = overloads.references.compactMap { overloadReference -> OverloadDeclaration? in
-                    guard let overload = try? renderNodeTranslator.context
-                        .entity(with: overloadReference).semantic as? Symbol
+                    guard
+                        let overload = try? renderNodeTranslator.context
+                            .entity(with: overloadReference).semantic as? Symbol
                     else {
                         return nil
                     }
@@ -211,7 +217,8 @@ struct DeclarationsSectionTranslator: RenderSectionTranslator {
                     // in each declaration
                     let commonFragments = commonFragments(
                         for: (mainDeclaration, renderNode.identifier),
-                        overloadDeclarations: processedOverloadDeclarations)
+                        overloadDeclarations: processedOverloadDeclarations
+                    )
 
                     renderedTokens = translateDeclaration(
                         mainDeclaration,
@@ -220,7 +227,8 @@ struct DeclarationsSectionTranslator: RenderSectionTranslator {
                     otherDeclarations = renderOtherDeclarationsTokens(
                         from: processedOverloadDeclarations,
                         displayIndex: overloads.displayIndex,
-                        commonFragments: commonFragments)
+                        commonFragments: commonFragments
+                    )
                 } else {
                     renderedTokens = declaration.declarationFragments.map(translateFragment)
                     otherDeclarations = nil
@@ -286,7 +294,7 @@ fileprivate extension DeclarationRenderSection.Token {
 ///
 /// In addition, this function takes the opportunity to trim whitespace at the beginning and end of
 /// highlighted spans of tokens, to beautify the resulting declaration.
-fileprivate func postProcessTokens(
+private func postProcessTokens(
     _ tokens: [DeclarationRenderSection.Token]
 ) -> [DeclarationRenderSection.Token] {
     var processedTokens: [DeclarationRenderSection.Token] = []
@@ -410,7 +418,7 @@ fileprivate func postProcessTokens(
 /// > Note: Any adjacent text fragments that are both shared or highlighted should be recombined
 /// > after translation, to allow Swift-DocC-Render to correctly format Swift declarations into
 /// > multiple lines. This is performed as part of `translateDeclaration(_:commonFragments:)` above.
-fileprivate func preProcessFragment(
+private func preProcessFragment(
     _ fragment: SymbolGraph.Symbol.DeclarationFragments.Fragment
 ) -> [SymbolGraph.Symbol.DeclarationFragments.Fragment] {
     guard fragment.kind == .text, !fragment.spelling.isEmpty else {
@@ -459,7 +467,7 @@ fileprivate func preProcessFragment(
 /// appears in all the input sequences in the same order. For example given the sequences `ABAC`
 /// and `CAACB`, the letters `AAC` appear in the same order in both of them, even though the letter
 /// `B` interrupts the sequence in the first one.
-fileprivate func longestCommonSubsequence<Element: Equatable>(_ sequences: [[Element]]) -> [Element] {
+private func longestCommonSubsequence<Element: Equatable>(_ sequences: [[Element]]) -> [Element] {
     guard var result = sequences.first else { return [] }
 
     for other in sequences.dropFirst() {

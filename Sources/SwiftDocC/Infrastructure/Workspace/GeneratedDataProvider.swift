@@ -14,7 +14,7 @@ import SymbolKit
 /// A type that provides documentation bundles that it discovers by traversing the local file system.
 public class GeneratedDataProvider: DocumentationWorkspaceDataProvider {
     public var identifier: String = UUID().uuidString
-    
+
     public typealias SymbolGraphDataLoader = (URL) -> Data?
     private let symbolGraphDataLoader: SymbolGraphDataLoader
     private var generatedMarkdownFiles: [String: Data] = [:]
@@ -26,7 +26,7 @@ public class GeneratedDataProvider: DocumentationWorkspaceDataProvider {
     public init(symbolGraphDataLoader: @escaping SymbolGraphDataLoader) {
         self.symbolGraphDataLoader = symbolGraphDataLoader
     }
-    
+
     public func bundles(options: BundleDiscoveryOptions) throws -> [DocumentationBundle] {
         // Find all the unique module names from the symbol graph files and generate a top level module page for each of them.
         var moduleNames = Set<String>()
@@ -52,27 +52,30 @@ public class GeneratedDataProvider: DocumentationWorkspaceDataProvider {
         } catch {
             throw Error.notEnoughDataToGenerateBundle(options: options, underlyingError: error)
         }
-        
+
         guard !options.additionalSymbolGraphFiles.isEmpty else {
             return []
         }
-        
+
         if moduleNames.count == 1, let moduleName = moduleNames.first, moduleName != info.displayName {
-            generatedMarkdownFiles[moduleName] = Data("""
+            generatedMarkdownFiles[moduleName] = Data(
+                """
                 # ``\(moduleName)``
 
                 @Metadata {
                   @DisplayName("\(info.displayName)")
                 }
-                """.utf8)
+                """
+                .utf8
+            )
         } else {
             for moduleName in moduleNames {
                 generatedMarkdownFiles[moduleName] = Data("# ``\(moduleName)``".utf8)
             }
         }
-        
+
         let topLevelPages = generatedMarkdownFiles.keys.map { URL(string: $0 + ".md")! }
-        
+
         return [
             DocumentationBundle(
                 info: info,
@@ -82,11 +85,11 @@ public class GeneratedDataProvider: DocumentationWorkspaceDataProvider {
             )
         ]
     }
-    
+
     enum Error: DescribedError {
         case unableToLoadSymbolGraphData(url: URL)
         case notEnoughDataToGenerateBundle(options: BundleDiscoveryOptions, underlyingError: Swift.Error?)
-        
+
         var errorDescription: String {
             switch self {
             case .unableToLoadSymbolGraphData(let url):
@@ -96,29 +99,29 @@ public class GeneratedDataProvider: DocumentationWorkspaceDataProvider {
                 if !symbolGraphFileList.isEmpty {
                     symbolGraphFileList += "\n"
                 }
-                
+
                 var errorMessage = """
                     The information provided as command line arguments is not enough to generate a documentation bundle:
                     """
-                
+
                 if let underlyingError {
                     errorMessage += """
-                    \((underlyingError as? DescribedError)?.errorDescription ?? underlyingError.localizedDescription)
-                    
-                    """
+                        \((underlyingError as? DescribedError)?.errorDescription ?? underlyingError.localizedDescription)
+
+                        """
                 } else {
                     errorMessage += """
-                    \(options.infoPlistFallbacks.sorted(by: { lhs, rhs in lhs.key < rhs.key }).map { "\($0.key) : '\($0.value)'" }.joined(separator: "\n"))
-                    Additional symbol graph files: [\(symbolGraphFileList)]
-                    
-                    """
+                        \(options.infoPlistFallbacks.sorted(by: { lhs, rhs in lhs.key < rhs.key }).map { "\($0.key) : '\($0.value)'" }.joined(separator: "\n"))
+                        Additional symbol graph files: [\(symbolGraphFileList)]
+
+                        """
                 }
-                
+
                 return errorMessage
             }
         }
     }
-    
+
     public func contentsOfURL(_ url: URL) throws -> Data {
         if DocumentationBundleFileTypes.isMarkupFile(url), let content = generatedMarkdownFiles[url.deletingPathExtension().lastPathComponent] {
             return content
@@ -137,12 +140,12 @@ public class GeneratedDataProvider: DocumentationWorkspaceDataProvider {
 private struct SymbolGraphModuleContainer: Decodable {
     /// The decoded symbol graph module.
     let module: SymbolGraph.Module
-    
+
     typealias CodingKeys = SymbolGraph.CodingKeys
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        
+
         self.module = try container.decode(SymbolGraph.Module.self, forKey: .module)
     }
 }

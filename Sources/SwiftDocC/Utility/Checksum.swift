@@ -8,12 +8,12 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import Foundation
 import Crypto
+import Foundation
 
 /// A checksum generator.
 public struct Checksum {
-    
+
     /// Computes the SHA512 checksum of the given data as a lowercased hex string.
     ///
     /// - Parameter data: The data to compute the checksum for.
@@ -21,7 +21,7 @@ public struct Checksum {
     public static func sha512(of data: Data) -> String {
         return SHA512.hash(data: data).hexString()
     }
-    
+
     /// Computes the MD5 checksum of the given data as a lowercased hex string.
     ///
     /// - Important: This hash algorithm isn’t considered cryptographically secure.
@@ -35,7 +35,7 @@ public struct Checksum {
 
 /// Note: this extension is private because it's not meant for general use.
 private extension Sequence<UInt8> {
-    
+
     /// Creates a lowercase hex string from a sequence of 8-bit unsigned integers.
     func hexString() -> String {
         return reduce(into: "") { accumulator, byte in

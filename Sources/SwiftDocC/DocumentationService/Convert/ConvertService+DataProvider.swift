@@ -17,7 +17,7 @@ extension ConvertService {
     struct InMemoryContentDataProvider: DocumentationWorkspaceDataProvider {
         var identifier: String = UUID().uuidString
         var bundles: [DocumentationBundle] = []
-        
+
         var files: [URL: Data] = [:]
 
         mutating func registerBundle(
@@ -28,20 +28,22 @@ extension ConvertService {
             miscResourceURLs: [URL]
         ) {
             let symbolGraphURLs = symbolGraphs.map { registerFile(contents: $0, pathExtension: nil) }
-            let markupFileURLs = markupFiles.map { markupFile in
-                registerFile(
-                    contents: markupFile,
-                    pathExtension:
-                        DocumentationBundleFileTypes.referenceFileExtension
-                )
-            } + tutorialFiles.map { tutorialFile in
-                registerFile(
-                    contents: tutorialFile,
-                    pathExtension:
-                        DocumentationBundleFileTypes.tutorialFileExtension
-                )
-            }
-            
+            let markupFileURLs =
+                markupFiles.map { markupFile in
+                    registerFile(
+                        contents: markupFile,
+                        pathExtension:
+                            DocumentationBundleFileTypes.referenceFileExtension
+                    )
+                }
+                + tutorialFiles.map { tutorialFile in
+                    registerFile(
+                        contents: tutorialFile,
+                        pathExtension:
+                            DocumentationBundleFileTypes.tutorialFileExtension
+                    )
+                }
+
             bundles.append(
                 DocumentationBundle(
                     info: info,
@@ -51,7 +53,7 @@ extension ConvertService {
                 )
             )
         }
-        
+
         private mutating func registerFile(contents: Data, pathExtension: String?) -> URL {
             let url = Self.createURL(pathExtension: pathExtension)
             files[url] = contents
@@ -65,37 +67,37 @@ extension ConvertService {
         /// case, our resources are not file URLs so we generate a URL for each resource.
         static private func createURL(pathExtension: String? = nil) -> URL {
             var url = URL(string: "docc-service:/\(UUID().uuidString)")!
-            
+
             if let pathExtension {
                 url.appendPathExtension(pathExtension)
             }
-            
+
             return url
         }
-        
+
         func contentsOfURL(_ url: URL) throws -> Data {
             guard let contents = files[url] else {
                 throw Error.unknownURL(url: url)
             }
             return contents
         }
-        
+
         func bundles(options: BundleDiscoveryOptions) throws -> [DocumentationBundle] {
             return bundles
         }
-        
+
         enum Error: DescribedError {
             case unknownURL(url: URL)
-            
+
             var errorDescription: String {
                 switch self {
                 case .unknownURL(let url):
                     return """
-                    Unable to retrieve contents of file at \(url.absoluteString.singleQuoted).
-                    """
+                        Unable to retrieve contents of file at \(url.absoluteString.singleQuoted).
+                        """
                 }
             }
         }
     }
-    
+
 }

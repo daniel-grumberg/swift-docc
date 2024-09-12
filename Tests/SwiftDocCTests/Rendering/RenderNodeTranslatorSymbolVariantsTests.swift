@@ -9,13 +9,14 @@
 */
 
 import Foundation
-import XCTest
-import SymbolKit
 import Markdown
+import SymbolKit
+import XCTest
+
 @testable import SwiftDocC
 
 class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
-    
+
     func testIdentifierVariants() throws {
         try assertMultiVariantSymbol(
             configureContext: { context, resolvedTopicReference in
@@ -31,7 +32,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testMultipleModules() throws {
         try assertMultiVariantSymbol(
             configureContext: { context, resolvedTopicReference in
@@ -47,7 +48,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testMultipleModulesWithBystanderModule() throws {
         try assertMultiVariantSymbol(
             configureContext: { context, resolvedTopicReference in
@@ -102,7 +103,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testExtendedModuleVariants() throws {
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
@@ -121,7 +122,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testPlatformsVariantsDefaultAvailability() throws {
         try assertMultiVariantSymbol(
             configureContext: { context, resolvedTopicReference in
@@ -140,7 +141,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testPlatformsVariantsCustomAvailability() throws {
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
@@ -157,7 +158,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                         willEventuallyBeDeprecated: true
                     )
                 ])
-                
+
                 symbol.availabilityVariants[.objectiveC] = SymbolGraph.Symbol.Availability(availability: [
                     SymbolGraph.Symbol.Availability.AvailabilityItem(
                         domain: nil,
@@ -182,7 +183,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testRequiredVariants() throws {
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
@@ -197,7 +198,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testRoleHeadingVariants() throws {
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
@@ -212,7 +213,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testTitleVariants() throws {
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
@@ -227,7 +228,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testExternalIDVariants() throws {
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
@@ -242,7 +243,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testSymbolKindVariants() throws {
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
@@ -257,21 +258,21 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testFragmentsVariants() throws {
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
                 symbol.subHeadingVariants[.swift] = [
                     .init(kind: .keyword, spelling: "swift", preciseIdentifier: nil)
                 ]
-                
+
                 symbol.subHeadingVariants[.objectiveC] = [
                     .init(kind: .keyword, spelling: "objc", preciseIdentifier: nil)
                 ]
-                
+
                 symbol.titleVariants[.swift] = "Swift Title"
                 symbol.titleVariants[.objectiveC] = "Objective-C Title"
-                
+
                 symbol.kindVariants[.swift] = .init(rawIdentifier: "swift.method", displayName: "Swift Kind")
                 symbol.kindVariants[.objectiveC] = .init(rawIdentifier: "objc.func", displayName: "Objective-C Kind")
             },
@@ -289,18 +290,18 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testNavigatorTitleVariants() throws {
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
                 symbol.navigatorVariants[.swift] = [
                     .init(kind: .keyword, spelling: "swift", preciseIdentifier: nil)
                 ]
-                
+
                 symbol.navigatorVariants[.objectiveC] = [
                     .init(kind: .keyword, spelling: "objc", preciseIdentifier: nil)
                 ]
-                
+
                 symbol.titleVariants[.swift] = "Swift Title"
                 symbol.titleVariants[.objectiveC] = "Objective-C Title"
             },
@@ -318,7 +319,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testVariants() throws {
         let expectedVariants = [
             RenderNode.Variant(
@@ -330,7 +331,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 paths: ["/documentation/mykit/myclass"]
             ),
         ]
-        
+
         try assertMultiVariantSymbol(
             configureContext: { context, resolvedTopicReference in
                 var documentationNode = try XCTUnwrap(context.documentationCache[resolvedTopicReference])
@@ -345,14 +346,14 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testAbstractVariants() throws {
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
                 symbol.abstractSectionVariants[.swift] = AbstractSection(
                     paragraph: Paragraph(Text("Swift abstract"))
                 )
-                
+
                 symbol.abstractSectionVariants[.objectiveC] = AbstractSection(
                     paragraph: Paragraph(Text("Objective-C abstract"))
                 )
@@ -365,14 +366,14 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testDeclarationsSectionVariants() throws {
         func declarationSection(in renderNode: RenderNode) throws -> DeclarationRenderSection {
             try XCTUnwrap(
                 (renderNode.primaryContentSections.first as? DeclarationsRenderSection)?.declarations.first
             )
         }
-        
+
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
                 symbol.declarationVariants[.swift] = [
@@ -380,7 +381,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                         declarationFragments: [.init(kind: .keyword, spelling: "swift", preciseIdentifier: nil)]
                     )
                 ]
-                
+
                 symbol.declarationVariants[.objectiveC] = [
                     [.iOS]: SymbolGraph.Symbol.DeclarationFragments(
                         declarationFragments: [.init(kind: .keyword, spelling: "objc", preciseIdentifier: nil)]
@@ -390,46 +391,46 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             assertOriginalRenderNode: { renderNode in
                 let declarationSection = try declarationSection(in: renderNode)
                 XCTAssertEqual(declarationSection.platforms, [.macOS])
-                
+
                 XCTAssertEqual(
                     declarationSection.tokens,
                     [.init(text: "swift", kind: .keyword, identifier: nil, preciseIdentifier: nil)]
                 )
-                
+
                 XCTAssertEqual(declarationSection.languages, ["swift"])
             },
             assertAfterApplyingVariant: { renderNode in
                 let declarationSection = try declarationSection(in: renderNode)
                 XCTAssertEqual(declarationSection.platforms, [.iOS])
-                
+
                 XCTAssertEqual(
                     declarationSection.tokens,
                     [.init(text: "objc", kind: .keyword, identifier: nil, preciseIdentifier: nil)]
                 )
-                
+
                 XCTAssertEqual(declarationSection.languages, ["occ"])
             }
         )
     }
-    
+
     func testReturnsSectionVariants() throws {
         func returnsSection(in renderNode: RenderNode) throws -> ContentRenderSection {
             let returnsSectionIndex = 1
-            
+
             guard renderNode.primaryContentSections.indices.contains(returnsSectionIndex) else {
                 XCTFail("Missing returns section")
                 return ContentRenderSection(kind: .content, content: [], heading: nil)
             }
-            
+
             return try XCTUnwrap(renderNode.primaryContentSections[returnsSectionIndex] as? ContentRenderSection)
         }
-        
+
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
                 symbol.returnsSectionVariants[.swift] = ReturnsSection(
                     content: [Paragraph(Text("Swift Returns Section"))]
                 )
-                
+
                 symbol.returnsSectionVariants[.objectiveC] = ReturnsSection(
                     content: [Paragraph(Text("Objective-C Returns Section"))]
                 )
@@ -440,7 +441,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                     returnsSection.content,
                     [
                         .heading(.init(level: 2, text: "Return Value", anchor: "return-value")),
-                        .paragraph(.init(inlineContent: [.text("Swift Returns Section")]))
+                        .paragraph(.init(inlineContent: [.text("Swift Returns Section")])),
                     ]
                 )
             },
@@ -450,109 +451,125 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                     returnsSection.content,
                     [
                         .heading(.init(level: 2, text: "Return Value", anchor: "return-value")),
-                        .paragraph(.init(inlineContent: [.text("Objective-C Returns Section")]))
+                        .paragraph(.init(inlineContent: [.text("Objective-C Returns Section")])),
                     ]
                 )
             }
         )
-   }
-    
+    }
+
     func testParametersSectionVariants() throws {
         func parametersSection(in renderNode: RenderNode) throws -> ParametersRenderSection {
             let parametersSectionIndex = 1
-            
+
             guard renderNode.primaryContentSections.indices.contains(parametersSectionIndex) else {
                 XCTFail("Missing parameters section")
                 return ParametersRenderSection(parameters: [])
             }
-            
+
             return try XCTUnwrap(renderNode.primaryContentSections[parametersSectionIndex] as? ParametersRenderSection)
         }
-        
+
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
                 symbol.parametersSectionVariants[.swift] = ParametersSection(
                     parameters: [Parameter(name: "Swift parameter", contents: [])]
                 )
-                
+
                 symbol.parametersSectionVariants[.objectiveC] = ParametersSection(
                     parameters: [Parameter(name: "Objective-C parameter", contents: [])]
                 )
             },
             assertOriginalRenderNode: { renderNode in
                 let parametersSection = try parametersSection(in: renderNode)
-                
+
                 XCTAssertEqual(parametersSection.parameters.count, 1)
-                
+
                 let parameter = try XCTUnwrap(parametersSection.parameters.first)
                 XCTAssertEqual(parameter.name, "Swift parameter")
                 XCTAssertEqual(parameter.content, [])
             },
             assertAfterApplyingVariant: { renderNode in
                 let parametersSection = try parametersSection(in: renderNode)
-                
+
                 XCTAssertEqual(parametersSection.parameters.count, 1)
-                
+
                 let parameter = try XCTUnwrap(parametersSection.parameters.first)
                 XCTAssertEqual(parameter.name, "Objective-C parameter")
                 XCTAssertEqual(parameter.content, [])
             }
         )
     }
-    
+
     func testDictionaryKeysSectionVariants() throws {
         func propertiesSection(in renderNode: RenderNode) throws -> PropertiesRenderSection {
             let propertiesSectionIndex = 1
-            
+
             guard renderNode.primaryContentSections.indices.contains(propertiesSectionIndex) else {
                 XCTFail("Missing properties section")
                 return PropertiesRenderSection(title: "Properties", items: [])
             }
-            
+
             return try XCTUnwrap(renderNode.primaryContentSections[propertiesSectionIndex] as? PropertiesRenderSection)
         }
-        
+
         // Dictionary Keys that are backed by a SymbolGraph symbol survive to the render section...
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
-                let keySymbol1 = SymbolGraph.Symbol(identifier: SymbolGraph.Symbol.Identifier(precise: "precise1", interfaceLanguage: "swift"), names: SymbolGraph.Symbol.Names(title: "Title1", navigator: nil, subHeading: nil, prose: nil), pathComponents: ["path1"], docComment: nil, accessLevel: SymbolGraph.Symbol.AccessControl(rawValue: "public"), kind: SymbolGraph.Symbol.Kind(rawIdentifier: "dictKey", displayName: "Key"), mixins: [:])
-                let keySymbol2 = SymbolGraph.Symbol(identifier: SymbolGraph.Symbol.Identifier(precise: "precise2", interfaceLanguage: "swift"), names: SymbolGraph.Symbol.Names(title: "Title2", navigator: nil, subHeading: nil, prose: nil), pathComponents: ["path2"], docComment: nil, accessLevel: SymbolGraph.Symbol.AccessControl(rawValue: "public"), kind: SymbolGraph.Symbol.Kind(rawIdentifier: "dictKey", displayName: "Key"), mixins: [:])
-                
+                let keySymbol1 = SymbolGraph.Symbol(
+                    identifier: SymbolGraph.Symbol.Identifier(precise: "precise1", interfaceLanguage: "swift"),
+                    names: SymbolGraph.Symbol.Names(title: "Title1", navigator: nil, subHeading: nil, prose: nil),
+                    pathComponents: ["path1"],
+                    docComment: nil,
+                    accessLevel: SymbolGraph.Symbol.AccessControl(rawValue: "public"),
+                    kind: SymbolGraph.Symbol.Kind(rawIdentifier: "dictKey", displayName: "Key"),
+                    mixins: [:]
+                )
+                let keySymbol2 = SymbolGraph.Symbol(
+                    identifier: SymbolGraph.Symbol.Identifier(precise: "precise2", interfaceLanguage: "swift"),
+                    names: SymbolGraph.Symbol.Names(title: "Title2", navigator: nil, subHeading: nil, prose: nil),
+                    pathComponents: ["path2"],
+                    docComment: nil,
+                    accessLevel: SymbolGraph.Symbol.AccessControl(rawValue: "public"),
+                    kind: SymbolGraph.Symbol.Kind(rawIdentifier: "dictKey", displayName: "Key"),
+                    mixins: [:]
+                )
+
                 symbol.dictionaryKeysSectionVariants[.swift] = DictionaryKeysSection(
                     dictionaryKeys: [DictionaryKey(name: "Swift property", contents: [], symbol: keySymbol1)]
                 )
-                
+
                 symbol.dictionaryKeysSectionVariants[.objectiveC] = DictionaryKeysSection(
                     dictionaryKeys: [DictionaryKey(name: "Objective-C property", contents: [], symbol: keySymbol2)]
                 )
             },
             assertOriginalRenderNode: { renderNode in
                 let propertiesSection = try propertiesSection(in: renderNode)
-                
+
                 XCTAssertEqual(propertiesSection.items.count, 1)
-                
+
                 let property = try XCTUnwrap(propertiesSection.items.first)
                 XCTAssertEqual(property.name, "Swift property")
                 XCTAssertEqual(property.content, [])
             },
             assertAfterApplyingVariant: { renderNode in
                 let propertiesSection = try propertiesSection(in: renderNode)
-                
+
                 XCTAssertEqual(propertiesSection.items.count, 1)
-                
+
                 let property = try XCTUnwrap(propertiesSection.items.first)
                 XCTAssertEqual(property.name, "Objective-C property")
                 XCTAssertEqual(property.content, [])
             }
         )
-        
+
         // ... but Dictionary Keys that are NOT backed by a SymbolGraph symbol get filtered out.
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
                 symbol.dictionaryKeysSectionVariants[.swift] = DictionaryKeysSection(
                     dictionaryKeys: [DictionaryKey(name: "Swift property", contents: [], symbol: nil)]
                 )
-                
+
                 symbol.dictionaryKeysSectionVariants[.objectiveC] = DictionaryKeysSection(
                     dictionaryKeys: [DictionaryKey(name: "Objective-C property", contents: [], symbol: nil)]
                 )
@@ -567,62 +584,63 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testDiscussionSectionVariants() throws {
         func discussionSection(in renderNode: RenderNode) throws -> ContentRenderSection {
             return try XCTUnwrap(renderNode.primaryContentSections.mapFirst { $0 as? ContentRenderSection })
         }
-        
+
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
                 symbol.discussionVariants[.swift] = DiscussionSection(
                     content: [Paragraph(Text("Swift Discussion"))]
                 )
-                
+
                 symbol.discussionVariants[.objectiveC] = DiscussionSection(
                     content: [Paragraph(Text("Objective-C Discussion"))]
                 )
             },
             assertOriginalRenderNode: { renderNode in
                 let discussionSection = try discussionSection(in: renderNode)
-                
+
                 XCTAssertEqual(
                     discussionSection.content,
                     [
                         .heading(.init(level: 2, text: "Overview", anchor: "overview")),
-                        .paragraph(.init(inlineContent: [.text("Swift Discussion")]))
+                        .paragraph(.init(inlineContent: [.text("Swift Discussion")])),
                     ]
                 )
             },
             assertAfterApplyingVariant: { renderNode in
                 let discussionSection = try discussionSection(in: renderNode)
-                
+
                 XCTAssertEqual(
                     discussionSection.content,
                     [
                         .heading(.init(level: 2, text: "Overview", anchor: "overview")),
-                        .paragraph(.init(inlineContent: [.text("Objective-C Discussion")]))
+                        .paragraph(.init(inlineContent: [.text("Objective-C Discussion")])),
                     ]
                 )
             }
         )
     }
-    
+
     func testSourceFileURIVariants() throws {
         func makeLocation(uri: String) throws -> SymbolGraph.Symbol.Location {
             let location = """
-            {
-                "uri": "\(uri)",
-                "position": {
-                    "line": 0,
-                    "character": 0,
+                {
+                    "uri": "\(uri)",
+                    "position": {
+                        "line": 0,
+                        "character": 0,
+                    }
                 }
-            }
-            """.data(using: .utf8)!
-            
+                """
+                .data(using: .utf8)!
+
             return try JSONDecoder().decode(SymbolGraph.Symbol.Location.self, from: location)
         }
-        
+
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
                 symbol.locationVariants[.swift] = try makeLocation(uri: "Swift URI")
@@ -639,7 +657,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testSymbolAccessLevelVariants() throws {
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
@@ -657,11 +675,11 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testRelationshipSectionsVariants() throws {
         try assertMultiVariantSymbol(
             configureContext: { context, _ in
-            
+
                 // Set up an Objective-C title for MyProtocol.
                 let myFunctionNode = try context.entity(
                     with: ResolvedTopicReference(
@@ -671,7 +689,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                         sourceLanguage: .swift
                     )
                 )
-                
+
                 let myProtocol = try XCTUnwrap(myFunctionNode.semantic as? Symbol)
                 myProtocol.titleVariants[.objectiveC] = "MyProtocol"
             },
@@ -680,7 +698,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                     kind: .inheritedBy,
                     path: "/documentation/MyKit/MyClass/myFunction()"
                 )
-                
+
                 symbol.relationshipsVariants[.objectiveC] = makeRelationshipSection(
                     kind: .conformsTo,
                     path: "/documentation/MyKit/MyProtocol"
@@ -690,7 +708,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 XCTAssertEqual(renderNode.relationshipSections.count, 1)
                 let relationshipSection = try XCTUnwrap(renderNode.relationshipSections.first)
                 XCTAssertEqual(relationshipSection.title, "Inherited By")
-                
+
                 XCTAssertEqual(
                     relationshipSection.identifiers,
                     ["doc://org.swift.docc.example/documentation/MyKit/MyClass/myFunction()"]
@@ -700,7 +718,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 XCTAssertEqual(renderNode.relationshipSections.count, 1)
                 let relationshipSection = try XCTUnwrap(renderNode.relationshipSections.first)
                 XCTAssertEqual(relationshipSection.title, "Conforms To")
-                
+
                 XCTAssertEqual(
                     relationshipSection.identifiers,
                     ["doc://org.swift.docc.example/documentation/MyKit/MyProtocol"]
@@ -708,11 +726,11 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testDoesNotEmitObjectiveCRelationshipsForTopicThatOnlyHasSwiftRelationships() throws {
         try assertMultiVariantSymbol(
             configureContext: { context, _ in
-            
+
                 // Set up an Objective-C title for MyProtocol.
                 let myFunctionNode = try context.entity(
                     with: ResolvedTopicReference(
@@ -722,7 +740,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                         sourceLanguage: .swift
                     )
                 )
-                
+
                 let myProtocol = try XCTUnwrap(myFunctionNode.semantic as? Symbol)
                 myProtocol.titleVariants[.objectiveC] = "MyProtocol"
             },
@@ -731,14 +749,14 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                     kind: .inheritedBy,
                     path: "/documentation/MyKit/MyClass/myFunction()"
                 )
-                
+
                 symbol.relationshipsVariants[.objectiveC] = nil
             },
             assertOriginalRenderNode: { renderNode in
                 XCTAssertEqual(renderNode.relationshipSections.count, 1)
                 let relationshipSection = try XCTUnwrap(renderNode.relationshipSections.first)
                 XCTAssertEqual(relationshipSection.title, "Inherited By")
-                
+
                 XCTAssertEqual(
                     relationshipSection.identifiers,
                     ["doc://org.swift.docc.example/documentation/MyKit/MyClass/myFunction()"]
@@ -749,7 +767,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testTopicsSectionVariants() throws {
         try assertMultiVariantSymbol(
             configureContext: { context, reference in
@@ -765,7 +783,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                     taskGroupName: "Swift Task Group",
                     destination: "doc://org.swift.docc.example/documentation/MyKit/MyProtocol"
                 )
-                
+
                 symbol.automaticTaskGroupsVariants[.objectiveC] = []
                 symbol.topicsVariants[.objectiveC] = makeTopicsSection(
                     taskGroupName: "Objective-C Task Group",
@@ -776,7 +794,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 XCTAssertEqual(renderNode.topicSections.count, 1 /* all initializers and functions are already manually curated elsewhere */)
                 let taskGroup = try XCTUnwrap(renderNode.topicSections.first)
                 XCTAssertEqual(taskGroup.title, "Swift Task Group")
-                
+
                 XCTAssertEqual(
                     taskGroup.identifiers,
                     ["doc://org.swift.docc.example/documentation/MyKit/MyProtocol"]
@@ -786,7 +804,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 XCTAssertEqual(renderNode.topicSections.count, 1)
                 let taskGroup = try XCTUnwrap(renderNode.topicSections.first)
                 XCTAssertEqual(taskGroup.title, "Objective-C Task Group")
-                
+
                 XCTAssertEqual(
                     taskGroup.identifiers,
                     ["doc://org.swift.docc.example/documentation/MyKit/MyProtocol"]
@@ -794,7 +812,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testEncodesNilTopicsSectionsForArticleVariantIfDefaultIsNonEmpty() throws {
         try assertMultiVariantArticle(
             configureArticle: { article in
@@ -808,7 +826,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 XCTAssertEqual(renderNode.topicSections.count, 1)
                 let taskGroup = try XCTUnwrap(renderNode.topicSections.first)
                 XCTAssertEqual(taskGroup.title, "Swift Task Group")
-                
+
                 XCTAssertEqual(
                     taskGroup.identifiers,
                     ["doc://org.swift.docc.example/documentation/MyKit/MyProtocol"]
@@ -819,11 +837,11 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 // than `[]`. Since the `RenderNode` decoder implementation encodes `[]` rather than `nil` into the
                 // model when the JSON value is `null` (`topicSections` is not optional in the model), we can't use it
                 // for this test. Instead, we decode the JSON using a proxy type that has an optional `topicSections`.
-                
+
                 struct RenderNodeProxy: Codable {
                     var topicSections: [TaskGroupRenderSection]?
                 }
-                
+
                 XCTAssertNil(
                     try JSONDecoder().decode(RenderNodeProxy.self, from: renderNodeData).topicSections,
                     "Expected topicSections to be null in the JSON because the article has no Objective-C topics."
@@ -831,7 +849,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testEncodesNilTopicsSectionsForSymbolVariantIfDefaultIsNonEmpty() throws {
         try assertMultiVariantSymbol(
             assertOriginalRenderNode: { renderNode in
@@ -839,11 +857,11 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             },
             assertDataAfterApplyingVariant: { renderNodeData in
                 // See reasoning for the RenderNodeProxy type in the similar test above.
-                
+
                 struct RenderNodeProxy: Codable {
                     var topicSections: [TaskGroupRenderSection]?
                 }
-                
+
                 XCTAssertNil(
                     try JSONDecoder().decode(RenderNodeProxy.self, from: renderNodeData).topicSections,
                     "Expected topicSections to be null in the JSON because the article has no Objective-C topics."
@@ -851,16 +869,16 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testTopicsSectionVariantsNoUserProvidedTopics() throws {
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
                 symbol.automaticTaskGroupsVariants[.fallback] = []
                 symbol.topicsVariants[.fallback] = nil
-                
+
                 symbol.automaticTaskGroupsVariants[.swift] = []
                 symbol.topicsVariants[.swift] = nil
-                
+
                 symbol.automaticTaskGroupsVariants[.objectiveC] = []
                 symbol.topicsVariants[.objectiveC] = nil
             },
@@ -878,7 +896,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testDefaultImplementationsSectionsVariants() throws {
         func createDefaultImplementationsSection(path: String) -> DefaultImplementationsSection {
             DefaultImplementationsSection(
@@ -899,22 +917,22 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 ]
             )
         }
-        
+
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
                 symbol.defaultImplementationsVariants[.swift] = createDefaultImplementationsSection(
                     path: "/documentation/MyKit/MyProtocol"
                 )
-                
+
                 symbol.relationshipsVariants[.swift] = makeRelationshipSection(
                     kind: .inheritedBy,
                     path: "/documentation/MyKit/MyClass/myFunction()"
                 )
-                
+
                 symbol.defaultImplementationsVariants[.objectiveC] = createDefaultImplementationsSection(
                     path: "/documentation/MyKit/MyClass/myFunction()"
                 )
-                
+
                 symbol.relationshipsVariants[.objectiveC] = makeRelationshipSection(
                     kind: .conformsTo,
                     path: "/documentation/MyKit/MyProtocol"
@@ -940,7 +958,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testSeeAlsoSectionVariants() throws {
         func makeSeeAlsoSection(destination: String) -> SeeAlsoSection {
             SeeAlsoSection(content: [
@@ -949,7 +967,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 )
             ])
         }
-        
+
         try assertMultiVariantSymbol(
             configureContext: { context, reference in
                 try makeSymbolAvailableInSwiftAndObjectiveC(
@@ -962,7 +980,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 symbol.seeAlsoVariants[.swift] = makeSeeAlsoSection(
                     destination: "doc://org.swift.docc.example/documentation/MyKit/MyProtocol"
                 )
-                
+
                 symbol.seeAlsoVariants[.objectiveC] = makeSeeAlsoSection(
                     destination: "doc://org.swift.docc.example/documentation/MyKit/MyProtocol"
                 )
@@ -971,7 +989,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 XCTAssertEqual(renderNode.seeAlsoSections.count, 2)
                 let taskGroup = try XCTUnwrap(renderNode.seeAlsoSections.first)
                 XCTAssertEqual(taskGroup.title, "Related Documentation")
-                
+
                 XCTAssertEqual(
                     taskGroup.identifiers,
                     ["doc://org.swift.docc.example/documentation/MyKit/MyProtocol"]
@@ -981,7 +999,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 XCTAssertEqual(renderNode.seeAlsoSections.count, 2)
                 let taskGroup = try XCTUnwrap(renderNode.seeAlsoSections.first)
                 XCTAssertEqual(taskGroup.title, "Related Documentation")
-                
+
                 XCTAssertEqual(
                     taskGroup.identifiers,
                     ["doc://org.swift.docc.example/documentation/MyKit/MyProtocol"]
@@ -989,7 +1007,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testDoesNotEmitObjectiveCSeeAlsoIfEmpty() throws {
         func makeSeeAlsoSection(destination: String) -> SeeAlsoSection {
             SeeAlsoSection(content: [
@@ -998,7 +1016,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 )
             ])
         }
-        
+
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
                 symbol.seeAlsoVariants[.swift] = makeSeeAlsoSection(
@@ -1013,14 +1031,14 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testDeprecationSummaryVariants() throws {
         try assertMultiVariantSymbol(
             configureSymbol: { symbol in
                 symbol.deprecatedSummaryVariants[.swift] = DeprecatedSection(
                     text: "Swift Deprecation Variant"
                 )
-                
+
                 symbol.deprecatedSummaryVariants[.objectiveC] = DeprecatedSection(
                     text: "Objective-C Deprecation Variant"
                 )
@@ -1039,7 +1057,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             }
         )
     }
-    
+
     func testTopicRenderReferenceVariants() throws {
         func myFunctionReference(in renderNode: RenderNode) throws -> TopicRenderReference {
             return try XCTUnwrap(
@@ -1048,11 +1066,11 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                 ] as? TopicRenderReference
             )
         }
-        
+
         try assertMultiVariantSymbol(
             configureContext: { context, _ in
                 // Set up a symbol with variants.
-                
+
                 let myFunctionNode = try context.entity(
                     with: ResolvedTopicReference(
                         bundleIdentifier: "org.swift.docc.example",
@@ -1061,30 +1079,32 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
                         sourceLanguage: .swift
                     )
                 )
-                
+
                 let myFunction = try XCTUnwrap(myFunctionNode.semantic as? Symbol)
-                
+
                 myFunction.titleVariants[.swift] = "myFunction in Swift"
                 myFunction.abstractSectionVariants[.swift] = AbstractSection(
                     paragraph: Paragraph(Text("myFunction abstract in Swift"))
                 )
-                
+
                 myFunction.titleVariants[.objectiveC] = "myFunction in Objective-C"
                 myFunction.abstractSectionVariants[.objectiveC] = AbstractSection(
                     paragraph: Paragraph(Text("myFunction abstract in Objective-C"))
                 )
-            }, assertOriginalRenderNode: { renderNode in
+            },
+            assertOriginalRenderNode: { renderNode in
                 let reference = try myFunctionReference(in: renderNode)
                 XCTAssertEqual(reference.title, "myFunction in Swift")
                 XCTAssertEqual(reference.abstract, [.text("myFunction abstract in Swift")])
-            }, assertAfterApplyingVariant: { renderNode in
+            },
+            assertAfterApplyingVariant: { renderNode in
                 let reference = try myFunctionReference(in: renderNode)
                 XCTAssertEqual(reference.title, "myFunction in Objective-C")
                 XCTAssertEqual(reference.abstract, [.text("myFunction abstract in Objective-C")])
             }
         )
     }
-    
+
     private func assertMultiVariantSymbol(
         configureContext: (DocumentationContext, ResolvedTopicReference) throws -> () = { _, _ in },
         configureSymbol: (Symbol) throws -> () = { _ in },
@@ -1094,22 +1114,22 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
         assertDataAfterApplyingVariant: (Data) throws -> () = { _ in }
     ) throws {
         let (_, bundle, context) = try testBundleAndContext(copying: "TestBundle")
-        
+
         let identifier = ResolvedTopicReference(
             bundleIdentifier: bundle.identifier,
             path: "/documentation/MyKit/MyClass",
             sourceLanguage: .swift
         )
-        
+
         try configureContext(context, identifier)
         context.documentationCache[identifier]?.availableSourceLanguages = [.swift, .objectiveC]
-        
+
         let node = try context.entity(with: identifier)
-        
+
         let symbol = try XCTUnwrap(node.semantic as? Symbol)
-        
+
         try configureSymbol(symbol)
-        
+
         try assertMultiLanguageSemantic(
             symbol,
             context: context,
@@ -1121,7 +1141,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             assertDataAfterApplyingVariant: assertDataAfterApplyingVariant
         )
     }
-    
+
     private func assertMultiVariantArticle(
         configureContext: (DocumentationContext, ResolvedTopicReference) throws -> () = { _, _ in },
         configureArticle: (Article) throws -> () = { _ in },
@@ -1131,22 +1151,22 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
         assertDataAfterApplyingVariant: (Data) throws -> () = { _ in }
     ) throws {
         let (_, bundle, context) = try testBundleAndContext(copying: "TestBundle")
-        
+
         let identifier = ResolvedTopicReference(
             bundleIdentifier: bundle.identifier,
             path: "/documentation/Test-Bundle/article",
             sourceLanguage: .swift
         )
-        
+
         try configureContext(context, identifier)
         context.documentationCache[identifier]?.availableSourceLanguages = [.swift, .objectiveC]
-        
+
         let node = try context.entity(with: identifier)
-        
+
         let article = try XCTUnwrap(node.semantic as? Article)
-        
+
         try configureArticle(article)
-       
+
         try assertMultiLanguageSemantic(
             article,
             context: context,
@@ -1157,7 +1177,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             assertDataAfterApplyingVariant: assertDataAfterApplyingVariant
         )
     }
-    
+
     private func assertMultiLanguageSemantic(
         _ semantic: Semantic,
         context: DocumentationContext,
@@ -1169,23 +1189,23 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
         assertDataAfterApplyingVariant: (Data) throws -> () = { _ in }
     ) throws {
         var translator = RenderNodeTranslator(context: context, bundle: bundle, identifier: identifier)
-        
+
         configureRenderNodeTranslator(&translator)
-        
+
         let renderNode = translator.visit(semantic) as! RenderNode
-        
+
         let data = try renderNode.encodeToJSON()
-        
+
         try assertOriginalRenderNode(RenderJSONDecoder.makeDecoder().decode(RenderNode.self, from: data))
-        
+
         let variantRenderNode = try RenderNodeVariantOverridesApplier()
             .applyVariantOverrides(in: data, for: [.interfaceLanguage("occ")])
-        
+
         try assertDataAfterApplyingVariant(variantRenderNode)
-        
+
         try assertAfterApplyingVariant(RenderJSONDecoder.makeDecoder().decode(RenderNode.self, from: variantRenderNode))
     }
-    
+
     private func assertModule(
         _ modules: [RenderMetadata.Module]?,
         expectedName: String,
@@ -1193,11 +1213,11 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
     ) throws {
         XCTAssertEqual(modules?.count, 1)
         let module = try XCTUnwrap(modules?.first)
-        
+
         XCTAssertEqual(module.name, expectedName)
         XCTAssertEqual(module.relatedModules, expectedRelatedModules)
     }
-    
+
     private func makeRelationshipSection(kind: RelationshipsGroup.Kind, path: String) -> RelationshipsSection {
         RelationshipsSection(
             groups: [
@@ -1219,17 +1239,17 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             constraints: [:]
         )
     }
-    
+
     private func makeTopicsSection(taskGroupName: String, destination: String) -> TopicsSection {
         TopicsSection(content: [
             Heading(level: 3, Text(taskGroupName)),
-            
+
             UnorderedList(
                 ListItem(Paragraph(Link(destination: destination)))
-            )
+            ),
         ])
     }
-    
+
     private func makeSymbolAvailableInSwiftAndObjectiveC(
         symbolPath: String,
         bundleIdentifier: String,
@@ -1240,7 +1260,7 @@ class RenderNodeTranslatorSymbolVariantsTests: XCTestCase {
             path: symbolPath,
             sourceLanguage: .swift
         )
-        
+
         context.documentationCache[reference]?.availableSourceLanguages = [.swift, .objectiveC]
     }
 }

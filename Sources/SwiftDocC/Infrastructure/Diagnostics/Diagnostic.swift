@@ -32,7 +32,7 @@ public struct Diagnostic {
 
     /// A brief summary that describe the problem or issue.
     public var summary: String
-    
+
     /// Additional details that explain the problem or issue to the end-user in plain language.
     public var explanation: String?
 
@@ -40,8 +40,8 @@ public struct Diagnostic {
     ///
     /// For example, if you're diagnosing the fact that there are multiple *X* in a document, you might diagnose on
     /// the second *X* while adding a note on the first *X* to note that it was the first occurrence.
-    public var notes = [DiagnosticNote]()
-    
+    public var notes: [DiagnosticNote] = []
+
     public init(
         source: URL? = nil,
         severity: DiagnosticSeverity,
@@ -69,6 +69,6 @@ public extension Diagnostic {
     mutating func offsetWithRange(_ docRange: SymbolGraph.LineList.SourceRange) {
         // If there is no location information in the source diagnostic, the diagnostic might be removed for safety reasons.
         range?.offsetWithRange(docRange)
-        
+
     }
 }

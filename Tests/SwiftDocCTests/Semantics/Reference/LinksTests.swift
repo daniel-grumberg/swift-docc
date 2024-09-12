@@ -9,10 +9,10 @@
 */
 
 import Foundation
-
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class LinksTests: XCTestCase {
     func testMissingBasicRequirements() throws {
@@ -22,17 +22,17 @@ class LinksTests: XCTestCase {
                 @Links(visualStyle: compactGrid)
                 """
             }
-            
+
             XCTAssertNotNil(links)
-            
+
             XCTAssertEqual(
                 problems,
                 ["1: warning – org.swift.docc.HasExactlyOneUnorderedList<Links, AnyLink>.InvalidContent"]
             )
-            
+
             XCTAssertEqual(renderedContent, [])
         }
-        
+
         do {
             let (renderedContent, problems, links) = try parseDirective(Links.self, in: "BookLikeContent") {
                 """
@@ -41,34 +41,34 @@ class LinksTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertNil(links)
-            
+
             XCTAssertEqual(
                 problems,
                 [
-                    "1: warning – org.swift.docc.HasArgument.visualStyle",
+                    "1: warning – org.swift.docc.HasArgument.visualStyle"
                 ]
             )
-            
+
             XCTAssertEqual(renderedContent, [])
         }
     }
-    
+
     func testInvalidBodyContent() throws {
         do {
             let (renderedContent, problems, links) = try parseDirective(Links.self, in: "BookLikeContent") {
                 """
                 @Links(visualStyle: compactGrid) {
                     This is a paragraph of text in 'Links' directive.
-                
+
                     And a second paragraph.
                 }
                 """
             }
-            
+
             XCTAssertNotNil(links)
-            
+
             XCTAssertEqual(
                 problems,
                 [
@@ -77,25 +77,25 @@ class LinksTests: XCTestCase {
                     "4: warning – org.swift.docc.HasExactlyOneUnorderedList<Links, AnyLink>.ExtraneousContent",
                 ]
             )
-            
+
             XCTAssertEqual(renderedContent, [])
         }
-        
+
         do {
             let (renderedContent, problems, links) = try parseDirective(Links.self, in: "BookLikeContent") {
                 """
                 @Links(visualStyle: compactGrid) {
                     This is a paragraph of text in 'Links' directive.
-                
+
                     And a second paragraph preceding a valid link:
-                
+
                     - <doc:MyArticle>
                 }
                 """
             }
-            
+
             XCTAssertNotNil(links)
-            
+
             XCTAssertEqual(
                 problems,
                 [
@@ -103,18 +103,20 @@ class LinksTests: XCTestCase {
                     "4: warning – org.swift.docc.HasExactlyOneUnorderedList<Links, AnyLink>.ExtraneousContent",
                 ]
             )
-            
+
             XCTAssertEqual(
                 renderedContent,
                 [
-                    RenderBlockContent.links(RenderBlockContent.Links(
-                        style: .compactGrid,
-                        items: ["doc://org.swift.docc.Book/documentation/BestBook/MyArticle"]
-                    ))
+                    RenderBlockContent.links(
+                        RenderBlockContent.Links(
+                            style: .compactGrid,
+                            items: ["doc://org.swift.docc.Book/documentation/BestBook/MyArticle"]
+                        )
+                    )
                 ]
             )
         }
-        
+
         do {
             let (renderedContent, problems, links) = try parseDirective(Links.self, in: "BookLikeContent") {
                 """
@@ -123,30 +125,32 @@ class LinksTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertNotNil(links)
-            
+
             XCTAssertEqual(
                 problems,
                 [
                     "2: warning – org.swift.docc.ExtraneousLinksDirectiveItemContent"
                 ]
             )
-            
+
             XCTAssertEqual(
                 renderedContent,
                 [
-                    RenderBlockContent.links(RenderBlockContent.Links(
-                        style: .compactGrid,
-                        items: [
-                            "doc://org.swift.docc.Book/documentation/BestBook/MyArticle",
-                        ]
-                    ))
+                    RenderBlockContent.links(
+                        RenderBlockContent.Links(
+                            style: .compactGrid,
+                            items: [
+                                "doc://org.swift.docc.Book/documentation/BestBook/MyArticle"
+                            ]
+                        )
+                    )
                 ]
             )
         }
     }
-    
+
     func testLinkResolution() throws {
         do {
             let (renderedContent, problems, links) = try parseDirective(Links.self, in: "BookLikeContent") {
@@ -160,30 +164,32 @@ class LinksTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertNotNil(links)
-            
+
             XCTAssertEqual(
                 problems,
                 ["5: warning – org.swift.docc.unresolvedTopicReference"]
             )
-            
+
             XCTAssertEqual(
                 renderedContent,
                 [
-                    RenderBlockContent.links(RenderBlockContent.Links(
-                        style: .compactGrid,
-                        items: [
-                            "doc://org.swift.docc.Book/documentation/BestBook/MyArticle",
-                            "doc://org.swift.docc.Book/documentation/BestBook/TabNavigatorArticle",
-                            "doc://org.swift.docc.Book/documentation/MyBook",
-                            "doc://org.swift.docc.Book/documentation/BestBook/MyArticle",
-                        ]
-                    ))
+                    RenderBlockContent.links(
+                        RenderBlockContent.Links(
+                            style: .compactGrid,
+                            items: [
+                                "doc://org.swift.docc.Book/documentation/BestBook/MyArticle",
+                                "doc://org.swift.docc.Book/documentation/BestBook/TabNavigatorArticle",
+                                "doc://org.swift.docc.Book/documentation/MyBook",
+                                "doc://org.swift.docc.Book/documentation/BestBook/MyArticle",
+                            ]
+                        )
+                    )
                 ]
             )
         }
-        
+
         do {
             let (renderedContent, problems, links) = try parseDirective(Links.self, in: "TestBundle") {
                 """
@@ -195,23 +201,25 @@ class LinksTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertNotNil(links)
-            
+
             XCTAssertEqual(problems, [])
-            
+
             XCTAssertEqual(
                 renderedContent,
                 [
-                    RenderBlockContent.links(RenderBlockContent.Links(
-                        style: .compactGrid,
-                        items: [
-                            "doc://org.swift.docc.example/documentation/MyKit/MyClass",
-                            "doc://org.swift.docc.example/documentation/MyKit/MyClass/myFunction()",
-                            "doc://org.swift.docc.example/tutorials/Test-Bundle/TestTutorial",
-                            "doc://org.swift.docc.example/documentation/Test-Bundle/article2",
-                        ]
-                    ))
+                    RenderBlockContent.links(
+                        RenderBlockContent.Links(
+                            style: .compactGrid,
+                            items: [
+                                "doc://org.swift.docc.example/documentation/MyKit/MyClass",
+                                "doc://org.swift.docc.example/documentation/MyKit/MyClass/myFunction()",
+                                "doc://org.swift.docc.example/tutorials/Test-Bundle/TestTutorial",
+                                "doc://org.swift.docc.example/documentation/Test-Bundle/article2",
+                            ]
+                        )
+                    )
                 ]
             )
         }

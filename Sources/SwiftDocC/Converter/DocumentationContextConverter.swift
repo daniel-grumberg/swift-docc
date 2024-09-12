@@ -19,13 +19,13 @@ import Foundation
 public class DocumentationContextConverter {
     /// The context the converter uses to resolve references it finds in the documentation node's content.
     let context: DocumentationContext
-    
+
     /// The bundle that contains the content from which the documentation node originated.
     let bundle: DocumentationBundle
-    
+
     /// A context that contains common pre-rendered pieces of content.
     let renderContext: RenderContext
-    
+
     /// Whether the documentation converter should include source file
     /// location metadata in any render nodes representing symbols it creates.
     ///
@@ -33,16 +33,16 @@ public class DocumentationContextConverter {
     /// public distribution of any created render nodes as there are filesystem privacy and security
     /// concerns with distributing this data.
     let shouldEmitSymbolSourceFileURIs: Bool
-    
+
     /// Whether the documentation converter should include access level information for symbols.
     let shouldEmitSymbolAccessLevels: Bool
-    
+
     /// A list of symbol IDs that have version of their documentation page with more content that a renderer can link to.
     let symbolIdentifiersWithExpandedDocumentation: [String]?
-    
+
     /// The remote source control repository where the documented module's source is hosted.
     let sourceRepository: SourceRepository?
-    
+
     /// Creates a new node converter for the given bundle and context.
     ///
     /// The converter uses bundle and context to resolve references to other documentation and describe the documentation hierarchy.
@@ -77,7 +77,7 @@ public class DocumentationContextConverter {
         self.sourceRepository = sourceRepository
         self.symbolIdentifiersWithExpandedDocumentation = symbolIdentifiersWithExpandedDocumentation
     }
-    
+
     /// Converts a documentation node to a render node.
     ///
     /// Convert a documentation node into a render node to get a self-contained, persist-able representation of a given topic's data, so you can write it to disk, send it over a network, or otherwise process it.
@@ -101,7 +101,7 @@ public class DocumentationContextConverter {
         )
         return translator.visit(node.semantic) as? RenderNode
     }
-    
+
     @available(*, deprecated, renamed: "renderNode(for:)", message: "Use 'renderNode(for:)' instead. This deprecated API will be removed after 6.1 is released")
     public func renderNode(for node: DocumentationNode, at source: URL?) throws -> RenderNode? {
         return try self.renderNode(for: node)

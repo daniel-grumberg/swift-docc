@@ -28,13 +28,13 @@ enum SVGIDExtractor {
         let delegate = SVGIDParserDelegate()
         let svgParser = XMLParser(data: data)
         svgParser.delegate = delegate
-        
+
         // The delegate aborts the parsing when it finds the ID so the larger parsing operation is not "successful"
         _ = svgParser.parse()
-        
+
         return delegate.id
     }
-    
+
     /// Returns the first `id` attribute found in the given SVG, if any.
     ///
     /// Returns nil if any errors are encountered or if an `id` attribute is
@@ -43,25 +43,25 @@ enum SVGIDExtractor {
         guard let data = try? Data(contentsOf: svg) else {
             return nil
         }
-        
+
         return _extractID(from: data)
     }
 }
 
 private class SVGIDParserDelegate: NSObject, XMLParserDelegate {
     var id: String?
-    
+
     func parser(
         _ parser: XMLParser,
         didStartElement elementName: String,
         namespaceURI: String?,
         qualifiedName qName: String?,
-        attributes attributeDict: [String : String] = [:]
+        attributes attributeDict: [String: String] = [:]
     ) {
         guard let id = attributeDict["id"] ?? attributeDict["ID"] ?? attributeDict["iD"] ?? attributeDict["Id"] else {
             return
         }
-        
+
         self.id = id
         parser.abortParsing()
     }

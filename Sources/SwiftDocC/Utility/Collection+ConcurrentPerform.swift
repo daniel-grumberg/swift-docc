@@ -31,17 +31,18 @@ extension Collection where Index == Int {
     /// > Warning: As multiple copies of `block` are executed concurrently, mutating shared state outside the closure is not safe.
     func concurrentMap<Result>(
         batches: UInt = UInt(ProcessInfo.processInfo.processorCount * 4),
-        block: (Element) -> Result) -> [Result] {
-        
+        block: (Element) -> Result
+    ) -> [Result] {
+
         // If concurrency is disabled fall back on `map`.
         guard useConcurrentCollectionExtensions else { return map(block) }
-        
+
         guard !isEmpty else { return [] }
         precondition(batches > 0, "The number of concurrent batches should be greater than zero.")
-        
+
         let batchElementCount = Int(Double(count) / Double(batches) + 1)
         let allResults = Synchronized<[Int: [Result]]>([:])
-        
+
         // Concurrently run `block` over slices of the collection.
         DispatchQueue.concurrentPerform(iterations: Int(batches)) { batch in
             // Determine the start index and the elements count of each batch.
@@ -50,24 +51,25 @@ extension Collection where Index == Int {
             guard batchCount > 0 else { return }
 
             // Create a new array to collect results within this batch.
-            var batchResults = [Result]()
+            var batchResults: [Result] = []
             batchResults.reserveCapacity(batchCount)
-            
+
             // Run serially `block` over the elements
-            for offset in startOffset ..< startOffset + batchCount {
+            for offset in startOffset..<startOffset + batchCount {
                 batchResults.append(block(self[offset]))
             }
-            
+
             // Add the batch results to a dictionary keyed by the batch number
             allResults.sync({ $0[batch] = batchResults })
         }
-        
+
         // Stitch together the batch results in the correct order
         return allResults.sync({ allResults in
             // Sort the keys to preserve the original element order.
-            return allResults.keys.sorted().reduce(into: [Result]()) { result, batchNr in
-                result.append(contentsOf: allResults[batchNr]!)
-            }
+            return allResults.keys.sorted()
+                .reduce(into: [Result]()) { result, batchNr in
+                    result.append(contentsOf: allResults[batchNr]!)
+                }
         })
     }
 
@@ -79,14 +81,15 @@ extension Collection where Index == Int {
     ///         to the order of elements in the results array.
     func concurrentPerform(
         batches: UInt = UInt(ProcessInfo.processInfo.processorCount * 4),
-        block: (Element) -> Void) {
+        block: (Element) -> Void
+    ) {
 
         // If concurrency is disabled fall back on `forEach`.
         guard useConcurrentCollectionExtensions else { return forEach(block) }
 
         let _ = concurrentPerform { element, _ in block(element) } as [Void]
     }
-    
+
     /// Concurrently performs a block over the elements of the collection and collects any results.
     /// - Parameters:
     ///   - batches: The number of batches to split the elements.
@@ -106,21 +109,22 @@ extension Collection where Index == Int {
     ///         to the order of elements in the results array.
     func concurrentPerform<Result>(
         batches: UInt = UInt(ProcessInfo.processInfo.processorCount * 4),
-        block: (Element, inout [Result]) -> Void) -> [Result] {
-        
+        block: (Element, inout [Result]) -> Void
+    ) -> [Result] {
+
         // If concurrency is disabled fall back on `forEach`.
         guard useConcurrentCollectionExtensions else {
-            var results = [Result]()
+            var results: [Result] = []
             forEach { block($0, &results) }
             return results
         }
 
         guard !isEmpty else { return [] }
         precondition(batches > 0, "The number of concurrent batches should be greater than zero.")
-        
+
         let batchElementCount = Int(Double(count) / Double(batches) + 1)
         let allResults = Synchronized<[Result]>([])
-        
+
         // Concurrently run `block` over slices of the collection.
         DispatchQueue.concurrentPerform(iterations: Int(batches)) { batch in
             // Determine the start index and the elements count of each batch.
@@ -129,17 +133,17 @@ extension Collection where Index == Int {
             guard batchCount > 0 else { return }
 
             // Create a new array to collect results within this batch.
-            var batchResults = [Result]()
+            var batchResults: [Result] = []
             batchResults.reserveCapacity(batchCount)
-            
+
             // Run serially `block` over the elements
-            for offset in startOffset ..< startOffset + batchCount {
+            for offset in startOffset..<startOffset + batchCount {
                 block(self[offset], &batchResults)
             }
-            
+
             allResults.sync({ $0.append(contentsOf: batchResults) })
         }
-        
+
         // Return the collected results from all batches.
         return allResults.sync({ $0 })
     }

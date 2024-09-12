@@ -11,7 +11,7 @@
 /// An arbitrary-length version tuple.
 public struct Version: Codable, RandomAccessCollection, ExpressibleByArrayLiteral, CustomStringConvertible, Equatable {
     private var elements: [Int]
-    
+
     /// The start index of the version-components tuple.
     public var startIndex: Int {
         return elements.startIndex
@@ -39,7 +39,8 @@ public struct Version: Codable, RandomAccessCollection, ExpressibleByArrayLitera
         let stringComponents = versionString.components(separatedBy: ".")
         let intComponents = stringComponents.compactMap { Int($0) }
         guard intComponents.count == stringComponents.count,
-            intComponents.count > 0 else {
+            intComponents.count > 0
+        else {
             return nil
         }
         guard !intComponents.contains(where: { $0 < 0 }) else {
@@ -47,12 +48,12 @@ public struct Version: Codable, RandomAccessCollection, ExpressibleByArrayLitera
         }
         self.elements = intComponents
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(description)
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let string = try container.decode(String.self)

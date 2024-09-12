@@ -17,6 +17,7 @@ extension IndexAction {
         try self.init(
             documentationBundleURL: index.documentationBundle.urlOrFallback,
             outputURL: index.outputURL,
-            bundleIdentifier: index.bundleIdentifier)
+            bundleIdentifier: index.bundleIdentifier
+        )
     }
 }

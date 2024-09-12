@@ -16,7 +16,7 @@ import Markdown
 /// This directive acts as a container for metadata and configuration without any arguments of its own.
 ///
 /// ## Topics
-/// 
+///
 /// ### Child Directives
 ///
 /// - ``DocumentationExtension``
@@ -32,23 +32,23 @@ import Markdown
 public final class Metadata: Semantic, AutomaticDirectiveConvertible {
     public static let introducedVersion = "5.5"
     public let originalMarkup: BlockDirective
-    
+
     /// Configuration that describes how this documentation extension file merges or overrides the in-source documentation.
     @ChildDirective
     var documentationOptions: DocumentationExtension? = nil
-    
+
     /// Configuration to make this page root-level documentation.
     @ChildDirective
     var technologyRoot: TechnologyRoot? = nil
-    
+
     /// Configuration to customize this page's symbol's display name.
     @ChildDirective
     var displayName: DisplayName? = nil
-    
+
     /// The optional, custom image used to represent this page.
     @ChildDirective(requirements: .zeroOrMore)
     var pageImages: [PageImage]
-    
+
     @ChildDirective(requirements: .zeroOrMore)
     var customMetadata: [CustomMetadata]
 
@@ -60,13 +60,13 @@ public final class Metadata: Semantic, AutomaticDirectiveConvertible {
 
     @ChildDirective
     var pageKind: PageKind? = nil
-    
+
     @ChildDirective(requirements: .zeroOrMore)
     var supportedLanguages: [SupportedLanguage]
-    
+
     @ChildDirective
     var _pageColor: PageColor? = nil
-    
+
     /// The optional, context-dependent color used to represent this page.
     var pageColor: PageColor.Color? {
         _pageColor?.color
@@ -78,29 +78,31 @@ public final class Metadata: Semantic, AutomaticDirectiveConvertible {
     @ChildDirective
     var redirects: [Redirect]? = nil
 
-    static var keyPaths: [String : AnyKeyPath] = [
-        "documentationOptions"  : \Metadata._documentationOptions,
-        "technologyRoot"        : \Metadata._technologyRoot,
-        "displayName"           : \Metadata._displayName,
-        "pageImages"            : \Metadata._pageImages,
-        "customMetadata"        : \Metadata._customMetadata,
-        "callToAction"          : \Metadata._callToAction,
-        "availability"          : \Metadata._availability,
-        "pageKind"              : \Metadata._pageKind,
-        "supportedLanguages"    : \Metadata._supportedLanguages,
-        "_pageColor"            : \Metadata.__pageColor,
-        "titleHeading"          : \Metadata._titleHeading,
-        "redirects"             : \Metadata._redirects,
+    static var keyPaths: [String: AnyKeyPath] = [
+        "documentationOptions": \Metadata._documentationOptions,
+        "technologyRoot": \Metadata._technologyRoot,
+        "displayName": \Metadata._displayName,
+        "pageImages": \Metadata._pageImages,
+        "customMetadata": \Metadata._customMetadata,
+        "callToAction": \Metadata._callToAction,
+        "availability": \Metadata._availability,
+        "pageKind": \Metadata._pageKind,
+        "supportedLanguages": \Metadata._supportedLanguages,
+        "_pageColor": \Metadata.__pageColor,
+        "titleHeading": \Metadata._titleHeading,
+        "redirects": \Metadata._redirects,
     ]
-    
+
     @available(*, deprecated, message: "Do not call directly. Required for 'AutomaticDirectiveConvertible'.")
     init(originalMarkup: BlockDirective) {
         self.originalMarkup = originalMarkup
     }
-    
+
     func validate(source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) -> Bool {
         // Check that something is configured in the metadata block
-        if documentationOptions == nil && technologyRoot == nil && displayName == nil && pageImages.isEmpty && customMetadata.isEmpty && callToAction == nil && availability.isEmpty && pageKind == nil && pageColor == nil && titleHeading == nil && redirects == nil {
+        if documentationOptions == nil && technologyRoot == nil && displayName == nil && pageImages.isEmpty && customMetadata.isEmpty && callToAction == nil && availability.isEmpty
+            && pageKind == nil && pageColor == nil && titleHeading == nil && redirects == nil
+        {
             let diagnostic = Diagnostic(
                 source: source,
                 severity: .information,
@@ -108,24 +110,22 @@ public final class Metadata: Semantic, AutomaticDirectiveConvertible {
                 identifier: "org.swift.docc.\(Metadata.directiveName).NoConfiguration",
                 summary: "\(Metadata.directiveName.singleQuoted) doesn't configure anything and has no effect"
             )
-            
-            let solutions = originalMarkup.range.map {
-                [Solution(summary: "Remove this \(Metadata.directiveName.singleQuoted) directive.", replacements: [Replacement(range: $0, replacement: "")])]
-            } ?? []
+
+            let solutions =
+                originalMarkup.range.map {
+                    [Solution(summary: "Remove this \(Metadata.directiveName.singleQuoted) directive.", replacements: [Replacement(range: $0, replacement: "")])]
+                } ?? []
             problems.append(Problem(diagnostic: diagnostic, possibleSolutions: solutions))
         }
-        
+
         // Check that there is only a single `@PageImage` directive for each supported purpose
-        var categorizedPageImages = [PageImage.Purpose : [PageImage]]()
+        var categorizedPageImages: [PageImage.Purpose: [PageImage]] = [:]
         for pageImage in pageImages {
             categorizedPageImages[pageImage.purpose, default: []].append(pageImage)
         }
-        
-        for pageImages in categorizedPageImages.values {
-            guard pageImages.count > 1 else {
-                continue
-            }
-            
+
+        for pageImages in categorizedPageImages.values where pageImages.count > 1 {
+
             for extraPageImage in pageImages {
                 let diagnostic = Diagnostic(
                     source: extraPageImage.originalMarkup.nameLocation?.source,
@@ -134,34 +134,31 @@ public final class Metadata: Semantic, AutomaticDirectiveConvertible {
                     identifier: "org.swift.docc.DuplicatePageImage",
                     summary: "Duplicate \(PageImage.directiveName.singleQuoted) directive with \(extraPageImage.purpose.rawValue.singleQuoted) purpose",
                     explanation: """
-                    A documentation page can only contain a single \(PageImage.directiveName.singleQuoted) \
-                    directive for each purpose.
-                    """
+                        A documentation page can only contain a single \(PageImage.directiveName.singleQuoted) \
+                        directive for each purpose.
+                        """
                 )
-                
+
                 guard let range = extraPageImage.originalMarkup.range else {
                     problems.append(Problem(diagnostic: diagnostic))
                     continue
                 }
-                
+
                 let solution = Solution(
                     summary: "Remove extraneous \(extraPageImage.purpose.rawValue.singleQuoted) \(PageImage.directiveName.singleQuoted) directive",
                     replacements: [
                         Replacement(range: range, replacement: "")
                     ]
                 )
-                
+
                 problems.append(Problem(diagnostic: diagnostic, possibleSolutions: [solution]))
             }
         }
 
         let categorizedAvailability = Dictionary(grouping: availability, by: \.platform)
 
-        for duplicateIntroduced in categorizedAvailability.values {
-            guard duplicateIntroduced.count > 1 else {
-                continue
-            }
-            
+        for duplicateIntroduced in categorizedAvailability.values where duplicateIntroduced.count > 1 {
+
             for availability in duplicateIntroduced {
                 let diagnostic = Diagnostic(
                     source: availability.originalMarkup.nameLocation?.source,
@@ -170,8 +167,8 @@ public final class Metadata: Semantic, AutomaticDirectiveConvertible {
                     identifier: "org.swift.docc.\(Metadata.Availability.self).DuplicateIntroduced",
                     summary: "Duplicate \(Metadata.Availability.directiveName.singleQuoted) directive with 'introduced' argument",
                     explanation: """
-                    A documentation page can only contain a single 'introduced' version for each platform.
-                    """
+                        A documentation page can only contain a single 'introduced' version for each platform.
+                        """
                 )
 
                 guard let range = availability.originalMarkup.range else {
@@ -189,8 +186,7 @@ public final class Metadata: Semantic, AutomaticDirectiveConvertible {
                 problems.append(Problem(diagnostic: diagnostic, possibleSolutions: [solution]))
             }
         }
-        
+
         return true
     }
 }
-

@@ -11,10 +11,11 @@
 import Foundation
 import Markdown
 import XCTest
+
 @testable import SwiftDocC
 
 class PageKindTests: XCTestCase {
-    
+
     private func generateRenderNodeFromBundle(bundleName: String, resolvedTopicPath: String) throws -> RenderNode {
         let (bundle, context) = try testBundleAndContext(named: bundleName)
         let reference = ResolvedTopicReference(
@@ -26,7 +27,7 @@ class PageKindTests: XCTestCase {
         var translator = RenderNodeTranslator(context: context, bundle: bundle, identifier: reference)
         return try XCTUnwrap(translator.visitArticle(article) as? RenderNode)
     }
-    
+
     func testPageKindSampleCode() throws {
         let renderNode = try generateRenderNodeFromBundle(
             bundleName: "SampleBundle",
@@ -66,10 +67,10 @@ class PageKindTests: XCTestCase {
 
     func testValidMetadataWithOnlyPageKind() throws {
         let source = """
-        @Metadata {
-            @PageKind(article)
-        }
-        """
+            @Metadata {
+                @PageKind(article)
+            }
+            """
 
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
@@ -78,7 +79,7 @@ class PageKindTests: XCTestCase {
         let (bundle, context) = try testBundleAndContext(named: "SampleBundle")
 
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(Metadata.directiveName, directive.name)
             let metadata = Metadata(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNotNil(metadata)
@@ -87,7 +88,7 @@ class PageKindTests: XCTestCase {
             XCTAssert(problems.isEmpty)
         }
     }
-    
+
     // Verify that we assign the `Collection` role to the root article of a
     // documentation catalog that contains only one article.
     func testRoleForSingleArticleCatalog() throws {
@@ -97,7 +98,7 @@ class PageKindTests: XCTestCase {
         )
         XCTAssertEqual(renderNode.metadata.role, RenderMetadata.Role.collection.rawValue)
     }
-    
+
     // Verify we assign the `Collection` role to the root article of an article-only
     // documentation catalog that doesn't include manual curation
     func testRoleForArticleOnlyCatalogWithNoCuration() throws {

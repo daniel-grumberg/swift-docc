@@ -25,49 +25,76 @@ class FileRequestHandlerTests: XCTestCase {
         let request = makeRequestHead(uri: path)
         let factory = FileRequestHandler(rootURL: root, fileIO: fileIO)
         let response = try responseWithPipeline(request: request, handler: factory)
-        
+
         XCTAssertEqual(response.head?.status, .ok, file: (file), line: line)
         XCTAssertEqual(response.body, body, file: (file), line: line)
         XCTAssertEqual(response.head?.headers["Content-type"], [type], file: (file), line: line)
         XCTAssertEqual(response.head?.headers["Content-length"], ["\(body.count)"], file: (file), line: line)
     }
-    
+
     func testFileHandlerAssets() throws {
         let tempFolderURL = try createTempFolder(content: [
-            Folder(name: "data", content: [
-                TextFile(name: "test.json", utf8Content: "data"),
-            ]),
-            Folder(name: "css", content: [
-                TextFile(name: "test.css", utf8Content: "css"),
-            ]),
-            Folder(name: "js", content: [
-                TextFile(name: "test.js", utf8Content: "js"),
-            ]),
-            Folder(name: "fonts", content: [
-                TextFile(name: "test.otf", utf8Content: "font"),
-                TextFile(name: "test.ttf", utf8Content: "ttf"),
-            ]),
-            Folder(name: "images", content: [
-                TextFile(name: "image.png", utf8Content: "png"),
-                TextFile(name: "image.gif", utf8Content: "gif"),
-                TextFile(name: "image.jpg", utf8Content: "jpg"),
-                TextFile(name: "logo.svg", utf8Content: "svg"),
-            ]),
-            Folder(name: "img", content: [
-                TextFile(name: "image.png", utf8Content: "png"),
-                TextFile(name: "image.gif", utf8Content: "gif"),
-                TextFile(name: "image.jpg", utf8Content: "jpg"),
-            ]),
-            Folder(name: "videos", content: [
-                TextFile(name: "video.mov", utf8Content: "mov"),
-                TextFile(name: "video.avi", utf8Content: "avi"),
-            ]),
-            Folder(name: "downloads", content: [
-                TextFile(name: "project.zip", utf8Content: "zip"),
-            ]),
-            Folder(name: "index", content: [
-                TextFile(name: "index.json", utf8Content: "data"),
-            ]),
+            Folder(
+                name: "data",
+                content: [
+                    TextFile(name: "test.json", utf8Content: "data")
+                ]
+            ),
+            Folder(
+                name: "css",
+                content: [
+                    TextFile(name: "test.css", utf8Content: "css")
+                ]
+            ),
+            Folder(
+                name: "js",
+                content: [
+                    TextFile(name: "test.js", utf8Content: "js")
+                ]
+            ),
+            Folder(
+                name: "fonts",
+                content: [
+                    TextFile(name: "test.otf", utf8Content: "font"),
+                    TextFile(name: "test.ttf", utf8Content: "ttf"),
+                ]
+            ),
+            Folder(
+                name: "images",
+                content: [
+                    TextFile(name: "image.png", utf8Content: "png"),
+                    TextFile(name: "image.gif", utf8Content: "gif"),
+                    TextFile(name: "image.jpg", utf8Content: "jpg"),
+                    TextFile(name: "logo.svg", utf8Content: "svg"),
+                ]
+            ),
+            Folder(
+                name: "img",
+                content: [
+                    TextFile(name: "image.png", utf8Content: "png"),
+                    TextFile(name: "image.gif", utf8Content: "gif"),
+                    TextFile(name: "image.jpg", utf8Content: "jpg"),
+                ]
+            ),
+            Folder(
+                name: "videos",
+                content: [
+                    TextFile(name: "video.mov", utf8Content: "mov"),
+                    TextFile(name: "video.avi", utf8Content: "avi"),
+                ]
+            ),
+            Folder(
+                name: "downloads",
+                content: [
+                    TextFile(name: "project.zip", utf8Content: "zip")
+                ]
+            ),
+            Folder(
+                name: "index",
+                content: [
+                    TextFile(name: "index.json", utf8Content: "data")
+                ]
+            ),
         ])
 
         try verifyAsset(root: tempFolderURL, path: "/data/test.json", body: "data", type: "application/json")
@@ -88,32 +115,35 @@ class FileRequestHandlerTests: XCTestCase {
         try verifyAsset(root: tempFolderURL, path: "/videos/video.mov", body: "mov", type: "video/quicktime")
         try verifyAsset(root: tempFolderURL, path: "/videos/video.avi", body: "avi", type: "video/x-msvideo")
         try verifyAsset(root: tempFolderURL, path: "/downloads/project.zip", body: "zip", type: "application/zip")
-        
+
         // RenderIndex navigator index json
         try verifyAsset(root: tempFolderURL, path: "/index/index.json", body: "data", type: "application/json")
     }
-    
+
     func testFileHandlerAssetsMissing() throws {
         let tempFolderURL = try createTempFolder(content: [])
 
         let request = makeRequestHead(uri: "/css/b00011100.css")
         let factory = FileRequestHandler(rootURL: tempFolderURL, fileIO: fileIO)
         let response = try responseWithPipeline(request: request, handler: factory)
-        
+
         XCTAssertEqual(response.requestError?.status, .notFound)
     }
 
     func testFileHandlerWithRange() throws {
         let tempFolderURL = try createTempFolder(content: [
-            Folder(name: "videos", content: [
-                TextFile(name: "video.mov", utf8Content: "Hello!"),
-            ])
+            Folder(
+                name: "videos",
+                content: [
+                    TextFile(name: "video.mov", utf8Content: "Hello!")
+                ]
+            )
         ])
 
         let request = makeRequestHead(uri: "/videos/video.mov", headers: [("Range", "bytes=0-1")])
         let factory = FileRequestHandler(rootURL: tempFolderURL, fileIO: fileIO)
         let response = try responseWithPipeline(request: request, handler: factory)
-        
+
         XCTAssertEqual(response.body, "He")
         XCTAssertEqual(response.head?.status, .partialContent)
         XCTAssertEqual(response.head?.headers["Accept-ranges"], ["bytes"])
@@ -124,30 +154,36 @@ class FileRequestHandlerTests: XCTestCase {
 
     func testFileInUpperDirectory() throws {
         let tempFolderURL = try createTempFolder(content: [
-            Folder(name: "videos", content: [
-                TextFile(name: "video.mov", utf8Content: "Hello!"),
-            ])
+            Folder(
+                name: "videos",
+                content: [
+                    TextFile(name: "video.mov", utf8Content: "Hello!")
+                ]
+            )
         ])
 
         let request = makeRequestHead(uri: "/videos/../video.mov", headers: [("Range", "bytes=0-1")])
         let factory = FileRequestHandler(rootURL: tempFolderURL, fileIO: fileIO)
         let response = try responseWithPipeline(request: request, handler: factory)
-        
+
         XCTAssertNil(response.body, "He")
         XCTAssertEqual(response.requestError?.status.code, RequestError.init(status: .unauthorized).status.code)
     }
 
     func testMalformedURI() throws {
         let tempFolderURL = try createTempFolder(content: [
-            Folder(name: "videos", content: [
-                TextFile(name: "video.mov", utf8Content: "Hello!"),
-            ])
+            Folder(
+                name: "videos",
+                content: [
+                    TextFile(name: "video.mov", utf8Content: "Hello!")
+                ]
+            )
         ])
 
         let request = makeRequestHead(uri: "https://invalid host.com", headers: [("Range", "bytes=0-1")])
         let factory = FileRequestHandler(rootURL: tempFolderURL, fileIO: fileIO)
         let response = try responseWithPipeline(request: request, handler: factory)
-        
+
         XCTAssertNil(response.body, "He")
         XCTAssertEqual(response.requestError?.status.code, RequestError.init(status: .badRequest).status.code)
     }

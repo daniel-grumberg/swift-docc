@@ -20,7 +20,8 @@ extension Docc {
         // MARK: - Configuration
 
         public static var configuration = CommandConfiguration(
-            abstract: "Create an index for the documentation from compiled data.")
+            abstract: "Create an index for the documentation from compiled data."
+        )
 
         // MARK: - Command Line Options & Arguments
 
@@ -53,7 +54,7 @@ extension Docc {
             try indexAction.performAndHandleResult()
         }
     }
-    
+
     // This command wraps the Index command so that we can still support it as a top-level command without listing it in the help
     // text (but still list the Index command as a subcommand of the ProcessArchive command).
     struct _Index: ParsableCommand {

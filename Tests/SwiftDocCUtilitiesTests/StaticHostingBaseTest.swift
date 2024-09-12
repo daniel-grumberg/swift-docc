@@ -8,8 +8,9 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
 import Foundation
+import XCTest
+
 @testable import SwiftDocC
 @testable import SwiftDocCUtilities
 
@@ -51,10 +52,12 @@ class StaticHostingBaseTests: XCTestCase {
                         continue
                     }
                 } else {
-                    compareJSONFolder(fileManager: fileManager,
-                                   output: output.appendingPathComponent(inputContent),
-                                   input: input.appendingPathComponent(inputContent),
-                                   indexHTML: indexHTML)
+                    compareJSONFolder(
+                        fileManager: fileManager,
+                        output: output.appendingPathComponent(inputContent),
+                        input: input.appendingPathComponent(inputContent),
+                        indexHTML: indexHTML
+                    )
                 }
             }
         } catch {

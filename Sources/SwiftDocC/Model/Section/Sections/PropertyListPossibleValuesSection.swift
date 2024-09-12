@@ -13,7 +13,7 @@ import Markdown
 import SymbolKit
 
 public struct PropertyListPossibleValuesSection {
-    
+
     /// A possible value.
     ///
     /// Documentation about a  possible value of a symbol.
@@ -27,7 +27,7 @@ public struct PropertyListPossibleValuesSection {
         var nameRange: SourceRange?
         /// The text range where this parameter was parsed.
         var range: SourceRange?
-        
+
         init(value: String, contents: [Markup], nameRange: SourceRange? = nil, range: SourceRange? = nil) {
             self.value = value
             self.contents = contents
@@ -35,18 +35,18 @@ public struct PropertyListPossibleValuesSection {
             self.range = range
         }
     }
-    
+
     public static var title: String {
         return "Possible Values"
     }
-    
+
     /// The list of possible values.
     public let possibleValues: [PossibleValue]
-    
+
     struct Validator {
         /// The engine that collects problems encountered while validating the possible values documentation.
         var diagnosticEngine: DiagnosticEngine
-        
+
         /// Creates a new problem about documentation for a possible value that's not known to that symbol.
         ///
         /// ## Example
@@ -64,17 +64,17 @@ public struct PropertyListPossibleValuesSection {
         ///   - knownPossibleValues: All known possible value names for that symbol.
         /// - Returns: A new problem that suggests that the developer removes the documentation for the unknown possible value.
         func makeExtraPossibleValueProblem(_ unknownPossibleValue: PossibleValue, knownPossibleValues: Set<String>, symbolName: String) -> Problem {
-            
+
             let source = unknownPossibleValue.range?.source
             let summary = """
-            \(unknownPossibleValue.value.singleQuoted) is not a known possible value for \(symbolName.singleQuoted).
-            """
+                \(unknownPossibleValue.value.singleQuoted) is not a known possible value for \(symbolName.singleQuoted).
+                """
             let identifier = "org.swift.docc.DocumentedPossibleValueNotFound"
             let solutionSummary = """
-            Remove \(unknownPossibleValue.value.singleQuoted) possible value documentation or replace it with a known value.
-            """
+                Remove \(unknownPossibleValue.value.singleQuoted) possible value documentation or replace it with a known value.
+                """
             let nearMisses = NearMiss.bestMatches(for: knownPossibleValues, against: unknownPossibleValue.value)
-            
+
             if nearMisses.isEmpty {
                 // If this possible value doesn't resemble any of this symbols possible values, suggest to remove it.
                 return Problem(
@@ -101,4 +101,3 @@ public struct PropertyListPossibleValuesSection {
     }
 
 }
-

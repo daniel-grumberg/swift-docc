@@ -16,10 +16,9 @@ extension XCTestCase {
     func enableFeatureFlag(_ featureFlagPath: WritableKeyPath<FeatureFlags, Bool>) {
         let defaultValues = FeatureFlags.current
         FeatureFlags.current[keyPath: featureFlagPath] = true
-        
+
         addTeardownBlock {
             FeatureFlags.current = defaultValues
         }
     }
 }
-

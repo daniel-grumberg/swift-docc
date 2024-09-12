@@ -43,22 +43,22 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
     let documentationCoverageOptions: DocumentationCoverageOptions
     let bundleDiscoveryOptions: BundleDiscoveryOptions
     let diagnosticEngine: DiagnosticEngine
-    
+
     private(set) var context: DocumentationContext
     private let workspace: DocumentationWorkspace
     private var currentDataProvider: DocumentationWorkspaceDataProvider?
     private var dataProvider: DocumentationWorkspaceDataProvider
-    
+
     /// An optional closure that sets up a context before the conversion begins.
     public var setupContext: ((inout DocumentationContext) -> Void)?
-    
+
     /// Conversion batches should be big enough to keep all cores busy but small enough not to keep
     /// around too many async blocks that update the conversion results. After running some tests it
     /// seems that more than couple hundred of a batch size doesn't bring more performance CPU-wise
     /// and it's a fair amount of async tasks to keep in memory before draining the results queue
     /// after the batch is converted.
     var batchNodeCount = 1
-    
+
     /// The external IDs of the symbols to convert.
     ///
     /// Use this property to indicate what symbol documentation nodes should be converted. When ``externalIDsToConvert``
@@ -68,7 +68,7 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
     /// If you want all the symbol render nodes to be returned as part of the conversion's response, set this property to `nil`.
     /// For Swift, the external ID of the symbol is its USR.
     var externalIDsToConvert: [String]?
-    
+
     /// The paths of the documentation nodes to convert.
     ///
     /// Use this property to indicate what documentation nodes should be converted. When ``externalIDsToConvert``
@@ -77,7 +77,7 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
     ///
     /// If you want all the render nodes to be returned as part of the conversion's response, set this property to `nil`.
     var documentPathsToConvert: [String]?
-    
+
     /// Whether the documentation converter should include source file
     /// location metadata in any render nodes representing symbols it creates.
     ///
@@ -85,26 +85,26 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
     /// public distribution of any created render nodes as there are filesystem privacy and security
     /// concerns with distributing this data.
     var shouldEmitSymbolSourceFileURIs: Bool
-    
+
     /// Whether the documentation converter should include access level information for symbols.
     var shouldEmitSymbolAccessLevels: Bool
-    
+
     /// The source repository where the documentation's sources are hosted.
     var sourceRepository: SourceRepository?
-    
+
     /// Whether the documentation converter should write documentation extension files containing markdown representations of DocC's automatic curation into the source documentation catalog.
     var experimentalModifyCatalogWithGeneratedCuration: Bool
-    
+
     /// The identifiers and access level requirements for symbols that have an expanded version of their documentation page if the requirements are met
     var symbolIdentifiersWithExpandedDocumentation: [String: ConvertRequest.ExpandedDocumentationRequirements]? = nil
-    
+
     /// `true` if the conversion is cancelled.
     private var isCancelled: Synchronized<Bool>? = nil
 
     private var processingDurationMetric: Benchmark.Duration?
 
     /// Creates a documentation converter given a documentation bundle's URL.
-    /// 
+    ///
     /// - Parameters:
     ///  - documentationBundleURL: The root URL of the documentation bundle to convert.
     ///  - emitDigest: Whether the conversion should create metadata files, such as linkable entities information.
@@ -118,7 +118,7 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
     ///  - bundleDiscoveryOptions: Options to configure how the converter discovers documentation bundles.
     ///  - emitSymbolSourceFileURIs: Whether the documentation converter should include
     ///    source file location metadata in any render nodes representing symbols it creates.
-    /// 
+    ///
     ///    Before passing `true` please confirm that your use case doesn't include public
     ///    distribution of any created render nodes as there are filesystem privacy and security
     ///    concerns with distributing this data.
@@ -133,7 +133,7 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
         documentationBundleURL: URL?,
         emitDigest: Bool,
         documentationCoverageOptions: DocumentationCoverageOptions,
-        currentPlatforms: [String : PlatformVersion]?,
+        currentPlatforms: [String: PlatformVersion]?,
         workspace: DocumentationWorkspace,
         context: DocumentationContext,
         dataProvider: DocumentationWorkspaceDataProvider,
@@ -164,7 +164,7 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
         self.diagnosticEngine = diagnosticEngine
         self.symbolIdentifiersWithExpandedDocumentation = symbolIdentifiersWithExpandedDocumentation
         self.experimentalModifyCatalogWithGeneratedCuration = experimentalModifyCatalogWithGeneratedCuration
-        
+
         // Inject current platform versions if provided
         if var currentPlatforms {
             // Add missing platforms if their fallback platform is present.
@@ -174,31 +174,31 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
             self.context.externalMetadata.currentPlatforms = currentPlatforms
         }
     }
-    
+
     /// Returns the first bundle in the source directory, if any.
     /// > Note: The result of this function is not cached, it reads the source directory and finds all bundles.
     public func firstAvailableBundle() -> DocumentationBundle? {
         return (try? dataProvider.bundles(options: bundleDiscoveryOptions)).map(sorted(bundles:))?.first
     }
-    
+
     /// Sorts a list of bundles by the bundle identifier.
     private func sorted(bundles: [DocumentationBundle]) -> [DocumentationBundle] {
         return bundles.sorted(by: \.identifier)
     }
-    
+
     mutating public func convert(
         outputConsumer: some ConvertOutputConsumer
     ) throws -> (analysisProblems: [Problem], conversionProblems: [Problem]) {
         defer {
             diagnosticEngine.flush()
         }
-        
+
         // Unregister the current file data provider and all its bundles
         // when running repeated conversions.
         if let dataProvider = self.currentDataProvider {
             try workspace.unregisterProvider(dataProvider)
         }
-        
+
         // Do additional context setup.
         setupContext?(&context)
 
@@ -210,7 +210,7 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
         */
         let context = self.context
         let isCancelled = self.isCancelled
-        
+
         // `true` if the `isCancelled` flag is set.
         func isConversionCancelled() -> Bool {
             return isCancelled?.sync({ $0 }) == true
@@ -230,7 +230,7 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
             }
         }
         cancelTimer.resume()
-        
+
         // Start bundle registration
         try workspace.registerProvider(dataProvider, options: bundleDiscoveryOptions)
         self.currentDataProvider = dataProvider
@@ -239,12 +239,12 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
         cancelTimer.cancel()
         cancelTimerQueue = nil
         context.setRegistrationEnabled(true)
-        
+
         // If cancelled, return early before we emit diagnostics.
         guard !isConversionCancelled() else { return ([], []) }
-        
+
         processingDurationMetric = benchmark(begin: Benchmark.Duration(id: "documentation-processing"))
-        
+
         let bundles = try sorted(bundles: dataProvider.bundles(options: bundleDiscoveryOptions))
         guard !bundles.isEmpty else {
             if let rootURL {
@@ -254,10 +254,10 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
                 throw GeneratedDataProvider.Error.notEnoughDataToGenerateBundle(options: bundleDiscoveryOptions, underlyingError: nil)
             }
         }
-        
+
         // For now, we only support one bundle.
         let bundle = bundles.first!
-        
+
         if experimentalModifyCatalogWithGeneratedCuration, let catalogURL = rootURL {
             let writer = GeneratedCurationWriter(context: context, catalogURL: catalogURL, outputURL: catalogURL)
             let curation = try writer.generateDefaultCurationContents()
@@ -267,30 +267,31 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
                 try? data.write(to: url, options: .atomic)
             }
         }
-        
+
         guard !context.problems.containsErrors else {
             if emitDigest {
                 try outputConsumer.consume(problems: context.problems)
             }
             return (analysisProblems: context.problems, conversionProblems: [])
         }
-        
+
         // Precompute the render context
         let renderContext = RenderContext(documentationContext: context, bundle: bundle)
-        
+
         try outputConsumer.consume(renderReferenceStore: renderContext.store)
 
         // Copy images, sample files, and other static assets.
         try outputConsumer.consume(assetsInBundle: bundle)
-        
-        let symbolIdentifiersMeetingRequirementsForExpandedDocumentation: [String]? = symbolIdentifiersWithExpandedDocumentation?.compactMap { (identifier, expandedDocsRequirement) -> String? in
-            guard let documentationNode = context.documentationCache[identifier] else {
-                return nil
+
+        let symbolIdentifiersMeetingRequirementsForExpandedDocumentation: [String]? = symbolIdentifiersWithExpandedDocumentation?
+            .compactMap { (identifier, expandedDocsRequirement) -> String? in
+                guard let documentationNode = context.documentationCache[identifier] else {
+                    return nil
+                }
+
+                return documentationNode.meetsExpandedDocumentationRequirements(expandedDocsRequirement) ? identifier : nil
             }
-            
-            return documentationNode.meetsExpandedDocumentationRequirements(expandedDocsRequirement) ? identifier : nil
-        }
-        
+
         let converter = DocumentationContextConverter(
             bundle: bundle,
             context: context,
@@ -300,25 +301,25 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
             sourceRepository: sourceRepository,
             symbolIdentifiersWithExpandedDocumentation: symbolIdentifiersMeetingRequirementsForExpandedDocumentation
         )
-        
-        var indexingRecords = [IndexingRecord]()
-        var linkSummaries = [LinkDestinationSummary]()
-        var assets = [RenderReferenceType : [RenderReference]]()
-        
+
+        var indexingRecords: [IndexingRecord] = []
+        var linkSummaries: [LinkDestinationSummary] = []
+        var assets: [RenderReferenceType: [RenderReference]] = [:]
+
         let references = context.knownPages
         let resultsSyncQueue = DispatchQueue(label: "Convert Serial Queue", qos: .unspecified, attributes: [])
         let resultsGroup = DispatchGroup()
 
-        var coverageInfo = [CoverageDataEntry]()
+        var coverageInfo: [CoverageDataEntry] = []
         // No need to generate this closure more than once.
         let coverageFilterClosure = documentationCoverageOptions.generateFilterClosure()
-        
+
         // Process render nodes in batches allowing us to release memory and sync after each batch
         // Keep track of any problems in case emitDigest == true
         var conversionProblems: [Problem] = references.concurrentPerform { identifier, results in
             // If cancelled skip all concurrent conversion work in this block.
             guard !isConversionCancelled() else { return }
-            
+
             // Wrap JSON encoding in an autorelease pool to avoid retaining the autoreleased ObjC objects returned by `JSONSerialization`
             autoreleasepool {
                 do {
@@ -332,7 +333,7 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
                         // No render node was produced for this entity, so just skip it.
                         return
                     }
-                    
+
                     try outputConsumer.consume(renderNode: renderNode)
 
                     switch documentationCoverageOptions.level {
@@ -350,11 +351,11 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
                     case .none:
                         break
                     }
-                    
+
                     if emitDigest {
                         let nodeLinkSummaries = entity.externallyLinkableElementSummaries(context: context, renderNode: renderNode, includeTaskGroups: true)
                         let nodeIndexingRecords = try renderNode.indexingRecords(onPage: identifier)
-                        
+
                         resultsGroup.async(queue: resultsSyncQueue) {
                             assets.merge(renderNode.assetReferences, uniquingKeysWith: +)
                             linkSummaries.append(contentsOf: nodeLinkSummaries)
@@ -362,7 +363,7 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
                         }
                     } else if FeatureFlags.current.isExperimentalLinkHierarchySerializationEnabled {
                         let nodeLinkSummaries = entity.externallyLinkableElementSummaries(context: context, renderNode: renderNode, includeTaskGroups: false)
-                        
+
                         resultsGroup.async(queue: resultsSyncQueue) {
                             linkSummaries.append(contentsOf: nodeLinkSummaries)
                         }
@@ -372,13 +373,13 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
                 }
             }
         }
-        
+
         // Wait for any concurrent updates to complete.
         resultsGroup.wait()
-        
+
         // If cancelled, return before producing outputs.
         guard !isConversionCancelled() else { return ([], []) }
-        
+
         // Write various metadata
         if emitDigest {
             do {
@@ -389,12 +390,12 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
                 recordProblem(from: error, in: &conversionProblems, withIdentifier: "metadata")
             }
         }
-        
+
         if FeatureFlags.current.isExperimentalLinkHierarchySerializationEnabled {
             do {
                 let serializableLinkInformation = try context.linkResolver.localResolver.prepareForSerialization(bundleID: bundle.identifier)
                 try outputConsumer.consume(linkResolutionInformation: serializableLinkInformation)
-                
+
                 if !emitDigest {
                     try outputConsumer.consume(linkableElementSummaries: linkSummaries)
                 }
@@ -402,7 +403,7 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
                 recordProblem(from: error, in: &conversionProblems, withIdentifier: "link-resolver")
             }
         }
-        
+
         if emitDigest {
             do {
                 try outputConsumer.consume(problems: context.problems + conversionProblems)
@@ -421,14 +422,14 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
         case .none:
             break
         }
-        
+
         try outputConsumer.consume(
             buildMetadata: BuildMetadata(
                 bundleDisplayName: bundle.displayName,
                 bundleIdentifier: bundle.identifier
             )
         )
-        
+
         // Log the duration of the processing (after the bundle content finished registering).
         benchmark(end: processingDurationMetric)
         // Log the finalized topic graph checksum.
@@ -439,10 +440,10 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
         benchmark(add: Benchmark.ExternalTopicsHash(context: context))
         // Log the peak memory.
         benchmark(add: Benchmark.PeakMemory())
-        
+
         return (analysisProblems: context.problems, conversionProblems: conversionProblems)
     }
-    
+
     /// Whether the given entity should be converted to a render node.
     private func shouldConvertEntity(
         entity: DocumentationNode,
@@ -454,12 +455,13 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
         } else {
             isDocumentPathToConvert = true
         }
-        
+
         let isExternalIDToConvert: Bool
         if let externalIDsToConvert {
-            isExternalIDToConvert = entity.symbol.map {
-                externalIDsToConvert.contains($0.identifier.precise)
-            } == true
+            isExternalIDToConvert =
+                entity.symbol.map {
+                    externalIDsToConvert.contains($0.identifier.precise)
+                } == true
         } else {
             isExternalIDToConvert = true
         }
@@ -468,7 +470,7 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
         // nor `externalIDsToConvert`, we don't convert it to a render node.
         return isDocumentPathToConvert || isExternalIDToConvert
     }
-    
+
     /// Record a problem from the given error in the given problem array.
     ///
     /// Creates a ``Problem`` from the given `Error` and identifier, emits it to the
@@ -492,14 +494,14 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
             summary: error.localizedDescription
         )
         let problem = Problem(diagnostic: singleDiagnostic, possibleSolutions: [])
-        
+
         diagnosticEngine.emit(problem)
         problems.append(problem)
     }
-    
+
     enum Error: DescribedError, Equatable {
         case doesNotContainBundle(url: URL)
-        
+
         var errorDescription: String {
             switch self {
             case .doesNotContainBundle(let url):
@@ -518,7 +520,7 @@ public struct DocumentationConverter: DocumentationConverterProtocol {
 extension DocumentationNode {
     func meetsExpandedDocumentationRequirements(_ requirements: ConvertRequest.ExpandedDocumentationRequirements) -> Bool {
         guard let symbol else { return false }
-        
+
         return requirements.accessControlLevels.contains(symbol.accessLevel.rawValue) && (!symbol.names.title.starts(with: "_") || requirements.canBeUnderscored)
     }
 }

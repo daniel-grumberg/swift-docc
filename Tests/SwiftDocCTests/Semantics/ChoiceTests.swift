@@ -8,9 +8,10 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class ChoiceTests: XCTestCase {
     func testInvalidEmpty() throws {
@@ -18,11 +19,11 @@ class ChoiceTests: XCTestCase {
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(Choice.directiveName, directive.name)
             let choice = Choice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNil(choice)
@@ -33,23 +34,23 @@ class ChoiceTests: XCTestCase {
             XCTAssertTrue(problems.map { $0.diagnostic.severity }.allSatisfy { $0 == .warning })
         }
     }
-    
+
     func testInvalidMissingContent() throws {
         let source = """
-@Choice(isCorrect: true) {
-   @Justification {
-      Trust me, it's right.
-   }
-}
-"""
+            @Choice(isCorrect: true) {
+               @Justification {
+                  Trust me, it's right.
+               }
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(Choice.directiveName, directive.name)
             let choice = Choice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNotNil(choice)
@@ -58,21 +59,21 @@ class ChoiceTests: XCTestCase {
             XCTAssertTrue(diagnosticIdentifiers.contains("org.swift.docc.\(Choice.self).Empty"))
         }
     }
-    
+
     func testInvalidMissingJustification() throws {
         let source = """
-@Choice(isCorrect: true) {
-   This is some content.
-}
-"""
+            @Choice(isCorrect: true) {
+               This is some content.
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(Choice.directiveName, directive.name)
             let choice = Choice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNil(choice)
@@ -82,23 +83,23 @@ class ChoiceTests: XCTestCase {
             }
         }
     }
-    
+
     func testInvalidMissingIsCorrect() throws {
         let source = """
-@Choice {
-   This is some content.
-   @Justification {
-      Trust me, it's right.
-   }
-"""
+            @Choice {
+               This is some content.
+               @Justification {
+                  Trust me, it's right.
+               }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(Choice.directiveName, directive.name)
             let choice = Choice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNil(choice)
@@ -108,23 +109,23 @@ class ChoiceTests: XCTestCase {
             }
         }
     }
-    
+
     func testInvalidIsCorrect() throws {
         let source = """
-@Choice(isCorrect: blah) {
-   This is some content.
-   @Justification {
-      Trust me, it's right.
-   }
-"""
+            @Choice(isCorrect: blah) {
+               This is some content.
+               @Justification {
+                  Trust me, it's right.
+               }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(Choice.directiveName, directive.name)
             let choice = Choice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNil(choice)
@@ -137,106 +138,106 @@ class ChoiceTests: XCTestCase {
             }
         }
     }
-    
+
     func testValidParagraph() throws {
         let source = """
-@Choice(isCorrect: true) {
-   This is some content.
-   @Justification {
-      Trust me, it's right.
-   }
-}
-"""
+            @Choice(isCorrect: true) {
+               This is some content.
+               @Justification {
+                  Trust me, it's right.
+               }
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(Choice.directiveName, directive.name)
             let choice = Choice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNotNil(choice)
             XCTAssertTrue(problems.isEmpty)
             choice.map { choice in
                 let expectedDump = """
-Choice @1:1-6:2 isCorrect: true
-├─ MarkupContainer (1 element)
-└─ Justification @3:4-5:5
-   └─ MarkupContainer (1 element)
-"""
+                    Choice @1:1-6:2 isCorrect: true
+                    ├─ MarkupContainer (1 element)
+                    └─ Justification @3:4-5:5
+                       └─ MarkupContainer (1 element)
+                    """
                 XCTAssertEqual(expectedDump, choice.dump())
             }
         }
     }
-    
+
     func testValidCode() throws {
         let source = """
-@Choice(isCorrect: true) {
-   ```swift
-   func foo() {}
-   ```
+            @Choice(isCorrect: true) {
+               ```swift
+               func foo() {}
+               ```
 
-   @Justification {
-      Trust me, it's right.
-   }
-}
-"""
+               @Justification {
+                  Trust me, it's right.
+               }
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(Choice.directiveName, directive.name)
             let choice = Choice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNotNil(choice)
             XCTAssertTrue(problems.isEmpty)
             choice.map { choice in
                 let expectedDump = """
-Choice @1:1-9:2 isCorrect: true
-├─ MarkupContainer (1 element)
-└─ Justification @6:4-8:5
-   └─ MarkupContainer (1 element)
-"""
+                    Choice @1:1-9:2 isCorrect: true
+                    ├─ MarkupContainer (1 element)
+                    └─ Justification @6:4-8:5
+                       └─ MarkupContainer (1 element)
+                    """
                 XCTAssertEqual(expectedDump, choice.dump())
             }
         }
     }
-    
+
     func testValidImage() throws {
         let source = """
-@Choice(isCorrect: true) {
-   @Image(source: blah.png, alt: blah)
+            @Choice(isCorrect: true) {
+               @Image(source: blah.png, alt: blah)
 
-   @Justification {
-      Trust me, it's right.
-   }
-}
-"""
+               @Justification {
+                  Trust me, it's right.
+               }
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(Choice.directiveName, directive.name)
             let choice = Choice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNotNil(choice)
             XCTAssertTrue(problems.isEmpty)
             choice.map { choice in
                 let expectedDump = """
-Choice @1:1-7:2 isCorrect: true
-├─ MarkupContainer (empty)
-├─ ImageMedia @2:4-2:39 source: 'ResourceReference(bundleIdentifier: "org.swift.docc.example", path: "blah.png")' altText: 'blah'
-└─ Justification @4:4-6:5
-   └─ MarkupContainer (1 element)
-"""
+                    Choice @1:1-7:2 isCorrect: true
+                    ├─ MarkupContainer (empty)
+                    ├─ ImageMedia @2:4-2:39 source: 'ResourceReference(bundleIdentifier: "org.swift.docc.example", path: "blah.png")' altText: 'blah'
+                    └─ Justification @4:4-6:5
+                       └─ MarkupContainer (1 element)
+                    """
                 XCTAssertEqual(expectedDump, choice.dump())
             }
         }

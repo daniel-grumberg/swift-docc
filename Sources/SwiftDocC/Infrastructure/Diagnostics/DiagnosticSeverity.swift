@@ -11,11 +11,9 @@
 import Foundation
 import Markdown
 
-/**
- The severity of a diagnostic.
-
- Diagnostics have a severity in order to give the user an indication of what a message means to them and whether it's immediately actionable or blocking.
- */
+/// The severity of a diagnostic.
+///
+/// Diagnostics have a severity in order to give the user an indication of what a message means to them and whether it's immediately actionable or blocking.
 public enum DiagnosticSeverity: Int, Codable, CustomStringConvertible {
     /**
      An error.

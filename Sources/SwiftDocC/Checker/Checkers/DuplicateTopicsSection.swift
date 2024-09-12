@@ -11,14 +11,12 @@
 import Foundation
 import Markdown
 
-/**
- A `Document` may only have one level-2 "Topics" heading at the top level, since it serves as structured data for a documentation bundle's hierarchy.
- */
+/// A `Document` may only have one level-2 "Topics" heading at the top level, since it serves as structured data for a documentation bundle's hierarchy.
 public struct DuplicateTopicsSections: Checker {
     /// The list of level-2 headings with the text "Topics" found in the document.
-    public var foundTopicsHeadings = [Heading]()
+    public var foundTopicsHeadings: [Heading] = []
     private var sourceFile: URL?
-    
+
     /// Creates a new checker that detects documents with multiple "Topics" sections.
     ///
     /// - Parameter sourceFile: The URL to the documentation file that the checker checks.
@@ -43,15 +41,24 @@ public struct DuplicateTopicsSections: Checker {
             let explanation = """
                 A second-level heading with the name "Topics" is a reserved heading name you use to begin a section to organize topics into task groups. To resolve this issue, change the name of this heading or merge the contents of both topics sections under a single Topics heading.
                 """
-            let diagnostic = Diagnostic(source: sourceFile, severity: .warning, range: range, identifier: "org.swift.docc.MultipleTopicsSections", summary: "The Topics section may only appear once in a document", explanation: explanation, notes: notes)
+            let diagnostic = Diagnostic(
+                source: sourceFile,
+                severity: .warning,
+                range: range,
+                identifier: "org.swift.docc.MultipleTopicsSections",
+                summary: "The Topics section may only appear once in a document",
+                explanation: explanation,
+                notes: notes
+            )
             return Problem(diagnostic: diagnostic, possibleSolutions: [])
         }
     }
-    
+
     public mutating func visitHeading(_ heading: Heading) {
         guard heading.isTopicsSection,
-              heading.parent is Document? else {
-                return
+            heading.parent is Document?
+        else {
+            return
         }
         foundTopicsHeadings.append(heading)
     }

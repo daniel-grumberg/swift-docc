@@ -12,7 +12,7 @@
 public struct RemoveAutomaticallyCuratedSeeAlsoSectionsTransformation: RenderNodeTransforming {
     /// Creates a new transformer.
     public init() {}
-    
+
     /// Removes automatically curated See Also sections from the given render node.
     ///
     /// Applying this transformation will also decrease the reference count in the returned transformation context
@@ -22,8 +22,12 @@ public struct RemoveAutomaticallyCuratedSeeAlsoSectionsTransformation: RenderNod
     ///   - renderNode: The render node from which this transformation removes automatically curated See Also sections.
     ///   - context: The context that tracks the number of times each reference is referenced in the render node's content.
     /// - Returns: The transformed render node and context with updated reference counts.
-    public func transform(renderNode: RenderNode, context: RenderNodeTransformationContext)
-        -> RenderNodeTransformationResult {
+    public func transform(
+        renderNode: RenderNode,
+        context: RenderNodeTransformationContext
+    )
+        -> RenderNodeTransformationResult
+    {
         var (renderNode, context) = (renderNode, context)
         // Remove automatically curated See Also sections.
         let generatedIndex = renderNode.seeAlsoSections.partition { $0.generated }

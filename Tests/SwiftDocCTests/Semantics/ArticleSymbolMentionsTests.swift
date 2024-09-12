@@ -8,11 +8,12 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import Markdown
 import SwiftDocCTestUtilities
 import SymbolKit
+import XCTest
+
+@testable import SwiftDocC
 
 class ArticleSymbolMentionsTests: XCTestCase {
     /// Test that the recording abstraction for ``ArticleSymbolMentions`` works as expected.
@@ -29,7 +30,7 @@ class ArticleSymbolMentionsTests: XCTestCase {
 
         let weight = 99
         mentions.article(article, didMention: symbol, weight: weight)
-        
+
         let gottenArticles = mentions.articlesMentioning(symbol)
         XCTAssertEqual(1, gottenArticles.count)
         let gottenArticle = try XCTUnwrap(gottenArticles.first)
@@ -49,12 +50,14 @@ class ArticleSymbolMentionsTests: XCTestCase {
         let mentioningArticle = ResolvedTopicReference(
             bundleIdentifier: bundle.identifier,
             path: "/documentation/MentionedIn/ArticleMentioningSymbol",
-            sourceLanguage: .swift)
+            sourceLanguage: .swift
+        )
         let mentionedSymbol = ResolvedTopicReference(
             bundleIdentifier: bundle.identifier,
             path: "/documentation/MentionedIn/MyClass",
-            sourceLanguage: .swift)
-        
+            sourceLanguage: .swift
+        )
+
         let mentions = context.articleSymbolMentions.articlesMentioning(mentionedSymbol)
         XCTAssertEqual(1, mentions.count)
         let gottenArticle = try XCTUnwrap(mentions.first)
@@ -70,7 +73,8 @@ class ArticleSymbolMentionsTests: XCTestCase {
         let mentionedSymbol = ResolvedTopicReference(
             bundleIdentifier: bundle.identifier,
             path: "/documentation/MentionedIn/MyClass",
-            sourceLanguage: .swift)
+            sourceLanguage: .swift
+        )
 
         XCTAssertTrue(context.articleSymbolMentions.articlesMentioning(mentionedSymbol).isEmpty)
     }

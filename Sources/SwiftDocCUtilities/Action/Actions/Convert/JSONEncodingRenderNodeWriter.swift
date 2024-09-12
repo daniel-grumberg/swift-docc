@@ -20,7 +20,7 @@ class JSONEncodingRenderNodeWriter {
     private let transformForStaticHostingIndexHTML: URL?
     private let fileManager: FileManagerProtocol
     private let renderReferenceCache = RenderReferenceCache([:])
-    
+
     /// Creates a writer object that write render node JSON into a given folder.
     ///
     /// - Parameters:
@@ -34,10 +34,10 @@ class JSONEncodingRenderNodeWriter {
         self.transformForStaticHostingIndexHTML = transformForStaticHostingIndexHTML
         self.fileManager = fileManager
     }
-    
+
     // The already created directories on disk
     let directoryIndex = Synchronized(Set<URL>())
-    
+
     /// Writes a render node to a JSON file at a location based on the node's relative URL.
     ///
     /// If the target path to the JSON file includes intermediate folders that don't exist, the writer object will ask the file manager, with which it was created, to
@@ -51,17 +51,18 @@ class JSONEncodingRenderNodeWriter {
             renderNode.identifier,
             lowercased: true
         )
-        
+
         // The path on disk to write the render node JSON file at.
-        let renderNodeTargetFileURL = renderNodeURLGenerator
+        let renderNodeTargetFileURL =
+            renderNodeURLGenerator
             .urlForReference(
                 renderNode.identifier,
                 fileSafePath: fileSafePath
             )
             .appendingPathExtension("json")
-        
+
         let renderNodeTargetFolderURL = renderNodeTargetFileURL.deletingLastPathComponent()
-        
+
         // On Linux sometimes it takes a moment for the directory to be created and that leads to
         // errors when trying to write files concurrently in the same target location.
         // We keep an index in `directoryIndex` and create new sub-directories as needed.
@@ -77,14 +78,14 @@ class JSONEncodingRenderNodeWriter {
                 )
             }
         }
-        
+
         let data = try renderNode.encodeToJSON(with: encoder, renderReferenceCache: renderReferenceCache)
         try fileManager.createFile(at: renderNodeTargetFileURL, contents: data, options: nil)
-        
+
         guard let indexHTML = transformForStaticHostingIndexHTML else {
             return
         }
-        
+
         let htmlTargetFolderURL = targetFolder.appendingPathComponent(
             fileSafePath,
             isDirectory: true
@@ -93,7 +94,7 @@ class JSONEncodingRenderNodeWriter {
             HTMLTemplate.indexFileName.rawValue,
             isDirectory: false
         )
-        
+
         // Note that it doesn't make sense to use the above-described `directoryIndex` for this use
         // case since we expect every 'index.html' file to require the creation of
         // its own unique parent directory.
@@ -102,7 +103,7 @@ class JSONEncodingRenderNodeWriter {
             withIntermediateDirectories: true,
             attributes: nil
         )
-        
+
         do {
             try fileManager.copyItem(at: indexHTML, to: htmlTargetFileURL)
         } catch let error as NSError where error.code == NSFileWriteFileExistsError {

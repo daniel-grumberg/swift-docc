@@ -8,10 +8,11 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-import SwiftDocCUtilities
-@testable import SwiftDocC
 import Markdown
+import SwiftDocCUtilities
+import XCTest
+
+@testable import SwiftDocC
 
 class ProblemTests: XCTestCase {
 

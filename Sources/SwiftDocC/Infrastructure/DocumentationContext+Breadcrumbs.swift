@@ -12,11 +12,11 @@ extension DocumentationContext {
     /// Options that configure how the context produces node breadcrumbs.
     struct PathOptions: OptionSet {
         let rawValue: Int
-        
+
         /// Prefer a technology as the canonical path over a shorter path.
         static let preferTechnologyRoot = PathOptions(rawValue: 1 << 0)
     }
-    
+
     /// Finds all finite (acyclic) paths, also called "breadcrumbs", to the given reference in the topic graph.
     ///
     /// Each path is a list of references that describe a walk through the topic graph from a leaf node up to, but not including, the given `reference`.
@@ -42,11 +42,11 @@ extension DocumentationContext {
                 if options.contains(.preferTechnologyRoot), let first = lhs.first {
                     return try! entity(with: first).semantic is Technology
                 }
-                
+
                 return breadcrumbsAreInIncreasingOrder(lhs, rhs)
             }
     }
-    
+
     /// Finds the shortest finite (acyclic) path, also called "breadcrumb", to the given reference in the topic graph.
     ///
     /// The path is a list of references that describe a walk through the topic graph from a leaf node up to, but not including, the given `reference`.
@@ -65,7 +65,7 @@ extension DocumentationContext {
             .map { $0.dropFirst().reversed() }
             .min(by: breadcrumbsAreInIncreasingOrder)
     }
-    
+
     /// Finds all the reachable root node references from the given reference.
     ///
     /// > Note:
@@ -87,4 +87,3 @@ private func breadcrumbsAreInIncreasingOrder(_ lhs: [ResolvedTopicReference], _ 
     // Otherwise, sort by the number of breadcrumb components.
     return lhs.count < rhs.count
 }
-

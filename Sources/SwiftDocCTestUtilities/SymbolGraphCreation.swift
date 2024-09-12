@@ -8,16 +8,15 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-
 import Foundation
-import XCTest
-import SymbolKit
 import SwiftDocC
+import SymbolKit
+import XCTest
 
 // MARK: - Symbol Graph objects
 
 extension XCTestCase {
-    
+
     package func makeSymbolGraph(
         moduleName: String,
         platform: SymbolGraph.Platform = .init(),
@@ -31,20 +30,20 @@ extension XCTestCase {
             relationships: relationships
         )
     }
-    
+
     package func makeMetadata(major: Int = 0, minor: Int = 6, patch: Int = 0) -> SymbolGraph.Metadata {
         SymbolGraph.Metadata(
             formatVersion: SymbolGraph.SemanticVersion(major: major, minor: minor, patch: patch),
             generator: "unit-test"
         )
     }
-    
+
     package func makeModule(moduleName: String, platform: SymbolGraph.Platform = .init()) -> SymbolGraph.Module {
         SymbolGraph.Module(name: moduleName, platform: platform)
     }
-    
+
     // MARK: Line List
-    
+
     package func makeLineList(
         docComment: String,
         startOffset: SymbolGraph.LineList.SourceRange.Position = defaultSymbolPosition,
@@ -59,7 +58,7 @@ extension XCTestCase {
                         text: line,
                         range: SymbolGraph.LineList.SourceRange(
                             start: .init(line: startOffset.line + lineOffset, character: startOffset.character),
-                            end:   .init(line: startOffset.line + lineOffset, character: startOffset.character + line.count)
+                            end: .init(line: startOffset.line + lineOffset, character: startOffset.character + line.count)
                         )
                     )
                 },
@@ -67,37 +66,37 @@ extension XCTestCase {
             uri: url.absoluteString
         )
     }
-    
+
     package func makeMixins(_ mixins: [any Mixin]) -> [String: any Mixin] {
         [String: any Mixin](
             mixins.map { (type(of: $0).mixinKey, $0) },
             uniquingKeysWith: { old, _ in old /* Keep the first encountered value */ }
         )
     }
-    
+
     // MARK: Symbol
-    
+
     package func makeSymbol(
         id: String,
         language: SourceLanguage = .swift,
         kind kindID: SymbolGraph.Symbol.KindIdentifier,
         pathComponents: [String],
         docComment: String? = nil,
-        accessLevel: SymbolGraph.Symbol.AccessControl = .init(rawValue: "public"), // Defined internally in SwiftDocC
+        accessLevel: SymbolGraph.Symbol.AccessControl = .init(rawValue: "public"),  // Defined internally in SwiftDocC
         location: (position: SymbolGraph.LineList.SourceRange.Position, url: URL)? = (defaultSymbolPosition, defaultSymbolURL),
         signature: SymbolGraph.Symbol.FunctionSignature? = nil,
         otherMixins: [any Mixin] = []
     ) -> SymbolGraph.Symbol {
         precondition(!pathComponents.isEmpty, "Need at least one path component to name the symbol")
-        
-        var mixins = otherMixins // Earlier mixins are prioritized if there are duplicates
+
+        var mixins = otherMixins  // Earlier mixins are prioritized if there are duplicates
         if let location {
             mixins.append(SymbolGraph.Symbol.Location(uri: location.url.absoluteString /* we want to include the file:// scheme */, position: location.position))
         }
         if let signature {
             mixins.append(signature)
         }
-        
+
         return SymbolGraph.Symbol(
             identifier: SymbolGraph.Symbol.Identifier(precise: id, interfaceLanguage: language.id),
             names: makeSymbolNames(name: pathComponents.first!),
@@ -114,7 +113,7 @@ extension XCTestCase {
             mixins: makeMixins(mixins)
         )
     }
-    
+
     package func makeSymbolNames(name: String) -> SymbolGraph.Symbol.Names {
         SymbolGraph.Symbol.Names(
             title: name,
@@ -123,51 +122,51 @@ extension XCTestCase {
             prose: nil
         )
     }
-    
+
     package func makeSymbolKind(_ kindID: SymbolGraph.Symbol.KindIdentifier) -> SymbolGraph.Symbol.Kind {
         var documentationNodeKind: DocumentationNode.Kind {
             switch kindID {
             case .associatedtype: .associatedType
-            case .class:          .class
-            case .deinit:         .deinitializer
-            case .enum:           .enumeration
-            case .case:           .enumerationCase
-            case .func:           .function
-            case .operator:       .operator
-            case .`init`:         .initializer
-            case .ivar:           .instanceVariable
-            case .macro:          .macro
-            case .method:         .instanceMethod
-            case .namespace:      .namespace
-            case .property:       .instanceProperty
-            case .protocol:       .protocol
-            case .snippet:        .snippet
-            case .struct:         .structure
-            case .subscript:      .instanceSubscript
-            case .typeMethod:     .typeMethod
-            case .typeProperty:   .typeProperty
-            case .typeSubscript:  .typeSubscript
-            case .typealias:      .typeAlias
-            case .union:          .union
-            case .var:            .globalVariable
-            case .module:         .module
-            case .extension:      .extension
-            case .dictionary:     .dictionary
-            case .dictionaryKey:  .dictionaryKey
-            case .httpRequest:    .httpRequest
-            case .httpParameter:  .httpParameter
-            case .httpResponse:   .httpResponse
-            case .httpBody:       .httpBody
-            default:              .unknown
+            case .class: .class
+            case .deinit: .deinitializer
+            case .enum: .enumeration
+            case .case: .enumerationCase
+            case .func: .function
+            case .operator: .operator
+            case .`init`: .initializer
+            case .ivar: .instanceVariable
+            case .macro: .macro
+            case .method: .instanceMethod
+            case .namespace: .namespace
+            case .property: .instanceProperty
+            case .protocol: .protocol
+            case .snippet: .snippet
+            case .struct: .structure
+            case .subscript: .instanceSubscript
+            case .typeMethod: .typeMethod
+            case .typeProperty: .typeProperty
+            case .typeSubscript: .typeSubscript
+            case .typealias: .typeAlias
+            case .union: .union
+            case .var: .globalVariable
+            case .module: .module
+            case .extension: .extension
+            case .dictionary: .dictionary
+            case .dictionaryKey: .dictionaryKey
+            case .httpRequest: .httpRequest
+            case .httpParameter: .httpParameter
+            case .httpResponse: .httpResponse
+            case .httpBody: .httpBody
+            default: .unknown
             }
         }
         return SymbolGraph.Symbol.Kind(parsedIdentifier: kindID, displayName: documentationNodeKind.name)
     }
 }
-    
+
 // MARK: Constants
 
-private let defaultSymbolPosition = SymbolGraph.LineList.SourceRange.Position(line: 11, character: 17) // an arbitrary non-zero start position
+private let defaultSymbolPosition = SymbolGraph.LineList.SourceRange.Position(line: 11, character: 17)  // an arbitrary non-zero start position
 private let defaultSymbolURL = URL(fileURLWithPath: "/Users/username/path/to/SomeFile.swift")
 
 // MARK: - JSON strings
@@ -175,26 +174,26 @@ private let defaultSymbolURL = URL(fileURLWithPath: "/Users/username/path/to/Som
 extension XCTestCase {
     public func makeSymbolGraphString(moduleName: String, symbols: String = "", relationships: String = "", platform: String = "") -> String {
         return """
-        {
-          "metadata": {
-              "formatVersion": {
-                  "major": 0,
-                  "minor": 6,
-                  "patch": 0
+            {
+              "metadata": {
+                  "formatVersion": {
+                      "major": 0,
+                      "minor": 6,
+                      "patch": 0
+                  },
+                  "generator": "unit-test"
               },
-              "generator": "unit-test"
-          },
-          "module": {
-              "name": "\(moduleName)",
-              "platform": { \(platform) }
-          },
-          "relationships" : [
-            \(relationships)
-          ],
-          "symbols" : [
-            \(symbols)
-          ]
-        }
-        """
+              "module": {
+                  "name": "\(moduleName)",
+                  "platform": { \(platform) }
+              },
+              "relationships" : [
+                \(relationships)
+              ],
+              "symbols" : [
+                \(symbols)
+              ]
+            }
+            """
     }
 }

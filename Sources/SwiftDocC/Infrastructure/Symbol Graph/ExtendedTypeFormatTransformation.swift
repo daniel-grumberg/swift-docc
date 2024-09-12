@@ -13,7 +13,7 @@ import SymbolKit
 
 /// A namespace comprising functionality for converting between the standard Symbol Graph File
 /// format with extension block symbols and the Extended Types Format extension used by SwiftDocC.
-enum ExtendedTypeFormatTransformation { }
+enum ExtendedTypeFormatTransformation {}
 
 extension ExtendedTypeFormatTransformation {
     /// Transforms the extension symbol graph file to better match the hierarchical symbol structure that DocC uses when processing and rendering documentation.
@@ -135,52 +135,66 @@ extension ExtendedTypeFormatTransformation {
     /// in the Extended Type Symbol Format.
     static func transformExtensionBlockFormatToExtendedTypeFormat(_ symbolGraph: inout SymbolGraph, moduleName: String) throws -> Bool {
         var extensionBlockSymbols = extractExtensionBlockSymbols(from: &symbolGraph)
-        
+
         guard !extensionBlockSymbols.isEmpty else {
             return false
         }
-        
+
         prependModuleNameToPathComponents(&symbolGraph.symbols.values, moduleName: moduleName)
         prependModuleNameToPathComponents(&extensionBlockSymbols.values, moduleName: moduleName)
-        
-        var (extensionToRelationships,
-             memberOfRelationships,
-             conformsToRelationships) = extractRelationshipsTouchingExtensionBlockSymbols(from: &symbolGraph, using: extensionBlockSymbols)
-        
-        var (extendedTypeSymbols,
-             extensionBlockToExtendedTypeMapping,
-             extendedTypeToExtensionBlockMapping) = synthesizePrimaryExtendedTypeSymbols(using: extensionBlockSymbols, extensionToRelationships)
-        
+
+        var (
+            extensionToRelationships,
+            memberOfRelationships,
+            conformsToRelationships
+        ) = extractRelationshipsTouchingExtensionBlockSymbols(from: &symbolGraph, using: extensionBlockSymbols)
+
+        var (
+            extendedTypeSymbols,
+            extensionBlockToExtendedTypeMapping,
+            extendedTypeToExtensionBlockMapping
+        ) = synthesizePrimaryExtendedTypeSymbols(using: extensionBlockSymbols, extensionToRelationships)
+
         let contextOfRelationships = synthesizeSecondaryExtendedTypeSymbols(&extendedTypeSymbols)
-        
+
         redirect(\.target, of: &memberOfRelationships, using: extensionBlockToExtendedTypeMapping)
-        
+
         redirect(\.source, of: &conformsToRelationships, using: extensionBlockToExtendedTypeMapping)
-        
-        attachDocComments(to: &extendedTypeSymbols.values, using: { (target) -> [SymbolGraph.Symbol] in
-            guard let relevantExtensionBlockSymbols = extendedTypeToExtensionBlockMapping[target.identifier.precise]?.compactMap({ id in extensionBlockSymbols[id] }).filter({ symbol in symbol.docComment != nil }) else {
-                return []
+
+        attachDocComments(
+            to: &extendedTypeSymbols.values,
+            using: { (target) -> [SymbolGraph.Symbol] in
+                guard
+                    let relevantExtensionBlockSymbols = extendedTypeToExtensionBlockMapping[target.identifier.precise]?.compactMap({ id in extensionBlockSymbols[id] })
+                        .filter({ symbol in symbol.docComment != nil })
+                else {
+                    return []
+                }
+
+                // we sort the symbols here because their order is not guaranteed to stay the same
+                // across compilation processes and we always want to choose the same doc comment
+                // in case there are multiple candidates with maximum number of lines
+                if let winner = relevantExtensionBlockSymbols.sorted(by: \.identifier.precise)
+                    .max(by: { a, b in (a.docComment?.lines.count ?? 0) < (b.docComment?.lines.count ?? 0) })
+                {
+                    return [winner]
+                } else {
+                    return []
+                }
             }
-            
-            // we sort the symbols here because their order is not guaranteed to stay the same
-            // across compilation processes and we always want to choose the same doc comment
-            // in case there are multiple candidates with maximum number of lines
-            if let winner = relevantExtensionBlockSymbols.sorted(by: \.identifier.precise).max(by: { a, b in (a.docComment?.lines.count ?? 0) < (b.docComment?.lines.count ?? 0) }) {
-                return [winner]
-            } else {
-                return []
-            }
-        })
-        
+        )
+
         symbolGraph.relationships.append(contentsOf: memberOfRelationships)
         symbolGraph.relationships.append(contentsOf: conformsToRelationships)
         symbolGraph.relationships.append(contentsOf: contextOfRelationships)
         extendedTypeSymbols.values.forEach { symbol in symbolGraph.symbols[symbol.identifier.precise] = symbol }
-        
-        try synthesizeExtendedModuleSymbolAndDeclaredInRelationships(on: &symbolGraph,
-                                                                      using: extendedTypeSymbols.values.filter { symbol in symbol.pathComponents.count == 2 }.map(\.identifier.precise),
-                                                                      moduleName: moduleName)
-        
+
+        try synthesizeExtendedModuleSymbolAndDeclaredInRelationships(
+            on: &symbolGraph,
+            using: extendedTypeSymbols.values.filter { symbol in symbol.pathComponents.count == 2 }.map(\.identifier.precise),
+            moduleName: moduleName
+        )
+
         return true
     }
 
@@ -189,7 +203,7 @@ extension ExtendedTypeFormatTransformation {
     // identifiers to the target identifiers.
     typealias SourceIdentifier = String
     typealias TargetIdentifier = String
-    static func collapsedExtendedModuleRelationships(from relationships: Set<SymbolGraph.Relationship>) -> [ SourceIdentifier : TargetIdentifier] {
+    static func collapsedExtendedModuleRelationships(from relationships: Set<SymbolGraph.Relationship>) -> [SourceIdentifier: TargetIdentifier] {
 
         // Filter all the relationships down to only declaredIn and inContextOf.
         let filtered = relationships.filter { $0.kind == .declaredIn || $0.kind == .inContextOf }
@@ -240,11 +254,11 @@ extension ExtendedTypeFormatTransformation {
     ) {
         for index in targets.indices {
             var target = targets[index]
-            
+
             guard target.docComment == nil else {
                 continue
             }
-            
+
             for source in source(target) {
                 if case (.some(_), .some(_)) = (target.docComment, source.docComment) {
                     target.docComment = resolveConflict(target, source)
@@ -252,16 +266,16 @@ extension ExtendedTypeFormatTransformation {
                     target.docComment = target.docComment ?? source.docComment
                 }
             }
-            
+
             targets[index] = target
         }
     }
-    
+
     /// Adds the `extendedModule` name from the `swiftExtension` mixin to the beginning of the `pathComponents` array of all `symbols`.
     private static func prependModuleNameToPathComponents(_ symbols: inout some MutableCollection<SymbolGraph.Symbol>, moduleName: String) {
         for i in symbols.indices {
             let symbol = symbols[i]
-            
+
             symbols[i] = symbol.replacing(\.pathComponents, with: [moduleName] + symbol.pathComponents)
         }
     }
@@ -271,16 +285,16 @@ extension ExtendedTypeFormatTransformation {
     /// - Returns: The extracted symbols of kind `.extension` keyed by their precise identifier.
     private static func extractExtensionBlockSymbols(from symbolGraph: inout SymbolGraph) -> [String: SymbolGraph.Symbol] {
         var extensionBlockSymbols: [String: SymbolGraph.Symbol] = [:]
-        
+
         symbolGraph.apply(compactMap: { symbol in
             guard symbol.kind.identifier == SymbolGraph.Symbol.KindIdentifier.extension else {
                 return symbol
             }
-            
+
             extensionBlockSymbols[symbol.identifier.precise] = symbol
             return nil
         })
-        
+
         return extensionBlockSymbols
     }
 
@@ -295,16 +309,21 @@ extension ExtendedTypeFormatTransformation {
     /// - Parameter extensionBlockSymbols: A mapping between Symbols of kind `.extension` and their precise identifiers.
     ///
     /// - Returns: The extracted relationships listed separately by kind.
-    private static func extractRelationshipsTouchingExtensionBlockSymbols(from symbolGraph: inout SymbolGraph,
-                                                           using extensionBlockSymbols: [String: SymbolGraph.Symbol])
-        -> (extensionToRelationships: [SymbolGraph.Relationship],
+    private static func extractRelationshipsTouchingExtensionBlockSymbols(
+        from symbolGraph: inout SymbolGraph,
+        using extensionBlockSymbols: [String: SymbolGraph.Symbol]
+    )
+        -> (
+            extensionToRelationships: [SymbolGraph.Relationship],
             memberOfRelationships: [SymbolGraph.Relationship],
-            conformsToRelationships: [SymbolGraph.Relationship]) {
-            
+            conformsToRelationships: [SymbolGraph.Relationship]
+        )
+    {
+
         var extensionToRelationships: [SymbolGraph.Relationship] = []
         var memberOfRelationships: [SymbolGraph.Relationship] = []
         var conformsToRelationships: [SymbolGraph.Relationship] = []
-        
+
         symbolGraph.relationships = symbolGraph.relationships.compactMap { relationship in
             switch relationship.kind {
             case .extensionTo:
@@ -327,7 +346,7 @@ extension ExtendedTypeFormatTransformation {
             }
             return relationship
         }
-        
+
         return (extensionToRelationships, memberOfRelationships, conformsToRelationships)
     }
 
@@ -344,58 +363,66 @@ extension ExtendedTypeFormatTransformation {
     ///
     /// - Returns: - the created extended type symbols keyed by their precise identifier, along with a bidirectional
     /// mapping between the extended type symbols and the `.extension` symbols
-    private static func synthesizePrimaryExtendedTypeSymbols(using extensionBlockSymbols: [String: SymbolGraph.Symbol],
-                                                                           _ extensionToRelationships: some Sequence<SymbolGraph.Relationship>)
-    -> (extendedTypeSymbols: [String: SymbolGraph.Symbol],
-        extensionBlockToExtendedTypeMapping: [String: String],
-        extendedTypeToExtensionBlockMapping: [String: [String]])
+    private static func synthesizePrimaryExtendedTypeSymbols(
+        using extensionBlockSymbols: [String: SymbolGraph.Symbol],
+        _ extensionToRelationships: some Sequence<SymbolGraph.Relationship>
+    )
+        -> (
+            extendedTypeSymbols: [String: SymbolGraph.Symbol],
+            extensionBlockToExtendedTypeMapping: [String: String],
+            extendedTypeToExtensionBlockMapping: [String: [String]]
+        )
     {
-            
+
         var extendedTypeSymbols: [String: SymbolGraph.Symbol] = [:]
         var extensionBlockToExtendedTypeMapping: [String: String] = [:]
         var extendedTypeToExtensionBlockMapping: [String: [String]] = [:]
         var pathComponentToExtendedTypeMapping: [ArraySlice<String>: String] = [:]
-        
+
         extensionBlockToExtendedTypeMapping.reserveCapacity(extensionBlockSymbols.count)
-        
+
         let createExtendedTypeSymbolAndAncestors = { (extensionBlockSymbol: SymbolGraph.Symbol, id: String) -> SymbolGraph.Symbol in
             var newMixins = [String: Mixin]()
-            
+
             if var swiftExtension = extensionBlockSymbol[mixin: SymbolGraph.Symbol.Swift.Extension.self] {
                 swiftExtension.constraints = []
                 newMixins[SymbolGraph.Symbol.Swift.Extension.mixinKey] = swiftExtension
             }
-            
+
             if let declarationFragments = extensionBlockSymbol[mixin: SymbolGraph.Symbol.DeclarationFragments.self]?.declarationFragments, declarationFragments.count >= 3 {
                 var prefixWithoutWhereClause: [SymbolGraph.Symbol.DeclarationFragments.Fragment] = Array(declarationFragments[..<3])
-                
-            outer: for fragment in declarationFragments[3...] {
+
+                outer: for fragment in declarationFragments[3...] {
                     switch (fragment.kind, fragment.spelling) {
                     case (.typeIdentifier, _),
-                         (.identifier, _),
-                         (.text, "."):
+                        (.identifier, _),
+                        (.text, "."):
                         prefixWithoutWhereClause.append(fragment)
                     default:
                         break outer
                     }
                 }
-                
+
                 newMixins[SymbolGraph.Symbol.DeclarationFragments.mixinKey] = SymbolGraph.Symbol.DeclarationFragments(declarationFragments: Array(prefixWithoutWhereClause))
             }
-            
-            return SymbolGraph.Symbol(identifier: .init(precise: id,
-                                                        interfaceLanguage: extensionBlockSymbol.identifier.interfaceLanguage),
-                                      names: extensionBlockSymbol.names,
-                                      pathComponents: extensionBlockSymbol.pathComponents,
-                                      docComment: nil,
-                                      accessLevel: extensionBlockSymbol.accessLevel,
-                                      kind: .extendedType(for: extensionBlockSymbol),
-                                      mixins: newMixins)
+
+            return SymbolGraph.Symbol(
+                identifier: .init(
+                    precise: id,
+                    interfaceLanguage: extensionBlockSymbol.identifier.interfaceLanguage
+                ),
+                names: extensionBlockSymbol.names,
+                pathComponents: extensionBlockSymbol.pathComponents,
+                docComment: nil,
+                accessLevel: extensionBlockSymbol.accessLevel,
+                kind: .extendedType(for: extensionBlockSymbol),
+                mixins: newMixins
+            )
         }
-        
+
         // mapping from the extensionTo.target to the TYPE_KIND.extension symbol's identifier.precise
         var extendedTypeSymbolIdentifiers: [String: String] = [:]
-        
+
         // we sort the relationships here because their order is not guaranteed to stay the same
         // across compilation processes and choosing the same base symbol (and its USR) is important
         // to keeping (colliding) links stable
@@ -403,25 +430,27 @@ extension ExtendedTypeFormatTransformation {
             guard let extensionBlockSymbol = extensionBlockSymbols[extensionTo.source] else {
                 continue
             }
-            
+
             let extendedSymbolId = extendedTypeSymbolIdentifiers[extensionTo.target] ?? extensionBlockSymbol.identifier.precise
             extendedTypeSymbolIdentifiers[extensionTo.target] = extendedSymbolId
-            
-            let symbol: SymbolGraph.Symbol = extendedTypeSymbols[extendedSymbolId]?.replacing(\.accessLevel) { oldSymbol in
-                max(oldSymbol.accessLevel, extensionBlockSymbol.accessLevel)
-            } ?? createExtendedTypeSymbolAndAncestors(extensionBlockSymbol, extendedSymbolId)
-            
+
+            let symbol: SymbolGraph.Symbol =
+                extendedTypeSymbols[extendedSymbolId]?
+                .replacing(\.accessLevel) { oldSymbol in
+                    max(oldSymbol.accessLevel, extensionBlockSymbol.accessLevel)
+                } ?? createExtendedTypeSymbolAndAncestors(extensionBlockSymbol, extendedSymbolId)
+
             pathComponentToExtendedTypeMapping[symbol.pathComponents[...]] = symbol.identifier.precise
-            
+
             extendedTypeSymbols[symbol.identifier.precise] = symbol
-            
+
             extensionBlockToExtendedTypeMapping[extensionTo.source] = symbol.identifier.precise
             extendedTypeToExtensionBlockMapping[symbol.identifier.precise, default: []] += [extensionBlockSymbol.identifier.precise]
         }
-        
+
         return (extendedTypeSymbols, extensionBlockToExtendedTypeMapping, extendedTypeToExtensionBlockMapping)
     }
-    
+
     /// Synthesizes missing ancestor extended type symbols for any nested types among the `extendedTypeSymbols` and
     /// creates the relevant ``SymbolKit/SymbolGraph/Relationship/inContextOf`` relationships.
     ///
@@ -437,72 +466,86 @@ extension ExtendedTypeFormatTransformation {
     /// - Returns: the ``SymbolKit/SymbolGraph/Relationship/inContextOf`` relationships between the
     /// relevant extended type symbols
     private static func synthesizeSecondaryExtendedTypeSymbols(_ extendedTypeSymbols: inout [String: SymbolGraph.Symbol]) -> [SymbolGraph.Relationship] {
-        let sortedKeys: [(pathComponents: [String], preciseId: String)] = extendedTypeSymbols.map { key, value in
-            (value.pathComponents, key)
-        }.sorted(by: { a, b in a.pathComponents.count <= b.pathComponents.count && a.preciseId < b.preciseId })
-        
+        let sortedKeys: [(pathComponents: [String], preciseId: String)] =
+            extendedTypeSymbols.map { key, value in
+                (value.pathComponents, key)
+            }
+            .sorted(by: { a, b in a.pathComponents.count <= b.pathComponents.count && a.preciseId < b.preciseId })
+
         var pathComponentsToSymbolIds: [ArraySlice<String>: String] = [:]
         pathComponentsToSymbolIds.reserveCapacity(extendedTypeSymbols.count)
         for (key, symbol) in extendedTypeSymbols {
             pathComponentsToSymbolIds[symbol.pathComponents[...]] = key
         }
-        
+
         func lookupSymbol(_ pathComponents: ArraySlice<String>) -> SymbolGraph.Symbol? {
             guard let id = pathComponentsToSymbolIds[pathComponents] else {
                 return nil
             }
-            
+
             return extendedTypeSymbols[id]
         }
-        
-        var relationships = [SymbolGraph.Relationship]()
-        var symbolIsConnectedToParent = [String: Bool]()
+
+        var relationships: [SymbolGraph.Relationship] = []
+        var symbolIsConnectedToParent: [String: Bool] = [:]
         symbolIsConnectedToParent.reserveCapacity(extendedTypeSymbols.count)
-        
+
         for (pathComponents, preciseId) in sortedKeys {
             guard var symbol = extendedTypeSymbols[preciseId] else {
                 continue
             }
-            
-            var pathComponents = pathComponents[0..<pathComponents.count-1]
-            
+
+            var pathComponents = pathComponents[0..<pathComponents.count - 1]
+
             // we want to create one extended type symbol for each level of nesting,
             // except for the module
             while !pathComponents[1...].isEmpty {
-                let parent = lookupSymbol(pathComponents)?.replacing(\.accessLevel) { oldSymbol in
-                    max(oldSymbol.accessLevel, symbol.accessLevel)
-                } ?? SymbolGraph.Symbol(identifier: .init(precise: "s:e:" + symbol.identifier.precise,
-                                                          interfaceLanguage: symbol.identifier.interfaceLanguage),
-                                        names: .init(title: pathComponents[1...].joined(separator: "."),
-                                                navigator: pathComponents.last?.asDeclarationFragment(.identifier),
-                                                subHeading: nil,
-                                                prose: nil),
-                                        pathComponents: Array(pathComponents),
-                                        docComment: nil,
-                                        accessLevel: symbol.accessLevel,
-                                        kind: .unknownExtendedType,
-                                        mixins: symbol.mixins.keeping(SymbolGraph.Symbol.Swift.Extension.mixinKey))
-                
-                
+                let parent =
+                    lookupSymbol(pathComponents)?
+                    .replacing(\.accessLevel) { oldSymbol in
+                        max(oldSymbol.accessLevel, symbol.accessLevel)
+                    }
+                    ?? SymbolGraph.Symbol(
+                        identifier: .init(
+                            precise: "s:e:" + symbol.identifier.precise,
+                            interfaceLanguage: symbol.identifier.interfaceLanguage
+                        ),
+                        names: .init(
+                            title: pathComponents[1...].joined(separator: "."),
+                            navigator: pathComponents.last?.asDeclarationFragment(.identifier),
+                            subHeading: nil,
+                            prose: nil
+                        ),
+                        pathComponents: Array(pathComponents),
+                        docComment: nil,
+                        accessLevel: symbol.accessLevel,
+                        kind: .unknownExtendedType,
+                        mixins: symbol.mixins.keeping(SymbolGraph.Symbol.Swift.Extension.mixinKey)
+                    )
+
                 pathComponentsToSymbolIds[pathComponents] = parent.identifier.precise
                 extendedTypeSymbols[parent.identifier.precise] = parent
-                
+
                 if !symbolIsConnectedToParent[symbol.identifier.precise, default: false] {
-                    relationships.append(.init(source: symbol.identifier.precise,
-                                               target: parent.identifier.precise,
-                                               kind: .inContextOf,
-                                               targetFallback: parent.title))
+                    relationships.append(
+                        .init(
+                            source: symbol.identifier.precise,
+                            target: parent.identifier.precise,
+                            kind: .inContextOf,
+                            targetFallback: parent.title
+                        )
+                    )
                     symbolIsConnectedToParent[symbol.identifier.precise] = true
                 }
-                
+
                 symbol = parent
                 pathComponents.removeLast()
             }
         }
-        
+
         return relationships
     }
-    
+
     /// Updates the `anchor` of each relationship according to the given `keyMap`.
     ///
     /// If the `anchor` of a relationship cannot be found in the `keyMap`, the relationship is not modified.
@@ -517,11 +560,11 @@ extension ExtendedTypeFormatTransformation {
     ) {
         for index in relationships.indices {
             let relationship = relationships[index]
-            
+
             guard let newId = keyMap[relationship[keyPath: anchor]] else {
                 continue
             }
-            
+
             relationships[index] = relationship.replacing(anchor, with: newId)
         }
     }
@@ -531,10 +574,13 @@ extension ExtendedTypeFormatTransformation {
     /// Creates one symbol of kind ``SymbolKit/SymbolGraph/Symbol/KindIdentifier/extendedModule`` with the given name.
     /// The extended type symbols are connected with the extended module symbol using relationships of kind
     /// ``SymbolKit/SymbolGraph/Relationship/declaredIn``.
-    private static func synthesizeExtendedModuleSymbolAndDeclaredInRelationships(on symbolGraph: inout SymbolGraph, using extendedTypeSymbolIds: some Sequence<String>, moduleName: String) throws
-    {
+    private static func synthesizeExtendedModuleSymbolAndDeclaredInRelationships(
+        on symbolGraph: inout SymbolGraph,
+        using extendedTypeSymbolIds: some Sequence<String>,
+        moduleName: String
+    ) throws {
         var extendedModuleId: String?
-        
+
         // we sort the symbols here because their order is not guaranteed to stay the same
         // across compilation processes and choosing the same base symbol (and its USR) is important
         // to keeping (colliding) links stable
@@ -542,25 +588,34 @@ extension ExtendedTypeFormatTransformation {
             guard let extendedTypeSymbol = symbolGraph.symbols[extendedTypeSymbolId] else {
                 continue
             }
-            
+
             let id = extendedModuleId ?? "s:m:" + extendedTypeSymbol.identifier.precise
             extendedModuleId = id
-            
-            
-            let symbol = symbolGraph.symbols[id]?.replacing(\.accessLevel) { oldSymbol in
-                max(oldSymbol.accessLevel, extendedTypeSymbol.accessLevel)
-            } ?? SymbolGraph.Symbol(identifier: .init(precise: id, interfaceLanguage: extendedTypeSymbol.identifier.interfaceLanguage),
-                                    names: .init(title: moduleName, navigator: nil, subHeading: nil, prose: nil),
-                                    pathComponents: [moduleName],
-                                    docComment: nil,
-                                    accessLevel: extendedTypeSymbol.accessLevel,
-                                    kind: .init(parsedIdentifier: .extendedModule, displayName: "Extended Module"),
-                                    mixins: [:])
-            
+
+            let symbol =
+                symbolGraph.symbols[id]?
+                .replacing(\.accessLevel) { oldSymbol in
+                    max(oldSymbol.accessLevel, extendedTypeSymbol.accessLevel)
+                }
+                ?? SymbolGraph.Symbol(
+                    identifier: .init(precise: id, interfaceLanguage: extendedTypeSymbol.identifier.interfaceLanguage),
+                    names: .init(title: moduleName, navigator: nil, subHeading: nil, prose: nil),
+                    pathComponents: [moduleName],
+                    docComment: nil,
+                    accessLevel: extendedTypeSymbol.accessLevel,
+                    kind: .init(parsedIdentifier: .extendedModule, displayName: "Extended Module"),
+                    mixins: [:]
+                )
+
             symbolGraph.symbols[id] = symbol
-            
-            let relationship = SymbolGraph.Relationship(source: extendedTypeSymbol.identifier.precise, target: symbol.identifier.precise, kind: .declaredIn, targetFallback: symbol.names.title)
-            
+
+            let relationship = SymbolGraph.Relationship(
+                source: extendedTypeSymbol.identifier.precise,
+                target: symbol.identifier.precise,
+                kind: .declaredIn,
+                targetFallback: symbol.names.title
+            )
+
             symbolGraph.relationships.append(relationship)
         }
     }
@@ -587,7 +642,7 @@ private extension SymbolGraph.Symbol {
         new[keyPath: keyPath] = value
         return new
     }
-    
+
     func replacing<V>(_ keyPath: WritableKeyPath<Self, V>, with closure: (Self) -> V) -> Self {
         var new = self
         new[keyPath: keyPath] = closure(self)
@@ -612,11 +667,11 @@ private extension String {
 private extension Dictionary {
     func keeping(_ keys: Key...) -> Self {
         var new = Self()
-        
+
         for key in keys {
             new[key] = self[key]
         }
-        
+
         return new
     }
 }

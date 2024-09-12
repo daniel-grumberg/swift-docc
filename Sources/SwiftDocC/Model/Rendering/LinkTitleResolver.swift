@@ -19,7 +19,7 @@ struct LinkTitleResolver {
     ///
     /// This value will be used if the title can only be determined by semantically parsing the documentation node's content.
     var source: URL?
-    
+
     /// Resolves the title that's appropriate for presentation as a link title for a given documentation node.
     ///
     /// Depending on the page type, semantic parsing may be necessary to determine the title of the page.
@@ -28,9 +28,10 @@ struct LinkTitleResolver {
     /// - Returns: The variants of the link title for this page, or `nil` if the page doesn't exist in the context.
     func title(for page: DocumentationNode) -> DocumentationDataVariants<String>? {
         if let bundle = context.bundle(identifier: page.reference.bundleIdentifier),
-           let directive = page.markup.child(at: 0) as? BlockDirective {
-            
-            var problems = [Problem]()
+            let directive = page.markup.child(at: 0) as? BlockDirective
+        {
+
+            var problems: [Problem] = []
             switch directive.name {
             case Tutorial.directiveName:
                 if let tutorial = Tutorial(from: directive, source: source, for: bundle, in: context, problems: &problems) {
@@ -43,23 +44,23 @@ struct LinkTitleResolver {
             default: break
             }
         }
-        
+
         if case let .conceptual(name) = page.name {
             return .init(defaultVariantValue: name)
         }
-        
+
         if let symbol = (page.semantic as? Symbol) {
             return symbol.titleVariants
         }
-        
+
         if let symbol = page.symbol {
             return .init(defaultVariantValue: symbol.names.title)
         }
-        
+
         if let article = page.semantic as? Article, let title = article.title?.plainText {
             return .init(defaultVariantValue: title)
         }
-        
+
         return nil
     }
 }

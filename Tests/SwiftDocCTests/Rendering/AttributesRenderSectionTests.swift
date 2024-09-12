@@ -10,17 +10,19 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftDocC
 
 class AttributesRenderSectionTests: XCTestCase {
     func value() throws -> AttributesRenderSection {
         let jsonData = """
-        {
-            "kind": "declarations",
-            "title": "",
-            "attributes": []
-        }
-        """.data(using: .utf8)!
+            {
+                "kind": "declarations",
+                "title": "",
+                "attributes": []
+            }
+            """
+            .data(using: .utf8)!
 
         return try JSONDecoder().decode(AttributesRenderSection.self, from: jsonData)
     }

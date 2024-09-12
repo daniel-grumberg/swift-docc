@@ -9,9 +9,8 @@
 */
 
 import Foundation
-import XCTest
-
 import Markdown
+import XCTest
 
 @testable import SwiftDocC
 
@@ -24,7 +23,7 @@ class ParseDirectiveArgumentsTests: XCTestCase {
         XCTAssertEqual(diagnostic.identifier, "org.swift.docc.Directive.MissingExpectedCharacter")
         XCTAssertEqual(diagnostic.severity, .warning)
     }
-    
+
     func testEmitsWarningForUnexpectedCharacter() throws {
         let diagnostic = try XCTUnwrap(
             parse(rawDirective: "@Directive(argumentA: value, argumentB: multiple words").first
@@ -33,7 +32,7 @@ class ParseDirectiveArgumentsTests: XCTestCase {
         XCTAssertEqual(diagnostic.identifier, "org.swift.docc.Directive.MissingExpectedCharacter")
         XCTAssertEqual(diagnostic.severity, .warning)
     }
-    
+
     func testEmitsWarningsForDuplicateArgument() throws {
         let diagnostic = try XCTUnwrap(
             parse(rawDirective: "@Directive(argumentA: value, argumentA: value").first
@@ -42,11 +41,11 @@ class ParseDirectiveArgumentsTests: XCTestCase {
         XCTAssertEqual(diagnostic.identifier, "org.swift.docc.Directive.DuplicateArgument")
         XCTAssertEqual(diagnostic.severity, .warning)
     }
-    
+
     func parse(rawDirective: String) -> [Diagnostic] {
         let document = Document(parsing: rawDirective, options: .parseBlockDirectives)
-        
-        var problems = [Problem]()
+
+        var problems: [Problem] = []
         _ = (document.child(at: 0) as? BlockDirective)?.arguments(problems: &problems)
         return problems.map(\.diagnostic)
     }

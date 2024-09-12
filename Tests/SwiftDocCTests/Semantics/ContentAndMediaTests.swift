@@ -8,37 +8,38 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class ContentAndMediaTests: XCTestCase {
     func testEmpty() throws {
         let source = """
-@ContentAndMedia {
-"""
+            @ContentAndMedia {
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let contentAndMedia = ContentAndMedia(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(contentAndMedia)
         XCTAssertEqual(0, problems.count)
     }
-    
+
     func testValid() throws {
         let source = """
-@ContentAndMedia {
-   
-   @Image(source: "/path/to/image", alt: blah)
+            @ContentAndMedia {
+               
+               @Image(source: "/path/to/image", alt: blah)
 
-   Blah.
-}
-"""
+               Blah.
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let contentAndMedia = ContentAndMedia(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(contentAndMedia)
         XCTAssertTrue(problems.isEmpty)
@@ -46,20 +47,20 @@ class ContentAndMediaTests: XCTestCase {
             XCTAssertEqual(.leading, contentAndMedia.mediaPosition)
         }
     }
-    
+
     func testTrailingMiddleMediaPosition() throws {
         let source = """
-@ContentAndMedia {
-   
-   Blah.
-   
-   @Image(source: "/path/to/image", alt: blah)
-}
-"""
+            @ContentAndMedia {
+               
+               Blah.
+               
+               @Image(source: "/path/to/image", alt: blah)
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let contentAndMedia = ContentAndMedia(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(contentAndMedia)
         XCTAssertTrue(problems.isEmpty)
@@ -67,22 +68,22 @@ class ContentAndMediaTests: XCTestCase {
             XCTAssertEqual(.trailing, contentAndMedia.mediaPosition)
         }
     }
-    
+
     func testTrailingMediaPosition() throws {
         let source = """
-@ContentAndMedia {
-   
-   Foo.
-   
-   @Image(source: "/path/to/image", alt: blah)
+            @ContentAndMedia {
+               
+               Foo.
+               
+               @Image(source: "/path/to/image", alt: blah)
 
-   Blah.
-}
-"""
+               Blah.
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let contentAndMedia = ContentAndMedia(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(contentAndMedia)
         XCTAssertTrue(problems.isEmpty)
@@ -93,17 +94,17 @@ class ContentAndMediaTests: XCTestCase {
 
     func testDeprecatedArguments() throws {
         let source = """
-@ContentAndMedia(layout: horizontal, eyebrow: eyebrow, title: title) {
+            @ContentAndMedia(layout: horizontal, eyebrow: eyebrow, title: title) {
 
-   @Image(source: "/path/to/image", alt: blah)
+               @Image(source: "/path/to/image", alt: blah)
 
-   Blah.
-}
-"""
+               Blah.
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let contentAndMedia = ContentAndMedia(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(contentAndMedia)
         XCTAssertEqual(problems.count, 3)

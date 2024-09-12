@@ -13,12 +13,12 @@ public struct HTTPResponsesSection {
     public static var title: String {
         return "Response Codes"
     }
-    
+
     /// The list of responses.
-    public var responses = [HTTPResponse]()
-    
+    public var responses: [HTTPResponse] = []
+
     /// Merge additional responses to section.
-    /// 
+    ///
     /// Preserves the order and merges in documentation and symbols to any existing responses.
     mutating public func mergeResponses(_ newResponses: [HTTPResponse]) {
         if responses.isEmpty {
@@ -26,7 +26,7 @@ public struct HTTPResponsesSection {
             responses = newResponses
             return
         }
-        
+
         // Update existing responses with new data being passed in.
         responses = responses.insertAndUpdate(newResponses) { existingResponse, newResponse in
             let contents = existingResponse.contents.count > 0 ? existingResponse.contents : newResponse.contents

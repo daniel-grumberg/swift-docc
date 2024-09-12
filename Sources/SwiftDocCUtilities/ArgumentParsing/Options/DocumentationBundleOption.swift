@@ -21,8 +21,10 @@ public struct DocumentationCatalogOption: DirectoryPathOption {
     @Argument(
         help: ArgumentHelp(
             "Path to a '.docc' documentation catalog directory.",
-            valueName: "catalog-path"),
-        transform: URL.init(fileURLWithPath:))
+            valueName: "catalog-path"
+        ),
+        transform: URL.init(fileURLWithPath:)
+    )
     public var url: URL?
 }
 

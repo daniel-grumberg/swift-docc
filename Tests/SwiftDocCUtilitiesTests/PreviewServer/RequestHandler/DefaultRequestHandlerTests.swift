@@ -19,29 +19,29 @@ import NIO
 import NIOHTTP1
 
 class DefaultRequestHandlerTests: XCTestCase {
-    
+
     func testDefaultHandler() throws {
         let tempFolderURL = try createTempFolder(content: [
-            TextFile(name: "index.html", utf8Content: "Hello!"),
+            TextFile(name: "index.html", utf8Content: "Hello!")
         ])
 
         // Default handler should be invoked for any non-asset path
         let request = makeRequestHead(uri: "/random-path")
         let factory = DefaultRequestHandler(rootURL: tempFolderURL)
         let response = try responseWithPipeline(request: request, handler: factory)
-        
+
         // Expected content
         XCTAssertEqual(response.body, "Hello!")
-        
+
         // Expected content type
         XCTAssertEqual(response.head?.headers["Content-type"], ["text/html"])
-        
+
         // No caching!
         XCTAssertEqual(response.head?.headers["ETag"], [])
         XCTAssertEqual(response.head?.headers["Pragma"], ["no-cache"])
         XCTAssertTrue(response.head?.headers["Cache-Control"].first?.contains("no-cache") ?? false)
     }
-    
+
     func testDefaultHandlerForExistingPath() throws {
         let tempFolderURL = try createTempFolder(content: [
             TextFile(name: "index.html", utf8Content: "Hello!"),
@@ -52,7 +52,7 @@ class DefaultRequestHandlerTests: XCTestCase {
         let request = makeRequestHead(uri: "/existing.html")
         let factory = DefaultRequestHandler(rootURL: tempFolderURL)
         let response = try responseWithPipeline(request: request, handler: factory)
-        
+
         // Expected content
         XCTAssertEqual(response.body, "Hello!")
     }

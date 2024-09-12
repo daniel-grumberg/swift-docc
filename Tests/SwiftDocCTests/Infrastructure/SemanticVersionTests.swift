@@ -9,6 +9,7 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 @testable import SymbolKit
 
@@ -28,11 +29,17 @@ class SemanticVersionTests: XCTestCase {
         XCTAssertNil(Version(string: "1.2.3-a"))
         XCTAssertNil(Version(string: "1.2.3~a"))
 
-        XCTAssertEqual(Version(major: 1, minor: 0, patch: 0),
-                       Version(string: "1"))
-        XCTAssertEqual(Version(major: 1, minor: 2, patch: 0),
-                       Version(string: "1.2"))
-        XCTAssertEqual(Version(major: 1, minor: 2, patch: 3),
-                       Version(string: "1.2.3"))
+        XCTAssertEqual(
+            Version(major: 1, minor: 0, patch: 0),
+            Version(string: "1")
+        )
+        XCTAssertEqual(
+            Version(major: 1, minor: 2, patch: 0),
+            Version(string: "1.2")
+        )
+        XCTAssertEqual(
+            Version(major: 1, minor: 2, patch: 3),
+            Version(string: "1.2.3")
+        )
     }
 }

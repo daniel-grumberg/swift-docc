@@ -10,25 +10,26 @@
 
 import Foundation
 import Markdown
-@testable import SwiftDocC
 import XCTest
+
+@testable import SwiftDocC
 
 class DocumentationNodeTests: XCTestCase {
     func testH4AndUpAnchorSections() throws {
         let articleSource = """
-        # Title
+            # Title
 
-        ## Heading2
+            ## Heading2
 
-        ### Heading3
-        
-        #### Heading4
-        
-        ##### Heading5
+            ### Heading3
 
-        ###### Heading6
-        """
-        
+            #### Heading4
+
+            ##### Heading5
+
+            ###### Heading6
+            """
+
         let article = Article(markup: Document(parsing: articleSource, options: []), metadata: nil, redirects: nil, options: [:])
         let node = try DocumentationNode(
             reference: ResolvedTopicReference(bundleIdentifier: "org.swift.docc", path: "/blah", sourceLanguage: .swift),

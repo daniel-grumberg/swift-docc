@@ -11,9 +11,7 @@
 import Foundation
 import Markdown
 
-/**
- A diagnostic note is a simple string message that should appear somewhere in a document.
- */
+/// A diagnostic note is a simple string message that should appear somewhere in a document.
 public struct DiagnosticNote {
     /// The source file to which to attach the `message`.
     public var source: URL

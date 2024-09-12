@@ -23,9 +23,10 @@ Signal.on(Signal.all) { _ in
     exit(99)
 }
 
-DispatchQueue.global().asyncAfter(deadline: .now() + 1) {
-    kill(getpid(), SIGABRT)
-}
+DispatchQueue.global()
+    .asyncAfter(deadline: .now() + 1) {
+        kill(getpid(), SIGABRT)
+    }
 
 print("Signal test app running.")
 RunLoop.current.run()

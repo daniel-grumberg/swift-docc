@@ -9,10 +9,10 @@
 */
 
 import Foundation
-
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class TutorialSectionTests: XCTestCase {
     func testEmpty() throws {
@@ -20,7 +20,7 @@ class TutorialSectionTests: XCTestCase {
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let section = TutorialSection(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNil(section)
         XCTAssertEqual(2, problems.count)

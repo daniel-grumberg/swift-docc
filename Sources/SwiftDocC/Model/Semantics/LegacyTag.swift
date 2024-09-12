@@ -16,12 +16,12 @@ import Markdown
 public struct SimpleTag {
     /// The name of the tag.
     public var tag: String
-    
+
     /// The tagged content.
     public var contents: [Markup]
-    
+
     /// Creates a new tagged piece of documentation from the given name and content.
-    /// 
+    ///
     /// - Parameters:
     ///   - tag: The name of the tag.
     ///   - contents: The tagged content.

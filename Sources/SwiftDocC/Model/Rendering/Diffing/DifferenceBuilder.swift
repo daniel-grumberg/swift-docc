@@ -15,121 +15,115 @@ import Foundation
 /// The DifferenceBuilder is used when diffing two ``RenderNode`` objects against each other.
 /// Initalize the DifferenceBuilder with the two.
 struct DifferenceBuilder<T> {
-    
+
     var differences: JSONPatchDifferences
     let current: T
     let other: T
     let path: CodablePath
-    
+
     init(current: T, other: T, basePath: CodablePath) {
         self.differences = []
         self.current = current
         self.other = other
         self.path = basePath
     }
-    
+
     /// Adds the difference between two properties to the DifferenceBuilder.
-    mutating func addDifferences(atKeyPath keyPath: KeyPath<T, some Equatable & Encodable>, forKey codingKey: CodingKey)
-    {
+    mutating func addDifferences(atKeyPath keyPath: KeyPath<T, some Equatable & Encodable>, forKey codingKey: CodingKey) {
         let currentProperty = current[keyPath: keyPath]
         let otherProperty = other[keyPath: keyPath]
-        
+
         if currentProperty != otherProperty {
             differences.append(.replace(pointer: JSONPointer(from: path + [codingKey]), encodableValue: currentProperty))
         }
     }
-    
+
     /// Determines the difference between the two diffable objects at the KeyPaths given.
-    mutating func addDifferences(atKeyPath keyPath: KeyPath<T, some RenderJSONDiffable & Equatable & Encodable>, forKey codingKey: CodingKey)
-    {
+    mutating func addDifferences(atKeyPath keyPath: KeyPath<T, some RenderJSONDiffable & Equatable & Encodable>, forKey codingKey: CodingKey) {
         let currentProperty = current[keyPath: keyPath]
         let otherProperty = other[keyPath: keyPath]
-        
+
         if currentProperty == otherProperty {
             return
         }
-        
+
         if currentProperty.isSimilar(to: otherProperty) {
             differences.append(contentsOf: currentProperty.difference(from: otherProperty, at: path + [codingKey]))
         } else {
             differences.append(.replace(pointer: JSONPointer(from: path + [codingKey]), encodableValue: currentProperty))
         }
     }
-    
+
     /// Determines the difference between the two arrays of diffable objects at the KeyPaths given.
-    mutating func addDifferences(atKeyPath keyPath: KeyPath<T, [String: some RenderJSONDiffable & Equatable & Encodable]>, forKey codingKey: CodingKey)
-    {
+    mutating func addDifferences(atKeyPath keyPath: KeyPath<T, [String: some RenderJSONDiffable & Equatable & Encodable]>, forKey codingKey: CodingKey) {
         let currentProperty = current[keyPath: keyPath]
         let otherProperty = other[keyPath: keyPath]
-        
+
         if currentProperty == otherProperty {
             return
         }
-        
+
         if currentProperty.isSimilar(to: otherProperty) {
             differences.append(contentsOf: currentProperty.difference(from: otherProperty, at: path + [codingKey]))
         } else {
             differences.append(.replace(pointer: JSONPointer(from: path + [codingKey]), encodableValue: currentProperty))
         }
     }
-    
+
     /// Determines the difference between the two dictionaries mapping strings to diffable objects at the KeyPaths given.
-    mutating func addDifferences(atKeyPath keyPath: KeyPath<T, [some RenderJSONDiffable & Equatable & Codable]>, forKey codingKey: CodingKey)
-    {
+    mutating func addDifferences(atKeyPath keyPath: KeyPath<T, [some RenderJSONDiffable & Equatable & Codable]>, forKey codingKey: CodingKey) {
         let currentProperty = current[keyPath: keyPath]
         let otherProperty = other[keyPath: keyPath]
-        
+
         if currentProperty == otherProperty {
             return
         }
-        
+
         if currentProperty.isSimilar(to: otherProperty) {
             differences.append(contentsOf: currentProperty.difference(from: otherProperty, at: path + [codingKey]))
         } else {
             differences.append(.replace(pointer: JSONPointer(from: path + [codingKey]), encodableValue: currentProperty))
         }
     }
-    
+
     /// Determines the difference between the two dictionaries mapping strings to diffable objects at the KeyPaths given.
-    mutating func addDifferences(atKeyPath keyPath: KeyPath<T, [some RenderJSONDiffable & Equatable & Codable]?>, forKey codingKey: CodingKey)
-    {
+    mutating func addDifferences(atKeyPath keyPath: KeyPath<T, [some RenderJSONDiffable & Equatable & Codable]?>, forKey codingKey: CodingKey) {
         let currentProperty = current[keyPath: keyPath]
         let otherProperty = other[keyPath: keyPath]
-        
+
         if currentProperty == otherProperty {
             return
         }
-        
+
         if currentProperty.isSimilar(to: otherProperty) {
             differences.append(contentsOf: currentProperty.difference(from: otherProperty, at: path + [codingKey]))
         } else {
             differences.append(.replace(pointer: JSONPointer(from: path + [codingKey]), encodableValue: currentProperty))
         }
     }
-    
+
     /// Determines the difference between the two dictionaries mapping strings to arrays of diffable objects at the KeyPaths given.
-    mutating func addDifferences(atKeyPath keyPath: KeyPath<T, [String: [some RenderJSONDiffable & Equatable & Encodable]]>, forKey codingKey: CodingKey)
-    {
+    mutating func addDifferences(atKeyPath keyPath: KeyPath<T, [String: [some RenderJSONDiffable & Equatable & Encodable]]>, forKey codingKey: CodingKey) {
         let currentProperty = current[keyPath: keyPath]
         let otherProperty = other[keyPath: keyPath]
-        
+
         if currentProperty == otherProperty {
             return
         }
-        
+
         if currentProperty.isSimilar(to: otherProperty) {
             differences.append(contentsOf: currentProperty.arrayValueDifference(from: otherProperty, at: path + [codingKey]))
         } else {
             differences.append(.replace(pointer: JSONPointer(from: path + [codingKey]), encodableValue: currentProperty))
         }
     }
-    
+
     /// Unwraps and adds the difference between two optional RenderSections.
     mutating func addDifferences(atKeyPath keyPath: KeyPath<T, RenderSection?>, forKey key: CodingKey) {
-        
+
         let currentProperty = current[keyPath: keyPath]
         let otherProperty = other[keyPath: keyPath]
-        
+
         if let currentProperty, let otherProperty {
             let anyCurrent = AnyRenderSection(currentProperty)
             let anyOther = AnyRenderSection(otherProperty)
@@ -144,19 +138,19 @@ struct DifferenceBuilder<T> {
             differences.append(.add(pointer: JSONPointer(from: path + [key]), encodableValue: currentProp))
         }
     }
-    
+
     /// Determines the difference between the two diffable Arrays of RenderSections at the KeyPaths given.
     mutating func addDifferences(atKeyPath keyPath: KeyPath<T, [RenderSection]>, forKey codingKey: CodingKey) {
         let currentArray = current[keyPath: keyPath]
         let otherArray = other[keyPath: keyPath]
-        
+
         let typeErasedCurrentArray = currentArray.map { section in
             return AnyRenderSection(section)
         }
         let typeErasedOtherArray = otherArray.map { section in
             return AnyRenderSection(section)
         }
-        
+
         if typeErasedCurrentArray == typeErasedOtherArray {
             return
         }
@@ -167,16 +161,18 @@ struct DifferenceBuilder<T> {
             differences.append(.replace(pointer: JSONPointer(from: path + [codingKey]), encodableValue: typeErasedCurrentArray))
         }
     }
-    
+
     /// Determines the difference between the two dictionaries of RenderReferences at the KeyPaths given.
     mutating func addDifferences(atKeyPath keyPath: KeyPath<T, [String: RenderReference]>, forKey codingKey: CodingKey) {
-        let currentDict = current[keyPath: keyPath].mapValues { section in
-            return AnyRenderReference(section)
-        }
-        let otherDict = other[keyPath: keyPath].mapValues { section in
-            return AnyRenderReference(section)
-        }
-        
+        let currentDict = current[keyPath: keyPath]
+            .mapValues { section in
+                return AnyRenderReference(section)
+            }
+        let otherDict = other[keyPath: keyPath]
+            .mapValues { section in
+                return AnyRenderReference(section)
+            }
+
         if currentDict == otherDict {
             return
         }

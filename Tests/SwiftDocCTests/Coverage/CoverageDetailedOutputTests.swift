@@ -9,6 +9,7 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class CoverageDetailedOutputTests: XCTestCase {
@@ -21,16 +22,16 @@ class CoverageDetailedOutputTests: XCTestCase {
             shouldGenerateDetailed: true
         )
         let expected = """
-                | Abstract        | Curated         | Code Listing
-Types           | (0/0)           | (0/0)           | (0/0)
-Members         | (0/0)           | (0/0)           | (0/0)
-Globals         | (0/0)           | (0/0)           | (0/0)
+                            | Abstract        | Curated         | Code Listing
+            Types           | (0/0)           | (0/0)           | (0/0)
+            Members         | (0/0)           | (0/0)           | (0/0)
+            Globals         | (0/0)           | (0/0)           | (0/0)
 
 
-Symbol Name                      Kind                             Abstract?      Curated?       Code Listing?     Parameters     Language          USR
---No Symbols to display--
+            Symbol Name                      Kind                             Abstract?      Curated?       Code Listing?     Parameters     Language          USR
+            --No Symbols to display--
 
-"""
+            """
         XCTAssertEqual(result, expected)
     }
 
@@ -46,7 +47,8 @@ Symbol Name                      Kind                             Abstract?     
                 isCurated: false,
                 hasCodeListing: false,
                 availability: nil,
-                kindSpecificData: .class(memberStats: [:])),
+                kindSpecificData: .class(memberStats: [:])
+            )
         ]
 
         let result = CoverageDataEntry.generateSummary(
@@ -55,16 +57,16 @@ Symbol Name                      Kind                             Abstract?     
             shouldGenerateDetailed: true
         )
         let expected = """
-                | Abstract        | Curated         | Code Listing
-Types           | \(ratio(1, 1, length: 15)) | \(ratio(0, 1, length: 15)) | \(ratio(0, 1))
-Members         | (0/0)           | (0/0)           | (0/0)
-Globals         | (0/0)           | (0/0)           | (0/0)
+                            | Abstract        | Curated         | Code Listing
+            Types           | \(ratio(1, 1, length: 15)) | \(ratio(0, 1, length: 15)) | \(ratio(0, 1))
+            Members         | (0/0)           | (0/0)           | (0/0)
+            Globals         | (0/0)           | (0/0)           | (0/0)
 
 
-Symbol Name                      Kind                             Abstract?      Curated?       Code Listing?     Parameters     Language          USR
-MyDocumentedUncuratedClass     | Class                          | true         | false        | false           | -            | Swift           | doc://org.swift.docc.example/documentation/MyLibrary/MyClass
+            Symbol Name                      Kind                             Abstract?      Curated?       Code Listing?     Parameters     Language          USR
+            MyDocumentedUncuratedClass     | Class                          | true         | false        | false           | -            | Swift           | doc://org.swift.docc.example/documentation/MyLibrary/MyClass
 
-"""
+            """
         XCTAssertEqual(result, expected)
     }
 
@@ -80,7 +82,8 @@ MyDocumentedUncuratedClass     | Class                          | true         |
                 isCurated: false,
                 hasCodeListing: true,
                 availability: nil,
-                kindSpecificData: .class(memberStats: [:])),
+                kindSpecificData: .class(memberStats: [:])
+            ),
             CoverageDataEntry(
                 title: "MyDocumentedUncuratedClassProperty",
                 usr: "doc://org.swift.docc.example/documentation/MyLibrary/MyClass/myProperty",
@@ -91,7 +94,8 @@ MyDocumentedUncuratedClass     | Class                          | true         |
                 isCurated: true,
                 hasCodeListing: false,
                 availability: nil,
-                kindSpecificData: .instanceProperty),
+                kindSpecificData: .instanceProperty
+            ),
         ]
 
         let result = CoverageDataEntry.generateSummary(
@@ -100,11 +104,11 @@ MyDocumentedUncuratedClass     | Class                          | true         |
             shouldGenerateDetailed: true
         )
         let expected = """
-Symbol Name                      Kind                             Abstract?      Curated?       Code Listing?     Parameters     Language          USR
-MyDocumentedUncuratedClass     | Class                          | true         | false        | true            | -            | Swift           | doc://org.swift.docc.example/documentation/MyLibrary/MyClass
-MyDocumentedUncuratedClassProp | Instance Property              | false        | true         | false           | -            | Swift           | doc://org.swift.docc.example/documentation/MyLibrary/MyClass/myProperty
+            Symbol Name                      Kind                             Abstract?      Curated?       Code Listing?     Parameters     Language          USR
+            MyDocumentedUncuratedClass     | Class                          | true         | false        | true            | -            | Swift           | doc://org.swift.docc.example/documentation/MyLibrary/MyClass
+            MyDocumentedUncuratedClassProp | Instance Property              | false        | true         | false           | -            | Swift           | doc://org.swift.docc.example/documentation/MyLibrary/MyClass/myProperty
 
-"""
+            """
         XCTAssertEqual(result, expected)
     }
 }

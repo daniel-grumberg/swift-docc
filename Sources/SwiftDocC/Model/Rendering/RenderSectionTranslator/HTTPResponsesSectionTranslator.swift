@@ -22,45 +22,46 @@ struct HTTPResponsesSectionTranslator: RenderSectionTranslator {
         ) { _, httpResponsesSection in
             // Filter out responses that aren't backed by a symbol
             let filteredResponses = httpResponsesSection.responses.filter { $0.symbol != nil }
-            
+
             if filteredResponses.isEmpty { return nil }
-            
+
             return RESTResponseRenderSection(
                 title: HTTPResponsesSection.title,
                 items: filteredResponses.map { translateResponse($0, &renderNodeTranslator) }
             )
         }
     }
-    
+
     func translateResponse(_ response: HTTPResponse, _ renderNodeTranslator: inout RenderNodeTranslator) -> RESTResponse {
-        let responseContent = renderNodeTranslator.visitMarkupContainer(
-            MarkupContainer(response.contents)
-        ) as! [RenderBlockContent]
-        
+        let responseContent =
+            renderNodeTranslator.visitMarkupContainer(
+                MarkupContainer(response.contents)
+            ) as! [RenderBlockContent]
+
         var renderedTokens: [DeclarationRenderSection.Token]? = nil
-        
+
         if let responseSymbol = response.symbol {
             // Convert the dictionary key's declaration into section tokens
             if let fragments = responseSymbol.declarationFragments {
                 renderedTokens = fragments.map { token -> DeclarationRenderSection.Token in
                     let reference: ResolvedTopicReference?
                     if let preciseIdentifier = token.preciseIdentifier,
-                       let resolved = renderNodeTranslator.context.localOrExternalReference(symbolID: preciseIdentifier)
+                        let resolved = renderNodeTranslator.context.localOrExternalReference(symbolID: preciseIdentifier)
                     {
                         reference = resolved
-                        
+
                         // Add relationship to render references
                         renderNodeTranslator.collectedTopicReferences.append(resolved)
                     } else {
                         reference = nil
                     }
-                    
+
                     // Add the declaration token
                     return DeclarationRenderSection.Token(fragment: token, identifier: reference?.absoluteString)
                 }
             }
         }
-        
+
         return RESTResponse(
             status: response.statusCode,
             reason: response.reason ?? Self.reasonForStatusCode[response.statusCode],
@@ -69,7 +70,7 @@ struct HTTPResponsesSectionTranslator: RenderSectionTranslator {
             content: responseContent
         )
     }
-    
+
     // Default reason strings in case one not explicitly set.
     static let reasonForStatusCode: [UInt: String] = [
         100: "Continue",
@@ -111,6 +112,6 @@ struct HTTPResponsesSectionTranslator: RenderSectionTranslator {
         502: "Bad Gateway",
         503: "Service Unavailable",
         504: "Gateway Time-out",
-        505: "HTTP Version not supported"
+        505: "HTTP Version not supported",
     ]
 }

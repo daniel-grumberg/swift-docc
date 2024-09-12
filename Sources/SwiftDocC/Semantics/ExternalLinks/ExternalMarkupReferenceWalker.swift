@@ -15,9 +15,9 @@ import Markdown
 struct ExternalMarkupReferenceWalker: MarkupVisitor {
     /// The local bundle ID, used to identify and skip absolute fully qualified local links.
     var localBundleID: BundleIdentifier
-    
+
     /// After walking a markup tree, all encountered external links are collected grouped by the bundle ID.
-    var collectedExternalLinks = [BundleIdentifier: Set<ValidatedURL>]()
+    var collectedExternalLinks: [BundleIdentifier: Set<ValidatedURL>] = [:]
 
     /// Descends down the given elements' children.
     mutating func defaultVisit(_ markup: Markup) {
@@ -30,13 +30,13 @@ struct ExternalMarkupReferenceWalker: MarkupVisitor {
     mutating func visitLink(_ link: Link) {
         // Only process documentation links to external bundles
         guard let destination = link.destination,
-              let url = ValidatedURL(parsingAuthoredLink: destination)?.requiring(scheme: ResolvedTopicReference.urlScheme),
-              let bundleID = url.components.host,
-              bundleID != localBundleID
+            let url = ValidatedURL(parsingAuthoredLink: destination)?.requiring(scheme: ResolvedTopicReference.urlScheme),
+            let bundleID = url.components.host,
+            bundleID != localBundleID
         else {
             return
         }
-        
+
         // Collect the external link.
         collectedExternalLinks[bundleID, default: []].insert(url)
     }

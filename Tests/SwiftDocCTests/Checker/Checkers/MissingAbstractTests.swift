@@ -8,53 +8,54 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class MissingAbstractTests: XCTestCase, CheckerTest {
-    
+
     func gatherProblems(for document: Document) -> [Problem] {
         var checker = MissingAbstract(sourceFile: nil)
         checker.visit(document)
         return checker.problems
     }
-    
+
     func testDocumentHasAbstract() {
         let source = """
-        # Title
+            # Title
 
-        This is an abstract.
-        """
+            This is an abstract.
+            """
         let document = Document(parsing: source, options: [])
         let problems = gatherProblems(for: document)
         XCTAssertTrue(problems.isEmpty)
     }
-    
+
     func testDocumentHasNoContentAfterTitle() {
         let document = Document(parsing: "# Title", options: [])
         let problems = gatherProblems(for: document)
         XCTAssertEqual(problems.count, 0)
     }
-    
+
     func testDocumentIsEmpty() {
         let document = Document(parsing: "", options: [])
         let problems = gatherProblems(for: document)
         XCTAssertEqual(problems.count, 0)
     }
-    
+
     func testDocumentHasListAfterTitle() {
         let source = """
-        # Title
+            # Title
 
-        - Foo
-        - Bar
-        """
+            - Foo
+            - Bar
+            """
 
         let document = Document(parsing: source, options: [])
         let problems = gatherProblems(for: document)
         XCTAssertEqual(problems.count, 1)
-        
+
         let problem = problems[0]
         let title = document.child(at: 0)! as! Heading
         XCTAssertEqual(problem.diagnostic.identifier, "org.swift.docc.DocumentHasNoAbstract")
@@ -62,30 +63,30 @@ class MissingAbstractTests: XCTestCase, CheckerTest {
         XCTAssertEqual(problem.diagnostic.severity, .information)
 
     }
-    
+
     func testDocumentHasTitleAfterTitle() {
         let source = """
-        # Title
-        # Title
-        """
-        
+            # Title
+            # Title
+            """
+
         let document = Document(parsing: source, options: [])
         let problems = gatherProblems(for: document)
         XCTAssertEqual(problems.count, 1)
-        
+
         let problem = problems[0]
         let title = document.child(at: 0)! as! Heading
         XCTAssertEqual(problem.diagnostic.identifier, "org.swift.docc.DocumentHasNoAbstract")
         XCTAssertEqual(problem.diagnostic.range, title.range)
     }
-    
+
     func testNoTitle() {
         let document = Document(parsing: "- List item", options: [])
         let problems = gatherProblems(for: document)
         XCTAssertEqual(problems.count, 1)
-        
+
         let problem = problems[0]
-        
+
         let zeroLocation = SourceLocation(line: 1, column: 1, source: nil)
         let endOfElementLocation = SourceLocation(line: 1, column: 12, source: nil)
         XCTAssertEqual(problem.diagnostic.range, zeroLocation..<endOfElementLocation)

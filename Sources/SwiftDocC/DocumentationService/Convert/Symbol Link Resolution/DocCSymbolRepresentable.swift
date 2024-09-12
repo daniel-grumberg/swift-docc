@@ -17,12 +17,12 @@ public protocol DocCSymbolRepresentable: Equatable {
     ///
     /// For example, a Swift class might use `swift.class`.
     var kindIdentifier: String? { get }
-    
+
     /// A unique identifier for this symbol.
     ///
     /// For Swift, this is the USR.
     var preciseIdentifier: String? { get }
-    
+
     /// The case-sensitive title of this symbol as would be used in documentation.
     ///
     /// > Note: DocC embeds function parameter information directly in the title.
@@ -62,14 +62,15 @@ extension AbsoluteSymbolLink.LinkComponent {
         guard !overloadedSymbols.isEmpty else {
             return []
         }
-        
+
         // Pair each overloaded symbol with its required disambiguation
         // suffix. This will tell us what kind of disambiguation suffix the
         // link should have.
         let overloadedSymbolsWithSuffixes = zip(
-            overloadedSymbols, overloadedSymbols.requiredDisambiguationSuffixes
+            overloadedSymbols,
+            overloadedSymbols.requiredDisambiguationSuffixes
         )
-        
+
         // Next we filter the given symbols for those that are precise matches
         // for the component.
         let matchingSymbols = overloadedSymbolsWithSuffixes.filter { (symbol, _) in
@@ -78,7 +79,7 @@ extension AbsoluteSymbolLink.LinkComponent {
             // This _should_ always return a single element but we can't be entirely sure.
             return fullyRepresentsSymbol(symbol)
         }
-        
+
         // We now check all the returned matching symbols to confirm that
         // the current link has the correct disambiguation suffix
         for (_, (shouldAddIdHash, shouldAddKind)) in matchingSymbols {
@@ -100,12 +101,12 @@ extension AbsoluteSymbolLink.LinkComponent {
                 }
             }
         }
-        
+
         // Since we've validated that the link has the correct
         // disambiguation suffix, we now return all matching symbols.
         return matchingSymbols.map(\.0)
     }
-    
+
     /// Returns true if the given symbol is fully represented by the
     /// symbol link.
     ///
@@ -118,7 +119,7 @@ extension AbsoluteSymbolLink.LinkComponent {
         guard name == symbol.title else {
             return false
         }
-        
+
         switch self.disambiguationSuffix {
         case .none:
             return true
@@ -126,9 +127,7 @@ extension AbsoluteSymbolLink.LinkComponent {
             return symbol.kindIdentifier == kindIdentifier
         case .preciseIdentifierHash(let preciseIdentifierHash):
             return symbol.preciseIdentifier?.stableHashString == preciseIdentifierHash
-        case .kindAndPreciseIdentifier(
-            kindIdentifier: let kindIdentifier,
-            preciseIdentifierHash: let preciseIdentifierHash):
+        case .kindAndPreciseIdentifier(let kindIdentifier, let preciseIdentifierHash):
             return symbol.preciseIdentifier?.stableHashString == preciseIdentifierHash
                 && symbol.kindIdentifier == kindIdentifier
         }
@@ -142,12 +141,12 @@ public extension Collection where Element: DocCSymbolRepresentable {
         guard let first else {
             return []
         }
-        
+
         guard count > 1 else {
             // There are no path collisions
             return Array(repeating: (shouldAddIdHash: false, shouldAddKind: false), count: count)
         }
-        
+
         if allSatisfy({ symbol in symbol.kindIdentifier == first.kindIdentifier }) {
             // All collisions are the same symbol kind.
             return Array(repeating: (shouldAddIdHash: true, shouldAddKind: false), count: count)
@@ -177,15 +176,15 @@ extension SymbolGraph.Symbol: DocCSymbolRepresentable {
     public var preciseIdentifier: String? {
         self.identifier.precise
     }
-    
+
     public var title: String {
         self.names.title
     }
-    
+
     public var kindIdentifier: String? {
         "\(self.identifier.interfaceLanguage).\(self.kind.identifier.identifier)"
     }
-    
+
     public static func == (lhs: SymbolGraph.Symbol, rhs: SymbolGraph.Symbol) -> Bool {
         lhs.identifier.precise == rhs.identifier.precise
     }
@@ -198,7 +197,8 @@ extension UnifiedSymbolGraph.Symbol: DocCSymbolRepresentable {
 
     public var title: String {
         guard let selector = self.defaultSelector else {
-            fatalError("""
+            fatalError(
+                """
                 Failed to find a supported default selector. \
                 Language unsupported or corrupt symbol graph provided.
                 """
@@ -210,7 +210,8 @@ extension UnifiedSymbolGraph.Symbol: DocCSymbolRepresentable {
 
     public var kindIdentifier: String? {
         guard let selector = self.defaultSelector else {
-            fatalError("""
+            fatalError(
+                """
                 Failed to find a supported default selector. \
                 Language unsupported or corrupt symbol graph provided.
                 """

@@ -9,10 +9,10 @@
 */
 
 import Foundation
-
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class RedirectedTests: XCTestCase {
     func testEmpty() throws {
@@ -20,52 +20,52 @@ class RedirectedTests: XCTestCase {
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let redirected = Redirect(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNil(redirected)
         XCTAssertEqual(1, problems.count)
         XCTAssertFalse(problems.containsErrors)
         XCTAssertEqual("org.swift.docc.HasArgument.from", problems.first?.diagnostic.identifier)
     }
-    
+
     func testValid() throws {
         let oldPath = "/old/path/to/this/page"
         let source = "@Redirected(from: \(oldPath))"
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let redirected = Redirect(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(redirected)
         XCTAssertTrue(problems.isEmpty)
         XCTAssertEqual(redirected?.oldPath.path, oldPath)
     }
-    
+
     func testExtraArguments() throws {
         let oldPath = "/old/path/to/this/page"
         let source = "@Redirected(from: \(oldPath), argument: value)"
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let redirected = Redirect(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(redirected, "Even if there are warnings we can create a Redirected value")
         XCTAssertFalse(problems.containsErrors)
         XCTAssertEqual(1, problems.count)
         XCTAssertEqual("org.swift.docc.UnknownArgument", problems.first?.diagnostic.identifier)
     }
-    
+
     func testExtraDirective() throws {
         let oldPath = "/old/path/to/this/page"
         let source = """
-        @Redirected(from: \(oldPath)) {
-           @Image
-        }
-        """
+            @Redirected(from: \(oldPath)) {
+               @Image
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let redirected = Redirect(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(redirected, "Even if there are warnings we can create a Redirected value")
         XCTAssertEqual(2, problems.count)
@@ -73,237 +73,237 @@ class RedirectedTests: XCTestCase {
         XCTAssertEqual("org.swift.docc.HasOnlyKnownDirectives", problems.first?.diagnostic.identifier)
         XCTAssertEqual("org.swift.docc.Redirected.NoInnerContentAllowed", problems.last?.diagnostic.identifier)
     }
-    
+
     func testExtraContent() throws {
         let oldPath = "/old/path/to/this/page"
         let source = """
-        @Redirected(from: \(oldPath)) {
-           Some text
-        }
-        """
+            @Redirected(from: \(oldPath)) {
+               Some text
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let redirected = Redirect(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(redirected, "Even if there are warnings we can create a Redirected value")
         XCTAssertFalse(problems.containsErrors)
         XCTAssertEqual(1, problems.count)
         XCTAssertEqual("org.swift.docc.Redirected.NoInnerContentAllowed", problems.first?.diagnostic.identifier)
     }
-    
+
     // MARK: - Redirect support
-    
+
     func testTechnologySupportsRedirect() throws {
         let source = """
-        @Tutorials(name: "Technology X") {
-           @Intro(title: "Technology X") {
-              You'll learn all about Technology X.
-           }
-           
-           @Redirected(from: /old/path/to/this/page)
-           @Redirected(from: /another/old/path/to/this/page)
-        }
-        """
+            @Tutorials(name: "Technology X") {
+               @Intro(title: "Technology X") {
+                  You'll learn all about Technology X.
+               }
+               
+               @Redirected(from: /old/path/to/this/page)
+               @Redirected(from: /another/old/path/to/this/page)
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let technology = Technology(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(technology, "A Technology value can be created with a Redirected child.")
         XCTAssert(problems.isEmpty, "There shouldn't be any problems. Got:\n\(problems.map { $0.diagnostic.summary })")
-        
+
         var analyzer = SemanticAnalyzer(source: nil, context: context, bundle: bundle)
         _ = analyzer.visit(document)
         XCTAssert(analyzer.problems.isEmpty, "Expected no problems. Got \(DiagnosticConsoleWriter.formattedDescription(for:  analyzer.problems))")
     }
-    
+
     func testVolumeAndChapterSupportsRedirect() throws {
         let source = """
-        @Volume(name: "Name of this volume") {
-           @Image(source: image.png, alt: image)
-           
-           @Redirected(from: /old/path/to/this/page)
-           @Redirected(from: /another/old/path/to/this/page)
-           
-           @Chapter(name: "Chapter 1") {
-              In this chapter, you'll follow Tutorial 1. Feel free to add more `Reference`s below.
-              
-              @Redirected(from: /old/path/to/this/page)
-              @Redirected(from: /another/old/path/to/this/page)
+            @Volume(name: "Name of this volume") {
+               @Image(source: image.png, alt: image)
+               
+               @Redirected(from: /old/path/to/this/page)
+               @Redirected(from: /another/old/path/to/this/page)
+               
+               @Chapter(name: "Chapter 1") {
+                  In this chapter, you'll follow Tutorial 1. Feel free to add more `Reference`s below.
+                  
+                  @Redirected(from: /old/path/to/this/page)
+                  @Redirected(from: /another/old/path/to/this/page)
 
-              @Image(source: image.png, alt: image)
-              @TutorialReference(tutorial: "doc://com.test.bundle/Tutorial")
-           }
-        }
-        """
+                  @Image(source: image.png, alt: image)
+                  @TutorialReference(tutorial: "doc://com.test.bundle/Tutorial")
+               }
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let volume = Volume(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(volume, "A Volume value can be created with a Redirected child.")
         XCTAssert(problems.isEmpty, "There shouldn't be any problems. Got:\n\(problems.map { $0.diagnostic.summary })")
     }
-    
+
     func testTutorialAndSectionsSupportsRedirect() throws {
         let source = """
-        @Tutorial(time: 20, projectFiles: project.zip) {
-           @Intro(title: "Basic Augmented Reality App") {
-              @Video(source: video.mov)
-           }
-           
-           @Redirected(from: /old/path/to/this/page)
-           @Redirected(from: /another/old/path/to/this/page)
-           
-           @Section(title: "Create a New AR Project") {
-              @ContentAndMedia {
-                 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-                 ut labore et dolore magna aliqua. Phasellus faucibus scelerisque eleifend donec pretium.
+            @Tutorial(time: 20, projectFiles: project.zip) {
+               @Intro(title: "Basic Augmented Reality App") {
+                  @Video(source: video.mov)
+               }
+               
+               @Redirected(from: /old/path/to/this/page)
+               @Redirected(from: /another/old/path/to/this/page)
+               
+               @Section(title: "Create a New AR Project") {
+                  @ContentAndMedia {
+                     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
+                     ut labore et dolore magna aliqua. Phasellus faucibus scelerisque eleifend donec pretium.
 
-                 Ultrices dui sapien eget mi proin sed libero enim. Quis auctor elit sed vulputate mi sit amet.
+                     Ultrices dui sapien eget mi proin sed libero enim. Quis auctor elit sed vulputate mi sit amet.
 
-                 @Image(source: arkit.png, alt: "Description of this image")
-              }
+                     @Image(source: arkit.png, alt: "Description of this image")
+                  }
 
-              @Redirected(from: /old/path/to/this/page)
-              @Redirected(from: /another/old/path/to/this/page)
-              
-              @Steps {
-                 Let's get started building the Augmented Reality app.
-              
-                 @Step {
-                    Lorem ipsum dolor sit amet, consectetur.
-                
-                    @Image(source: Sierra.jpg, alt: "Description of this image")
-                 }
-              }
-           }
-           @Assessments {
-              @MultipleChoice {
-                 Lorem ipsum dolor sit amet?
-                                              
-                 @Choice(isCorrect: true) {
-                    `anchor.hitTest(view)`
+                  @Redirected(from: /old/path/to/this/page)
+                  @Redirected(from: /another/old/path/to/this/page)
+                  
+                  @Steps {
+                     Let's get started building the Augmented Reality app.
+                  
+                     @Step {
+                        Lorem ipsum dolor sit amet, consectetur.
                     
-                    @Justification {
-                       This is correct because it is.
-                    }
-                 }
+                        @Image(source: Sierra.jpg, alt: "Description of this image")
+                     }
+                  }
+               }
+               @Assessments {
+                  @MultipleChoice {
+                     Lorem ipsum dolor sit amet?
+                                                  
+                     @Choice(isCorrect: true) {
+                        `anchor.hitTest(view)`
+                        
+                        @Justification {
+                           This is correct because it is.
+                        }
+                     }
 
-                 @Choice(isCorrect: false) {
-                    `anchor.hitTest(view)`
-                    
-                    @Justification {
-                       This is false because it is.
-                    }
-                 }
-              }
-           }
-        }
-        """
+                     @Choice(isCorrect: false) {
+                        `anchor.hitTest(view)`
+                        
+                        @Justification {
+                           This is false because it is.
+                        }
+                     }
+                  }
+               }
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let tutorial = Tutorial(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(tutorial, "A Tutorial value can be created with a Redirected child.")
         XCTAssert(problems.isEmpty, "There shouldn't be any problems. Got:\n\(problems.map { $0.diagnostic.summary })")
-        
+
         var analyzer = SemanticAnalyzer(source: nil, context: context, bundle: bundle)
         _ = analyzer.visit(document)
         XCTAssert(analyzer.problems.isEmpty, "Expected no problems. Got \(DiagnosticConsoleWriter.formattedDescription(for:  analyzer.problems))")
     }
-    
+
     func testTutorialArticleSupportsRedirect() throws {
         let source = """
-        @Article(time: 20) {
-           @Intro(title: "Making an Augmented Reality App") {
-              This is an abstract for the intro.
-           }
+            @Article(time: 20) {
+               @Intro(title: "Making an Augmented Reality App") {
+                  This is an abstract for the intro.
+               }
 
-           @Redirected(from: /old/path/to/this/page)
-           @Redirected(from: /another/old/path/to/this/page)
-           
-           ## Section Name
-           
-           ![full width image](referenced-article-image.png)
-        }
-        """
+               @Redirected(from: /old/path/to/this/page)
+               @Redirected(from: /another/old/path/to/this/page)
+               
+               ## Section Name
+               
+               ![full width image](referenced-article-image.png)
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let article = TutorialArticle(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(article, "A TutorialArticle value can be created with a Redirected child.")
         XCTAssert(problems.isEmpty, "There shouldn't be any problems. Got:\n\(problems.map { $0.diagnostic.summary })")
-        
+
         var analyzer = SemanticAnalyzer(source: nil, context: context, bundle: bundle)
         _ = analyzer.visit(document)
         XCTAssert(analyzer.problems.isEmpty, "Expected no problems. Got \(DiagnosticConsoleWriter.formattedDescription(for:  analyzer.problems))")
     }
-    
+
     func testResourcesSupportsRedirect() throws {
         let source = """
-        @Resources(technology: doc:/TestOverview) {
-           Find the tools and a comprehensive set of resources for creating AR experiences on iOS.
+            @Resources(technology: doc:/TestOverview) {
+               Find the tools and a comprehensive set of resources for creating AR experiences on iOS.
 
-           @Redirected(from: /old/path/to/this/page)
-           @Redirected(from: /another/old/path/to/this/page)
+               @Redirected(from: /old/path/to/this/page)
+               @Redirected(from: /another/old/path/to/this/page)
 
-           @Documentation(destination: "https://www.example.com/documentation/technology") {
-              Browse and search detailed API documentation.
+               @Documentation(destination: "https://www.example.com/documentation/technology") {
+                  Browse and search detailed API documentation.
 
-              - <doc://org.swift.docc.example/tutorials/Test-Bundle/TestTutorial>
-              - <doc://org.swift.docc.example/tutorials/Test-Bundle/TestTutorial2>
-           }
+                  - <doc://org.swift.docc.example/tutorials/Test-Bundle/TestTutorial>
+                  - <doc://org.swift.docc.example/tutorials/Test-Bundle/TestTutorial2>
+               }
 
-           @SampleCode(destination: "https://www.example.com/documentation/technology") {
-              Browse and search detailed sample code.
+               @SampleCode(destination: "https://www.example.com/documentation/technology") {
+                  Browse and search detailed sample code.
 
-              - <doc://org.swift.docc.example/tutorials/Test-Bundle/TestTutorial>
-              - <doc://org.swift.docc.example/tutorials/Test-Bundle/TestTutorial2>
-           }
+                  - <doc://org.swift.docc.example/tutorials/Test-Bundle/TestTutorial>
+                  - <doc://org.swift.docc.example/tutorials/Test-Bundle/TestTutorial2>
+               }
 
-           @Downloads(destination: "https://www.example.com/download") {
-              Download Xcode 10, which includes the latest tools and SDKs.
-           }
+               @Downloads(destination: "https://www.example.com/download") {
+                  Download Xcode 10, which includes the latest tools and SDKs.
+               }
 
-           @Videos(destination: "https://www.example.com/videos") {
-              See AR presentation from WWDC and other events.
-           }
+               @Videos(destination: "https://www.example.com/videos") {
+                  See AR presentation from WWDC and other events.
+               }
 
-           @Forums(destination: "https://www.example.com/forums") {
-              Discuss AR with Apple engineers and other developers.
-           }
-        }
+               @Forums(destination: "https://www.example.com/forums") {
+                  Discuss AR with Apple engineers and other developers.
+               }
+            }
 
-        """
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let article = Resources(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(article, "A Resources value can be created with a Redirected child.")
         XCTAssert(problems.isEmpty, "There shouldn't be any problems. Got:\n\(problems.map { $0.diagnostic.summary })")
     }
-    
+
     func testArticleSupportsRedirect() throws {
         let source = """
-        # Plain article
-        
-        The abstract of this article
-        
-        @Redirected(from: /old/path/to/this/page)
-        @Redirected(from: /another/old/path/to/this/page)
+            # Plain article
 
-        ## Section Name
+            The abstract of this article
 
-        ![full width image](referenced-article-image.png)
-        """
+            @Redirected(from: /old/path/to/this/page)
+            @Redirected(from: /another/old/path/to/this/page)
+
+            ## Section Name
+
+            ![full width image](referenced-article-image.png)
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let article = Article(from: document, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(article, "An Article value can be created with a Redirected child.")
         XCTAssert(problems.isEmpty, "There shouldn't be any problems. Got:\n\(problems.map { $0.diagnostic.summary })")
@@ -314,31 +314,34 @@ class RedirectedTests: XCTestCase {
 
         let redirects = try XCTUnwrap(article?.redirects)
         XCTAssertEqual(2, redirects.count)
-        let oldPaths = redirects.map{ $0.oldPath.relativePath }.sorted()
-        XCTAssertEqual([
-            "/another/old/path/to/this/page",
-            "/old/path/to/this/page",
-        ], oldPaths)
+        let oldPaths = redirects.map { $0.oldPath.relativePath }.sorted()
+        XCTAssertEqual(
+            [
+                "/another/old/path/to/this/page",
+                "/old/path/to/this/page",
+            ],
+            oldPaths
+        )
     }
 
     func testArticleSupportsRedirectInMetadata() throws {
         let source = """
-        # Plain article
+            # Plain article
 
-        The abstract of this article
+            The abstract of this article
 
-        @Metadata {
-            @Redirected(from: /old/path/to/this/page)
-            @Redirected(from: /another/old/path/to/this/page)
-        }
+            @Metadata {
+                @Redirected(from: /old/path/to/this/page)
+                @Redirected(from: /another/old/path/to/this/page)
+            }
 
-        ## Section Name
+            ## Section Name
 
-        ![full width image](referenced-article-image.png)
-        """
+            ![full width image](referenced-article-image.png)
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let article = Article(from: document, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(article, "An Article value can be created with a Redirected child.")
         XCTAssert(problems.isEmpty, "There shouldn't be any problems. Got:\n\(problems.map { $0.diagnostic.summary })")
@@ -349,69 +352,75 @@ class RedirectedTests: XCTestCase {
 
         let redirects = try XCTUnwrap(article?.redirects)
         XCTAssertEqual(2, redirects.count)
-        let oldPaths = redirects.map{ $0.oldPath.relativePath }.sorted()
-        XCTAssertEqual([
-            "/another/old/path/to/this/page",
-            "/old/path/to/this/page",
-        ], oldPaths)
+        let oldPaths = redirects.map { $0.oldPath.relativePath }.sorted()
+        XCTAssertEqual(
+            [
+                "/another/old/path/to/this/page",
+                "/old/path/to/this/page",
+            ],
+            oldPaths
+        )
     }
 
     func testArticleSupportsBothRedirects() throws {
         let source = """
-        # Plain article
+            # Plain article
 
-        The abstract of this article
+            The abstract of this article
 
-        @Metadata {
-            @Redirected(from: /old/path/to/this/page)
-            @Redirected(from: /another/old/path/to/this/page)
-        }
+            @Metadata {
+                @Redirected(from: /old/path/to/this/page)
+                @Redirected(from: /another/old/path/to/this/page)
+            }
 
-        ## Section Name
+            ## Section Name
 
-        @Redirected(from: /third/old/path/to/this/page)
+            @Redirected(from: /third/old/path/to/this/page)
 
-        ![full width image](referenced-article-image.png)
-        """
+            ![full width image](referenced-article-image.png)
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let article = Article(from: document, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(article, "An Article value can be created with a Redirected child.")
         XCTAssert(problems.isEmpty, "There shouldn't be any problems. Got:\n\(problems.map { $0.diagnostic.summary })")
-                
+
         var analyzer = SemanticAnalyzer(source: nil, context: context, bundle: bundle)
         _ = analyzer.visit(document)
         XCTAssert(analyzer.problems.isEmpty, "Expected no problems. Got \(DiagnosticConsoleWriter.formattedDescription(for:  analyzer.problems))")
 
         let redirects = try XCTUnwrap(article?.redirects)
         XCTAssertEqual(3, redirects.count)
-        let oldPaths = redirects.map{ $0.oldPath.relativePath }.sorted()
-        XCTAssertEqual([
-            "/another/old/path/to/this/page",
-            "/old/path/to/this/page",
-            "/third/old/path/to/this/page",
-        ], oldPaths)
+        let oldPaths = redirects.map { $0.oldPath.relativePath }.sorted()
+        XCTAssertEqual(
+            [
+                "/another/old/path/to/this/page",
+                "/old/path/to/this/page",
+                "/third/old/path/to/this/page",
+            ],
+            oldPaths
+        )
     }
-    
+
     func testIncorrectArgumentLabel() throws {
         let source = "@Redirected(fromURL: /old/path)"
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let redirected = Redirect(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNil(redirected)
         XCTAssertEqual(2, problems.count)
         XCTAssertFalse(problems.containsErrors)
-        
+
         let expectedIds = [
             "org.swift.docc.UnknownArgument",
             "org.swift.docc.HasArgument.from",
         ]
-        
+
         let problemIds = problems.map(\.diagnostic.identifier)
-        
+
         for id in expectedIds {
             XCTAssertTrue(problemIds.contains(id))
         }

@@ -8,9 +8,10 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class MultipleChoiceTests: XCTestCase {
     func testInvalidEmpty() throws {
@@ -18,11 +19,11 @@ class MultipleChoiceTests: XCTestCase {
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(MultipleChoice.directiveName, directive.name)
             let multipleChoice = MultipleChoice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNil(multipleChoice)
@@ -33,30 +34,30 @@ class MultipleChoiceTests: XCTestCase {
             XCTAssertTrue(diagnosticIdentifiers.contains("org.swift.docc.\(MultipleChoice.self).CorrectChoiceProvided"))
         }
     }
-    
+
     func testInvalidTooFewChoices() throws {
         let source = """
-@MultipleChoice {
-  What is your favorite color?
+            @MultipleChoice {
+              What is your favorite color?
 
-  Here's the first question.
+              Here's the first question.
 
-  @Choice(isCorrect: true) {
-     A.
-     @Justification {
-        Because.
-     }
-   }
-}
-"""
+              @Choice(isCorrect: true) {
+                 A.
+                 @Justification {
+                    Because.
+                 }
+               }
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         try directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(MultipleChoice.directiveName, directive.name)
             let multipleChoice = MultipleChoice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNotNil(multipleChoice)
@@ -69,42 +70,42 @@ class MultipleChoiceTests: XCTestCase {
             XCTAssertEqual(problem.diagnostic.severity, .warning)
         }
     }
-    
+
     func testInvalidCodeAndImage() throws {
         let source = """
-@MultipleChoice {
-  Question 1
+            @MultipleChoice {
+              Question 1
 
-  Here's the first question.
+              Here's the first question.
 
-  ```swift
-  func foo() {}
-  ```
+              ```swift
+              func foo() {}
+              ```
 
-  @Image(source: blah.png, alt: blah)
+              @Image(source: blah.png, alt: blah)
 
-  @Choice(isCorrect: true) {
-     A.
-     @Justification {
-        Because.
-     }
-   }
-  @Choice(isCorrect: false) {
-     B.
-     @Justification {
-        Because.
-     }
-  }
-}
-"""
+              @Choice(isCorrect: true) {
+                 A.
+                 @Justification {
+                    Because.
+                 }
+               }
+              @Choice(isCorrect: false) {
+                 B.
+                 @Justification {
+                    Because.
+                 }
+              }
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(MultipleChoice.directiveName, directive.name)
             let multipleChoice = MultipleChoice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNotNil(multipleChoice)
@@ -112,190 +113,190 @@ class MultipleChoiceTests: XCTestCase {
             problems.first.map {
                 XCTAssertEqual("org.swift.docc.MultipleChoice.CodeOrImage", $0.diagnostic.identifier)
             }
-            
+
             multipleChoice.map { multipleChoice in
                 let expectedDump = """
-MultipleChoice @1:1-24:2 title: 'SwiftDocC.MarkupContainer'
-├─ MarkupContainer (2 elements)
-├─ ImageMedia @10:3-10:38 source: 'ResourceReference(bundleIdentifier: "org.swift.docc.example", path: "blah.png")' altText: 'blah'
-├─ Choice @12:3-17:5 isCorrect: true
-│  ├─ MarkupContainer (1 element)
-│  └─ Justification @14:6-16:7
-│     └─ MarkupContainer (1 element)
-└─ Choice @18:3-23:4 isCorrect: false
-   ├─ MarkupContainer (1 element)
-   └─ Justification @20:6-22:7
-      └─ MarkupContainer (1 element)
-"""
+                    MultipleChoice @1:1-24:2 title: 'SwiftDocC.MarkupContainer'
+                    ├─ MarkupContainer (2 elements)
+                    ├─ ImageMedia @10:3-10:38 source: 'ResourceReference(bundleIdentifier: "org.swift.docc.example", path: "blah.png")' altText: 'blah'
+                    ├─ Choice @12:3-17:5 isCorrect: true
+                    │  ├─ MarkupContainer (1 element)
+                    │  └─ Justification @14:6-16:7
+                    │     └─ MarkupContainer (1 element)
+                    └─ Choice @18:3-23:4 isCorrect: false
+                       ├─ MarkupContainer (1 element)
+                       └─ Justification @20:6-22:7
+                          └─ MarkupContainer (1 element)
+                    """
                 XCTAssertEqual(expectedDump, multipleChoice.dump())
             }
         }
 
     }
-    
+
     func testValidNoCodeOrMedia() throws {
         let source = """
-@MultipleChoice {
-  Question 1
+            @MultipleChoice {
+              Question 1
 
-  Here's the first question.
+              Here's the first question.
 
-  @Choice(isCorrect: true) {
-     A.
-     @Justification {
-        Because.
-     }
-   }
-  @Choice(isCorrect: false) {
-     B.
-     @Justification {
-        Because.
-     }
-  }
-}
-"""
+              @Choice(isCorrect: true) {
+                 A.
+                 @Justification {
+                    Because.
+                 }
+               }
+              @Choice(isCorrect: false) {
+                 B.
+                 @Justification {
+                    Because.
+                 }
+              }
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(MultipleChoice.directiveName, directive.name)
             let multipleChoice = MultipleChoice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNotNil(multipleChoice)
             XCTAssertTrue(problems.isEmpty)
-            
+
             multipleChoice.map { multipleChoice in
                 let expectedDump = """
-MultipleChoice @1:1-18:2 title: 'SwiftDocC.MarkupContainer'
-├─ MarkupContainer (1 element)
-├─ Choice @6:3-11:5 isCorrect: true
-│  ├─ MarkupContainer (1 element)
-│  └─ Justification @8:6-10:7
-│     └─ MarkupContainer (1 element)
-└─ Choice @12:3-17:4 isCorrect: false
-   ├─ MarkupContainer (1 element)
-   └─ Justification @14:6-16:7
-      └─ MarkupContainer (1 element)
-"""
+                    MultipleChoice @1:1-18:2 title: 'SwiftDocC.MarkupContainer'
+                    ├─ MarkupContainer (1 element)
+                    ├─ Choice @6:3-11:5 isCorrect: true
+                    │  ├─ MarkupContainer (1 element)
+                    │  └─ Justification @8:6-10:7
+                    │     └─ MarkupContainer (1 element)
+                    └─ Choice @12:3-17:4 isCorrect: false
+                       ├─ MarkupContainer (1 element)
+                       └─ Justification @14:6-16:7
+                          └─ MarkupContainer (1 element)
+                    """
                 XCTAssertEqual(expectedDump, multipleChoice.dump())
             }
         }
     }
-    
+
     func testValidCode() throws {
         let source = """
-@MultipleChoice {
-  Question 1
+            @MultipleChoice {
+              Question 1
 
-  Here's the first question.
+              Here's the first question.
 
-  ```swift
-  func foo() {}
-  ```
+              ```swift
+              func foo() {}
+              ```
 
-  @Choice(isCorrect: true) {
-     A.
-     @Justification {
-        Because.
-     }
-   }
-  @Choice(isCorrect: false) {
-     B.
-     @Justification {
-        Because.
-     }
-  }
-}
-"""
+              @Choice(isCorrect: true) {
+                 A.
+                 @Justification {
+                    Because.
+                 }
+               }
+              @Choice(isCorrect: false) {
+                 B.
+                 @Justification {
+                    Because.
+                 }
+              }
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(MultipleChoice.directiveName, directive.name)
             let multipleChoice = MultipleChoice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNotNil(multipleChoice)
             XCTAssertTrue(problems.isEmpty)
-            
+
             multipleChoice.map { multipleChoice in
                 XCTAssertNil(multipleChoice.image)
             }
-            
+
             multipleChoice.map { multipleChoice in
                 let expectedDump = """
-MultipleChoice @1:1-22:2 title: 'SwiftDocC.MarkupContainer'
-├─ MarkupContainer (2 elements)
-├─ Choice @10:3-15:5 isCorrect: true
-│  ├─ MarkupContainer (1 element)
-│  └─ Justification @12:6-14:7
-│     └─ MarkupContainer (1 element)
-└─ Choice @16:3-21:4 isCorrect: false
-   ├─ MarkupContainer (1 element)
-   └─ Justification @18:6-20:7
-      └─ MarkupContainer (1 element)
-"""
+                    MultipleChoice @1:1-22:2 title: 'SwiftDocC.MarkupContainer'
+                    ├─ MarkupContainer (2 elements)
+                    ├─ Choice @10:3-15:5 isCorrect: true
+                    │  ├─ MarkupContainer (1 element)
+                    │  └─ Justification @12:6-14:7
+                    │     └─ MarkupContainer (1 element)
+                    └─ Choice @16:3-21:4 isCorrect: false
+                       ├─ MarkupContainer (1 element)
+                       └─ Justification @18:6-20:7
+                          └─ MarkupContainer (1 element)
+                    """
                 XCTAssertEqual(expectedDump, multipleChoice.dump())
             }
         }
 
     }
-    
+
     func testMultipleCorrectAnswers() throws {
         let source = """
-@MultipleChoice {
-  Question 1
+            @MultipleChoice {
+              Question 1
 
-  Here's the first question.
+              Here's the first question.
 
-  ```swift
-  func foo() {}
-  ```
+              ```swift
+              func foo() {}
+              ```
 
-  @Choice(isCorrect: true) {
-     A.
-     @Justification {
-        Because.
-     }
-   }
-  @Choice(isCorrect: true) {
-     B.
-     @Justification {
-        Because.
-     }
-  }
-}
-"""
+              @Choice(isCorrect: true) {
+                 A.
+                 @Justification {
+                    Because.
+                 }
+               }
+              @Choice(isCorrect: true) {
+                 B.
+                 @Justification {
+                    Because.
+                 }
+              }
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = try XCTUnwrap(document.child(at: 0) as? BlockDirective)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
-        var problems = [Problem]()
+
+        var problems: [Problem] = []
         XCTAssertEqual(MultipleChoice.directiveName, directive.name)
-        
+
         let multipleChoice = MultipleChoice(from: directive, source: nil, for: bundle, in: context, problems: &problems)
-        
+
         XCTAssertNotNil(multipleChoice)
         XCTAssertEqual(1, problems.count)
-        XCTAssertEqual(["org.swift.docc.MultipleChoice.MultipleCorrectChoicesProvided"], problems.map {$0.diagnostic.identifier})
-        
+        XCTAssertEqual(["org.swift.docc.MultipleChoice.MultipleCorrectChoicesProvided"], problems.map { $0.diagnostic.identifier })
+
         guard problems.count == 1 else { return }
-        
+
         let problem = problems[0]
         let lines = source.splitByNewlines
-        
+
         for note in problem.diagnostic.notes {
-            let sourceLine = lines[note.range.lowerBound.line-1]
-            let sourceStartIndex = sourceLine.index(sourceLine.startIndex, offsetBy: note.range.lowerBound.column-1)
-            let sourceEndIndex = sourceLine.index(sourceLine.startIndex, offsetBy: note.range.upperBound.column-1)
+            let sourceLine = lines[note.range.lowerBound.line - 1]
+            let sourceStartIndex = sourceLine.index(sourceLine.startIndex, offsetBy: note.range.lowerBound.column - 1)
+            let sourceEndIndex = sourceLine.index(sourceLine.startIndex, offsetBy: note.range.upperBound.column - 1)
             let sourceText = sourceLine[sourceStartIndex...sourceEndIndex].trimmingCharacters(in: .whitespacesAndNewlines)
-            
+
             XCTAssertEqual("isCorrect: true", sourceText)
         }
     }

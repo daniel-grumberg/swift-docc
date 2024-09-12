@@ -9,10 +9,10 @@
 */
 
 import Foundation
-
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class RowTests: XCTestCase {
     func testNoColumns() throws {
@@ -21,21 +21,21 @@ class RowTests: XCTestCase {
             @Row
             """
         }
-        
+
         XCTAssertNotNil(row)
-        
+
         XCTAssertEqual(
             problems,
             ["1: warning – org.swift.docc.HasAtLeastOne<Row, Column>"]
         )
-        
+
         XCTAssertEqual(renderBlockContent.count, 1)
         XCTAssertEqual(
             renderBlockContent.first,
             .row(.init(numberOfColumns: 0, columns: []))
         )
     }
-    
+
     func testInvalidParameters() throws {
         do {
             let (renderBlockContent, problems, row) = try parseDirective(Row.self) {
@@ -44,18 +44,18 @@ class RowTests: XCTestCase {
                     @Column(what: true) {
                         Hello there.
                     }
-                
+
                     @Column(size: true) {
                         Hello there.
                     }
-                
+
                     @Column(size: 4) {
                         Hello there.
                     }
                 }
                 """
             }
-            
+
             XCTAssertNotNil(row)
             XCTAssertEqual(
                 problems,
@@ -65,21 +65,23 @@ class RowTests: XCTestCase {
                     "6: warning – org.swift.docc.HasArgument.size.ConversionFailed",
                 ]
             )
-            
+
             XCTAssertEqual(renderBlockContent.count, 1)
             XCTAssertEqual(
                 renderBlockContent.first,
-                .row(RenderBlockContent.Row(
-                    numberOfColumns: 6,
-                    columns: [
-                        RenderBlockContent.Row.Column(size: 1, content: ["Hello there."]),
-                        RenderBlockContent.Row.Column(size: 1, content: ["Hello there."]),
-                        RenderBlockContent.Row.Column(size: 4, content: ["Hello there."])
-                    ]
-                ))
+                .row(
+                    RenderBlockContent.Row(
+                        numberOfColumns: 6,
+                        columns: [
+                            RenderBlockContent.Row.Column(size: 1, content: ["Hello there."]),
+                            RenderBlockContent.Row.Column(size: 1, content: ["Hello there."]),
+                            RenderBlockContent.Row.Column(size: 4, content: ["Hello there."]),
+                        ]
+                    )
+                )
             )
         }
-        
+
         do {
             let (_, problems, row) = try parseDirective(Row.self) {
                 """
@@ -96,17 +98,17 @@ class RowTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertNotNil(row)
             XCTAssertEqual(
                 problems,
                 [
-                    "6: warning – org.swift.docc.UnknownArgument",
+                    "6: warning – org.swift.docc.UnknownArgument"
                 ]
             )
         }
     }
-    
+
     func testInvalidChildren() throws {
         do {
             let (renderBlockContent, problems, row) = try parseDirective(Row.self) {
@@ -120,7 +122,7 @@ class RowTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertNotNil(row)
             XCTAssertEqual(
                 problems,
@@ -130,17 +132,19 @@ class RowTests: XCTestCase {
                     "2: warning – org.swift.docc.HasOnlyKnownDirectives",
                 ]
             )
-            
+
             XCTAssertEqual(renderBlockContent.count, 1)
             XCTAssertEqual(
                 renderBlockContent.first,
-                .row(RenderBlockContent.Row(
-                    numberOfColumns: 0,
-                    columns: []
-                ))
+                .row(
+                    RenderBlockContent.Row(
+                        numberOfColumns: 0,
+                        columns: []
+                    )
+                )
             )
         }
-        
+
         do {
             let (renderBlockContent, problems, row) = try parseDirective(Row.self) {
                 """
@@ -153,27 +157,29 @@ class RowTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertNotNil(row)
             XCTAssertEqual(
                 problems,
                 [
-                    "3: warning – org.swift.docc.HasOnlyKnownDirectives",
+                    "3: warning – org.swift.docc.HasOnlyKnownDirectives"
                 ]
             )
-            
+
             XCTAssertEqual(renderBlockContent.count, 1)
             XCTAssertEqual(
                 renderBlockContent.first,
-                .row(RenderBlockContent.Row(
-                    numberOfColumns: 1,
-                    columns: [
-                        RenderBlockContent.Row.Column(size: 1, content: [])
-                    ]
-                ))
+                .row(
+                    RenderBlockContent.Row(
+                        numberOfColumns: 1,
+                        columns: [
+                            RenderBlockContent.Row.Column(size: 1, content: [])
+                        ]
+                    )
+                )
             )
         }
-        
+
         do {
             let (renderBlockContent, problems, row) = try parseDirective(Row.self) {
                 """
@@ -182,15 +188,15 @@ class RowTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertNotNil(row)
             XCTAssertEqual(
                 problems,
                 [
-                    "1: warning – org.swift.docc.HasAtLeastOne<Row, Column>",
+                    "1: warning – org.swift.docc.HasAtLeastOne<Row, Column>"
                 ]
             )
-            
+
             XCTAssertEqual(renderBlockContent.count, 1)
             XCTAssertEqual(
                 renderBlockContent.first,
@@ -198,44 +204,46 @@ class RowTests: XCTestCase {
             )
         }
     }
-    
+
     func testEmptyColumn() throws {
         let (renderBlockContent, problems, row) = try parseDirective(Row.self) {
             """
             @Row {
                 @Column
-            
+
                 @Column(size: 3) {
                     This is a wiiiiddde column.
                 }
-            
+
                 @Column
             }
             """
         }
-        
+
         XCTAssertNotNil(row)
         XCTAssertEqual(problems, [])
-        
+
         XCTAssertEqual(renderBlockContent.count, 1)
         XCTAssertEqual(
             renderBlockContent.first,
-            .row(RenderBlockContent.Row(
-                numberOfColumns: 5,
-                columns: [
-                    RenderBlockContent.Row.Column(size: 1, content: []),
-                    
-                    RenderBlockContent.Row.Column(
-                        size: 3,
-                        content: ["This is a wiiiiddde column."]
-                    ),
-                    
-                    RenderBlockContent.Row.Column(size: 1, content: []),
-                ]
-            ))
+            .row(
+                RenderBlockContent.Row(
+                    numberOfColumns: 5,
+                    columns: [
+                        RenderBlockContent.Row.Column(size: 1, content: []),
+
+                        RenderBlockContent.Row.Column(
+                            size: 3,
+                            content: ["This is a wiiiiddde column."]
+                        ),
+
+                        RenderBlockContent.Row.Column(size: 1, content: []),
+                    ]
+                )
+            )
         )
     }
-    
+
     func testNestedRowAndColumns() throws {
         let (renderBlockContent, problems, row) = try parseDirective(Row.self) {
             """
@@ -245,7 +253,7 @@ class RowTests: XCTestCase {
                         @Column {
                             Hello
                         }
-            
+
                         @Column {
                             There
                         }
@@ -254,30 +262,34 @@ class RowTests: XCTestCase {
             }
             """
         }
-        
+
         XCTAssertNotNil(row)
         XCTAssertEqual(problems, [])
-        
+
         XCTAssertEqual(renderBlockContent.count, 1)
         XCTAssertEqual(
             renderBlockContent.first,
-            .row(RenderBlockContent.Row(
-                numberOfColumns: 1,
-                columns: [
-                    RenderBlockContent.Row.Column(
-                        size: 1,
-                        content: [
-                            .row(RenderBlockContent.Row(
-                                numberOfColumns: 2,
-                                columns: [
-                                    RenderBlockContent.Row.Column(size: 1, content: ["Hello"]),
-                                    RenderBlockContent.Row.Column(size: 1, content: ["There"]),
-                                ]
-                            ))
-                        ]
-                    )
-                ]
-            ))
+            .row(
+                RenderBlockContent.Row(
+                    numberOfColumns: 1,
+                    columns: [
+                        RenderBlockContent.Row.Column(
+                            size: 1,
+                            content: [
+                                .row(
+                                    RenderBlockContent.Row(
+                                        numberOfColumns: 2,
+                                        columns: [
+                                            RenderBlockContent.Row.Column(size: 1, content: ["Hello"]),
+                                            RenderBlockContent.Row.Column(size: 1, content: ["There"]),
+                                        ]
+                                    )
+                                )
+                            ]
+                        )
+                    ]
+                )
+            )
         )
     }
 

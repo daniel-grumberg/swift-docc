@@ -24,7 +24,7 @@ public final class DiagnosticEngine {
     var didEncounterError: Synchronized<Bool> = .init(false)
 
     /// Determines which problems will be emitted to consumers.
-    /// 
+    ///
     /// This filter level is inclusive, i.e. if a level of ``DiagnosticSeverity/information`` is specified,
     /// diagnostics with a severity up to and including `.information` will be printed.
     public var filterLevel: DiagnosticSeverity {
@@ -32,7 +32,7 @@ public final class DiagnosticEngine {
             self.filter = { $0.diagnostic.severity.rawValue <= self.filterLevel.rawValue }
         }
     }
-    
+
     /// Returns a Boolean value indicating whether the engine contains a consumer that satisfies the given predicate.
     /// - Parameter predicate: A closure that takes one of the engine's consumers as its argument and returns a Boolean value that indicates whether the passed consumer represents a match.
     /// - Returns: `true` if the engine contains a consumer that satisfies predicate; otherwise, `false`.
@@ -41,7 +41,7 @@ public final class DiagnosticEngine {
             try $0.values.contains(where: predicate)
         }
     }
-    
+
     /// Determines whether warnings will be treated as errors.
     private let treatWarningsAsErrors: Bool
 
@@ -91,7 +91,7 @@ public final class DiagnosticEngine {
         if filteredProblems.containsErrors {
             didEncounterError.sync { $0 = true }
         }
-        
+
         diagnostics.sync {
             $0.append(contentsOf: filteredProblems)
         }
@@ -104,12 +104,12 @@ public final class DiagnosticEngine {
             }
         }
     }
-    
+
     @available(*, deprecated, renamed: "flush()", message: "Use 'flush()' instead. This deprecated API will be removed after 6.0 is released")
     public func finalize() {
         flush()
     }
-    
+
     public func flush() {
         workQueue.sync {
             for consumer in self.consumers.sync({ $0.values }) {

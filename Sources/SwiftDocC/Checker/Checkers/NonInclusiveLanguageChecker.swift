@@ -46,7 +46,7 @@ public struct NonInclusiveLanguageChecker: Checker {
         self.terms = terms ?? builtinExcludedTerms
     }
 
-    public mutating func visitCodeBlock(_ codeBlock: CodeBlock) -> () {
+    public mutating func visitCodeBlock(_ codeBlock: CodeBlock) {
         for term in terms {
             let termRanges = ranges(for: term, in: codeBlock.code, of: codeBlock)
             termRanges.forEach { range in
@@ -68,7 +68,7 @@ public struct NonInclusiveLanguageChecker: Checker {
         }
     }
 
-    public mutating func visitInlineCode(_ inlineCode: InlineCode) -> () {
+    public mutating func visitInlineCode(_ inlineCode: InlineCode) {
         for term in terms {
             let termRanges = ranges(for: term, in: inlineCode.code, of: inlineCode)
             termRanges.forEach { range in
@@ -130,17 +130,19 @@ public struct NonInclusiveLanguageChecker: Checker {
     /// - Returns: An array of ranges at which the term was found.
     /// > Warning: Crashes if the term expression pattern is not valid.
     func ranges(for term: Term, in text: String, of markup: Markup) -> [SourceRange] {
-        var ranges = [SourceRange]()
+        var ranges: [SourceRange] = []
 
-        let regex = try! defaultRegularExpressions[term.expression]
+        let regex =
+            try! defaultRegularExpressions[term.expression]
             ?? NSRegularExpression(pattern: term.expression, options: [.caseInsensitive])
         let range = NSRange(text.startIndex..., in: text)
         let matches = regex.matches(in: text, range: range)
 
         for match in matches {
             if let startCursor = PrintCursor(offset: match.range.location, in: text),
-               let endCursor = PrintCursor(offset: NSMaxRange(match.range), in: text),
-               let markupRange = markup.range {
+                let endCursor = PrintCursor(offset: NSMaxRange(match.range), in: text),
+                let markupRange = markup.range
+            {
                 let start = SourceLocation(
                     line: markupRange.lowerBound.line + startCursor.line - 1,
                     column: startCursor.column + markupRange.lowerBound.column - 1,
@@ -161,7 +163,7 @@ public struct NonInclusiveLanguageChecker: Checker {
 }
 
 /// The default list of terms to look for in documentation.
-fileprivate let builtinExcludedTerms: [NonInclusiveLanguageChecker.Term] = [
+private let builtinExcludedTerms: [NonInclusiveLanguageChecker.Term] = [
     NonInclusiveLanguageChecker.Term(
         expression: #"black\W*list\w{0,2}"#,
         message: "Choose a more inclusive alternative that’s appropriate to the context, such as deny list/allow list or unapproved list/approved list.",
@@ -169,23 +171,25 @@ fileprivate let builtinExcludedTerms: [NonInclusiveLanguageChecker.Term] = [
     ),
     NonInclusiveLanguageChecker.Term(
         expression: #"master\w{0,2}"#,
-        message: #"Don't use "master" to describe the relationship between two devices, processes, or other things. Use an alternative that's appropriate to the context, such as "main" and "secondary" or "host" and "client"."#,
+        message:
+            #"Don't use "master" to describe the relationship between two devices, processes, or other things. Use an alternative that's appropriate to the context, such as "main" and "secondary" or "host" and "client"."#,
         replacement: "primary"
     ),
     NonInclusiveLanguageChecker.Term(
         expression: #"slave\w{0,2}"#,
-        message: #"Don't use "slave" to describe the relationship between two devices, processes, or other things. Use an alternative that's appropriate to the context, such as "main" and "secondary" or "host" and "client"."#,
+        message:
+            #"Don't use "slave" to describe the relationship between two devices, processes, or other things. Use an alternative that's appropriate to the context, such as "main" and "secondary" or "host" and "client"."#,
         replacement: "secondary"
     ),
     NonInclusiveLanguageChecker.Term(
         expression: #"white\W*list\w{0,2}"#,
         message: "Choose a more inclusive alternative that’s appropriate to the context, such as deny list/allow list or unapproved list/approved list.",
         replacement: "allow list"
-    )
+    ),
 ]
 
 /// The regular expressions for the default term list.
-fileprivate let defaultRegularExpressions: [String: NSRegularExpression] = builtinExcludedTerms.reduce(into: [:]) { result, term in
+private let defaultRegularExpressions: [String: NSRegularExpression] = builtinExcludedTerms.reduce(into: [:]) { result, term in
     if let regex = try? NSRegularExpression(pattern: term.expression, options: .caseInsensitive) {
         result[term.expression] = regex
     }

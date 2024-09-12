@@ -34,22 +34,22 @@ public struct ConformanceSection: Codable, Equatable {
     var availabilityPrefix: [RenderInlineContent] = [.text("Available when")]
     /// A prefix with which to prepend conformance constraints.
     var conformancePrefix: [RenderInlineContent] = [.text("Conforms when")]
-    
+
     /// The section constraints rendered as inline content.
     let constraints: [RenderInlineContent]
-    
+
     /// Additional parameters to consider when rendering conformance constraints.
     struct ConstraintRenderOptions {
         /// Whether the symbol is a leaf symbol, such as a function or a property.
         let isLeaf: Bool
-        
+
         /// The name of the parent symbol.
         let parentName: String?
-        
+
         /// The symbol name of `Self`.
         let selfName: String
     }
-    
+
     /// Creates a new conformance section.
     /// - Parameter constraints: The list of constraints to render.
     /// - Parameter options: The list of options to apply while rendering.
@@ -61,13 +61,13 @@ public struct ConformanceSection: Codable, Equatable {
 
         // If no valid constraints are left return `nil`.
         guard !constraints.isEmpty else { return nil }
-        
+
         // Checks if all requirements are on the same type & relation.
         let areRequirementsSameTypeAndRelation = constraints.allSatisfy { constraint in
             return (constraints[0].leftTypeName == constraint.leftTypeName)
                 && (constraints[0].kind == constraint.kind)
         }
-        
+
         // If all constraints are on the same type, fold the sentence and return
         if areRequirementsSameTypeAndRelation {
             self.constraints = ConformanceSection.groupRequirements(constraints) + [RenderInlineContent.text(".")]
@@ -82,25 +82,25 @@ public struct ConformanceSection: Codable, Equatable {
             return [
                 RenderInlineContent.codeVoice(code: ConformanceSection.displayNameForConformingType(constraint.leftTypeName)),
                 RenderInlineContent.text(constraint.kind.spelling.spaceDelimited),
-                RenderInlineContent.codeVoice(code: constraint.rightTypeName)
+                RenderInlineContent.codeVoice(code: constraint.rightTypeName),
             ]
         }
-        
+
         // Adds "," or ", and" to the requirements wherever necessary.
         var merged: [RenderInlineContent] = []
-        merged.reserveCapacity(rendered.count * 4) // 3 for each constraint and 1 for each separator
+        merged.reserveCapacity(rendered.count * 4)  // 3 for each constraint and 1 for each separator
         for (constraint, separator) in zip(rendered, separators) {
             merged.append(contentsOf: constraint)
             merged.append(separator)
         }
         merged.append(contentsOf: rendered.last!)
         merged.append(.text("."))
-        
+
         self.constraints = merged
     }
-    
+
     private static let selfPrefix = "Self."
-    
+
     /// Returns, modified if necessary, a conforming type's name for rendering.
     static func displayNameForConformingType(_ typeName: String) -> String {
         if typeName.hasPrefix(selfPrefix) {
@@ -108,12 +108,13 @@ public struct ConformanceSection: Codable, Equatable {
         }
         return typeName
     }
-    
+
     /// Filters the list of constraints to the significant constraints only.
     ///
     /// This method removes symbol graph constraints on `Self` that are always fulfilled.
     static func filterConstraints(_ constraints: [Constraint], options: ConstraintRenderOptions) -> [Constraint] {
-        return constraints
+        return
+            constraints
             .filter { constraint -> Bool in
                 if options.isLeaf {
                     // Leaf symbol.
@@ -134,7 +135,7 @@ public struct ConformanceSection: Codable, Equatable {
                 }
             }
     }
-    
+
     /// Groups all input requirements into a single multipart requirement.
     ///
     /// For example, converts the following repetitive constraints:
@@ -150,26 +151,27 @@ public struct ConformanceSection: Codable, Equatable {
     /// contains at least one requirement.
     static func groupRequirements(_ constraints: [Constraint]) -> [RenderInlineContent] {
         precondition(!constraints.isEmpty)
-        
+
         let constraintTypeNames = constraints.map { constraint in
             return RenderInlineContent.codeVoice(code: constraint.rightTypeName)
         }
         let separators = NativeLanguage.english.listSeparators(itemsCount: constraints.count, listType: .union)
             .map { return RenderInlineContent.text($0) }
-        
-        let constraintCompoundName = zip(constraintTypeNames, separators).flatMap { [$0, $1] }
+
+        let constraintCompoundName =
+            zip(constraintTypeNames, separators).flatMap { [$0, $1] }
             + constraintTypeNames[separators.count...]
-        
+
         return [
             RenderInlineContent.codeVoice(code: ConformanceSection.displayNameForConformingType(constraints[0].leftTypeName)),
-            RenderInlineContent.text(constraints[0].kind.spelling.spaceDelimited)
+            RenderInlineContent.text(constraints[0].kind.spelling.spaceDelimited),
         ] + constraintCompoundName
     }
 }
 
 private extension String {
     /// Returns the string surrounded by spaces.
-    var spaceDelimited: String { return " \(self) "}
+    var spaceDelimited: String { return " \(self) " }
 }
 
 // Diffable conformance

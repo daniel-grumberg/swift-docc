@@ -24,26 +24,26 @@ import SymbolKit
 public struct RenderIndex: Codable, Equatable {
     /// The current schema version of the Index JSON spec.
     public static let currentSchemaVersion = SemanticVersion(major: 0, minor: 1, patch: 2)
-    
+
     /// The version of the RenderIndex spec that was followed when creating this index.
     public let schemaVersion: SemanticVersion
-    
+
     /// A mapping of interface languages to the index nodes they contain.
     public private(set) var interfaceLanguages: [String: [Node]]
-    
+
     /// The values of the image references used in the documentation index.
     public private(set) var references: [String: ImageReference]
-    
+
     /// The unique identifiers of the archives that are included in the documentation index.
     public private(set) var includedArchiveIdentifiers: [String]
-    
+
     enum CodingKeys: CodingKey {
         case schemaVersion
         case interfaceLanguages
         case references
         case includedArchiveIdentifiers
     }
-    
+
     /// Creates a new render index with the given interface language to node mapping.
     public init(
         interfaceLanguages: [String: [Node]],
@@ -55,7 +55,7 @@ public struct RenderIndex: Codable, Equatable {
         self.references = references
         self.includedArchiveIdentifiers = includedArchiveIdentifiers
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(self.schemaVersion, forKey: .schemaVersion)
@@ -67,21 +67,21 @@ public struct RenderIndex: Codable, Equatable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.schemaVersion = try container.decode(SemanticVersion.self, forKey: .schemaVersion)
-        self.interfaceLanguages = try container.decode([String : [RenderIndex.Node]].self, forKey: .interfaceLanguages)
-        self.references = try container.decodeIfPresent([String : ImageReference].self, forKey: .references) ?? [:]
+        self.interfaceLanguages = try container.decode([String: [RenderIndex.Node]].self, forKey: .interfaceLanguages)
+        self.references = try container.decodeIfPresent([String: ImageReference].self, forKey: .references) ?? [:]
         self.includedArchiveIdentifiers = try container.decodeIfPresent([String].self.self, forKey: .includedArchiveIdentifiers) ?? []
     }
-    
+
     public mutating func merge(_ other: RenderIndex) throws {
         for (languageID, nodes) in other.interfaceLanguages {
             interfaceLanguages[languageID, default: []].append(contentsOf: nodes)
         }
-        
+
         try references.merge(other.references) { _, new in throw MergeError.referenceCollision(new.identifier.identifier) }
-        
+
         includedArchiveIdentifiers.append(contentsOf: other.includedArchiveIdentifiers)
     }
-    
+
     /// Insert a root node with a given name for each interface language and move the previous root node(s) under the new root node.
     /// - Parameter named: The name of the new root node
     public mutating func insertRoot(named: String) {
@@ -90,10 +90,10 @@ public struct RenderIndex: Codable, Equatable {
             interfaceLanguages[languageID] = [root]
         }
     }
-    
+
     enum MergeError: DescribedError {
         case referenceCollision(String)
-        
+
         var errorDescription: String {
             switch self {
             case .referenceCollision(let reference):
@@ -108,18 +108,18 @@ extension RenderIndex {
     public struct Node: Codable, Hashable {
         /// The title of the node, suitable for presentation.
         public let title: String
-        
+
         /// The relative path to the page represented by this node.
         public let path: String?
-        
+
         /// The type of this node.
         ///
         /// This type can be used to determine what icon to display for this node.
         public let type: String?
-        
+
         /// The children of this node.
         public let children: [Node]?
-        
+
         /// A Boolean value that is true if the current node has been marked as deprecated on any platform.
         ///
         /// Allows renderers to use a specific design treatment for render index nodes that mark the node as deprecated.
@@ -131,12 +131,12 @@ extension RenderIndex {
         /// Allows renderers to use a specific design treatment for render index nodes
         /// that lead to external documentation content.
         public let isExternal: Bool
-        
+
         /// A Boolean value that is true if the current node has been marked as is beta
         ///
         /// Allows renderers to use a specific design treatment for render index nodes that mark the node as in beta.
         public let isBeta: Bool
-        
+
         /// A reference to a custom image for this node.
         public let icon: RenderReferenceIdentifier?
 
@@ -153,52 +153,52 @@ extension RenderIndex {
 
         public func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
-            
+
             try container.encode(title, forKey: .title)
-            
+
             try container.encodeIfPresent(path, forKey: .path)
             try container.encodeIfPresent(type, forKey: .type)
             try container.encodeIfPresent(children, forKey: .children)
-            
+
             // `isDeprecated` defaults to false so only encode it if it's true
             if isDeprecated {
                 try container.encode(isDeprecated, forKey: .deprecated)
             }
-            
+
             // `isExternal` defaults to false so only encode it if it's true
             if isExternal {
                 try container.encode(isExternal, forKey: .external)
             }
-            
+
             // `isBeta` defaults to false so only encode it if it's true
             if isBeta {
                 try container.encode(isBeta, forKey: .beta)
             }
-            
+
             try container.encodeIfPresent(icon, forKey: .icon)
         }
-        
+
         public init(from decoder: Decoder) throws {
             let values = try decoder.container(keyedBy: CodingKeys.self)
-            
+
             title = try values.decode(String.self, forKey: .title)
-            
+
             path = try values.decodeIfPresent(String.self, forKey: .path)
             type = try values.decodeIfPresent(String.self, forKey: .type)
             children = try values.decodeIfPresent([Node].self, forKey: .children)
-            
+
             // `isDeprecated` defaults to false if it's not specified
             isDeprecated = try values.decodeIfPresent(Bool.self, forKey: .deprecated) ?? false
-            
+
             // `isExternal` defaults to false if it's not specified
             isExternal = try values.decodeIfPresent(Bool.self, forKey: .external) ?? false
-            
+
             // `isBeta` defaults to false if it's not specified
             isBeta = try values.decodeIfPresent(Bool.self, forKey: .beta) ?? false
-            
+
             icon = try values.decodeIfPresent(RenderReferenceIdentifier.self, forKey: .icon)
         }
-        
+
         /// Creates a new node with the given title, path, type, and children.
         ///
         /// - Parameters:
@@ -230,7 +230,7 @@ extension RenderIndex {
             self.isBeta = isBeta
             self.icon = nil
         }
-        
+
         init(
             title: String,
             path: String,
@@ -241,24 +241,24 @@ extension RenderIndex {
         ) {
             self.title = title
             self.children = children.isEmpty ? nil : children
-            
+
             self.isDeprecated = isDeprecated
-            
+
             // Currently Swift-DocC doesn't support resolving links to external DocC archives
             // so we default to `false` here.
             self.isExternal = false
-            
+
             self.isBeta = false
             self.icon = icon
-            
+
             guard let pageType else {
                 self.type = nil
                 self.path = path
                 return
             }
-            
+
             self.type = pageType.renderIndexPageType
-            
+
             if pageType.pathShouldBeIncludedInRenderIndex {
                 self.path = path
             } else {
@@ -273,9 +273,9 @@ extension RenderIndex {
         // The immediate children of the root represent the interface languages
         // described in this navigator tree.
         let interfaceLanguageRoots = navigatorIndex.navigatorTree.root.children
-        
+
         let languageMaskToLanguage = navigatorIndex.languageMaskToLanguage
-        
+
         return RenderIndex(
             interfaceLanguages: Dictionary(
                 interfaceLanguageRoots.compactMap { interfaceLanguageRoot in
@@ -283,7 +283,7 @@ extension RenderIndex {
                     // in the given language mask to language mapping, something has gone wrong
                     // and we should crash.
                     let languageID = languageMaskToLanguage[interfaceLanguageRoot.item.languageID]!.id
-                    
+
                     return (
                         language: languageID,
                         children: interfaceLanguageRoot.children.map {
@@ -303,7 +303,7 @@ extension RenderIndex.Node {
     static func fromNavigatorTreeNode(_ node: NavigatorTree.Node, in navigatorIndex: NavigatorIndex, with builder: NavigatorIndex.Builder) -> RenderIndex.Node {
         // If this node was deprecated on any platform version mark it as deprecated.
         let isDeprecated: Bool
-        
+
         let availabilityIndexEntryIDsForNode = builder.availabilityEntryIDs(for: node.item.availabilityID)
         if let entryIDs = availabilityIndexEntryIDsForNode {
             let availabilityInfosForNode = entryIDs.map { ID in navigatorIndex.availabilityIndex.info(for: ID) }
@@ -312,7 +312,7 @@ extension RenderIndex.Node {
         } else {
             isDeprecated = false
         }
-        
+
         return RenderIndex.Node(
             title: node.item.title,
             path: node.item.path,
@@ -335,7 +335,7 @@ extension NavigatorIndex.PageType {
             return true
         }
     }
-    
+
     var renderIndexPageType: String? {
         switch self {
         case .root:
@@ -353,7 +353,7 @@ extension NavigatorIndex.PageType {
         case .resources:
             return "resources"
         case .symbol:
-            return  RenderNode.Kind.symbol.rawValue
+            return RenderNode.Kind.symbol.rawValue
         case .framework:
             return SymbolGraph.Symbol.KindIdentifier.module.renderingIdentifier
         case .class:

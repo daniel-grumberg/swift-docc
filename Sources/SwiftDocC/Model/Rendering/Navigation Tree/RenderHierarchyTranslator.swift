@@ -14,10 +14,10 @@ import Foundation
 struct RenderHierarchyTranslator {
     var context: DocumentationContext
     var bundle: DocumentationBundle
-    
+
     var collectedTopicReferences = Set<ResolvedTopicReference>()
-    var linkReferences = [String: LinkReference]()
-    
+    var linkReferences: [String: LinkReference] = [:]
+
     /// Creates a new translator for the given bundle in the given context.
     /// - Parameters:
     ///   - context: The documentation context for the conversion.
@@ -26,10 +26,10 @@ struct RenderHierarchyTranslator {
         self.context = context
         self.bundle = bundle
     }
-    
+
     static let assessmentsAnchor = urlReadableFragment(TutorialAssessmentsRenderSection.title)
     let urlGenerator = NodeURLGenerator()
-    
+
     /// Returns a complete hierarchy, starting at the given tutorials landing page and describing all
     /// contained volumes, chapters, and tutorials.
     /// - Parameters:
@@ -38,36 +38,40 @@ struct RenderHierarchyTranslator {
     /// - Returns: A tuple of 1) a tutorials hierarchy and 2) the root reference of the tutorials hierarchy.
     mutating func visitTechnologyNode(_ reference: ResolvedTopicReference, omittingChapters: Bool = false) -> (hierarchy: RenderHierarchy, technology: ResolvedTopicReference)? {
         let paths = context.finitePaths(to: reference, options: [.preferTechnologyRoot])
-        
+
         // If the node is a technology return immediately without generating breadcrumbs
         if let _ = (try? context.entity(with: reference))?.semantic as? Technology {
             let hierarchy = visitTechnology(reference, omittingChapters: omittingChapters)
             return (hierarchy: .tutorials(hierarchy), technology: reference)
         }
-        
-        guard let technologyPath = paths.mapFirst(where: { path -> [ResolvedTopicReference]? in
-            guard let rootReference = path.first,
-                let _ = try! context.entity(with: rootReference).semantic as? Technology else { return nil }
-            return path
-        }) else {
+
+        guard
+            let technologyPath = paths.mapFirst(where: { path -> [ResolvedTopicReference]? in
+                guard let rootReference = path.first,
+                    let _ = try! context.entity(with: rootReference).semantic as? Technology
+                else { return nil }
+                return path
+            })
+        else {
             // If there are no tutorials, return `nil`. We've already warned about uncurated tutorials.
             return nil
         }
-        
+
         let technologyReference = technologyPath[0]
         var hierarchy = visitTechnology(technologyReference, omittingChapters: omittingChapters)
-        
-        hierarchy.paths = paths
+
+        hierarchy.paths =
+            paths
             // Position the technology path as the canonical path for the node
             // in case it's curated multiple times under documentation symbols too.
             .sorted(by: { (lhs, rhs) -> Bool in
                 return lhs == technologyPath
             })
             .map { $0.map { $0.absoluteString } }
-        
+
         return (hierarchy: .tutorials(hierarchy), technology: technologyReference)
     }
-    
+
     /// Returns the hierarchy under a given tutorials landing page.
     /// - Parameter technologyReference: The reference to the tutorials landing page.
     /// - Parameter omittingChapters: If `true`, don't include chapters in the returned hierarchy.
@@ -81,16 +85,18 @@ struct RenderHierarchyTranslator {
         if !omittingChapters {
             let children = context.children(of: technologyReference, kind: .volume)
 
-            let renderChapters = children.compactMap { child in
-                return visitVolume(child.reference, pathBreadcrumb: technologyPath)
-            }.flatMap { $0 }
+            let renderChapters =
+                children.compactMap { child in
+                    return visitVolume(child.reference, pathBreadcrumb: technologyPath)
+                }
+                .flatMap { $0 }
 
             renderHierarchy.modules = renderChapters
         }
 
         return renderHierarchy
     }
-    
+
     /// Returns the hierarchy under a given tutorial series volume.
     /// - Parameter volumeReference: The reference to the volume.
     /// - Parameter pathBreadcrumb: The current path breadcrumb.
@@ -99,7 +105,7 @@ struct RenderHierarchyTranslator {
         let children = context.children(of: volumeReference, kind: .chapter)
         return children.compactMap { visitChapter($0.reference, pathBreadcrumb: pathBreadcrumb) }
     }
-    
+
     /// Returns the hierarchy under a given chapter.
     /// - Parameter chapterReference: The reference to the chapter.
     /// - Parameter pathBreadcrumb: The current path breadcrumb.
@@ -107,9 +113,9 @@ struct RenderHierarchyTranslator {
     mutating func visitChapter(_ chapterReference: ResolvedTopicReference, pathBreadcrumb: String) -> RenderHierarchyChapter? {
         var renderHierarchyChapter = RenderHierarchyChapter(identifier: RenderReferenceIdentifier(chapterReference.absoluteString))
         collectedTopicReferences.insert(chapterReference)
-        
+
         let children = context.children(of: chapterReference)
-        
+
         renderHierarchyChapter.tutorials = children.compactMap { child in
             switch child.kind {
             case .tutorial:
@@ -119,11 +125,11 @@ struct RenderHierarchyTranslator {
             default:
                 fatalError("Unexpected child '\(child)' of chapter '\(chapterReference)', only tutorials and articles are expected.")
             }
-            
+
         }
         return renderHierarchyChapter
     }
-    
+
     /// Returns the hierarchy under a given tutorial article.
     /// - Parameter articleReference: The reference to the tutorial article.
     /// - Parameter pathBreadcrumb: The current path breadcrumb.
@@ -132,14 +138,14 @@ struct RenderHierarchyTranslator {
         let pathBreadcrumb = urlGenerator.urlForReference(articleReference, lowercased: true).path
         var renderHierarchyTutorial = RenderHierarchyTutorial(identifier: RenderReferenceIdentifier(articleReference.absoluteString))
         collectedTopicReferences.insert(articleReference)
-        
+
         let children = context.children(of: articleReference, kind: .onPageLandmark)
-    
+
         renderHierarchyTutorial.landmarks += children.compactMap { visitLandmark($0.reference, pathBreadcrumb: pathBreadcrumb) }
-        
+
         return renderHierarchyTutorial
     }
-    
+
     /// Returns the hierarchy under a given landmark.
     /// - Parameter landmarkReference: The reference to the landmark.
     /// - Parameter pathBreadcrumb: The current path breadcrumb.
@@ -148,7 +154,7 @@ struct RenderHierarchyTranslator {
         collectedTopicReferences.insert(landmarkReference)
         return RenderHierarchyLandmark(reference: RenderReferenceIdentifier(landmarkReference.absoluteString), kind: .heading)
     }
-    
+
     /// Returns the hierarchy under a given tutorial.
     /// - Parameter tutorialReference: The reference to the tutorial.
     /// - Parameter pathBreadcrumb: The current path breadcrumb.
@@ -157,16 +163,21 @@ struct RenderHierarchyTranslator {
         let pathBreadcrumb = urlGenerator.urlForReference(tutorialReference, lowercased: true).path
         var renderHierarchyTutorial = RenderHierarchyTutorial(identifier: RenderReferenceIdentifier(tutorialReference.absoluteString))
         collectedTopicReferences.insert(tutorialReference)
-        
+
         let children = context.children(of: tutorialReference, kind: .onPageLandmark)
-        
+
         renderHierarchyTutorial.landmarks += children.compactMap { visitTutorialSection($0.reference, pathBreadcrumb: pathBreadcrumb) }
-        
+
         if let tutorial = (try? context.entity(with: tutorialReference).semantic) as? Tutorial, let assessments = tutorial.assessments, !assessments.questions.isEmpty {
             // Add hardcoded assessment section.
-            let assessmentReference = ResolvedTopicReference(bundleIdentifier: tutorialReference.bundleIdentifier, path: tutorialReference.path, fragment: RenderHierarchyTranslator.assessmentsAnchor, sourceLanguage: .swift)
+            let assessmentReference = ResolvedTopicReference(
+                bundleIdentifier: tutorialReference.bundleIdentifier,
+                path: tutorialReference.path,
+                fragment: RenderHierarchyTranslator.assessmentsAnchor,
+                sourceLanguage: .swift
+            )
             renderHierarchyTutorial.landmarks.append(RenderHierarchyLandmark(reference: RenderReferenceIdentifier(assessmentReference.absoluteString), kind: .assessment))
-            
+
             let urlGenerator = PresentationURLGenerator(context: context, baseURL: bundle.baseURL)
             let assessmentLinkReference = LinkReference(
                 identifier: RenderReferenceIdentifier(assessmentReference.absoluteString),
@@ -203,7 +214,7 @@ struct RenderHierarchyTranslator {
         let paths = pathReferences.map { $0.map { $0.absoluteString } }
         return .reference(RenderReferenceHierarchy(paths: paths))
     }
-    
+
     /// Returns the hierarchy under a given article.
     /// - Parameter symbolReference: The reference to the article.
     /// - Returns: The framework hierarchy that describes all paths where the article is curated.

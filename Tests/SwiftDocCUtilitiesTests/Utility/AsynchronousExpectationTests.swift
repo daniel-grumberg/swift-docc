@@ -16,11 +16,11 @@ class AsynchronousExpectation {
     enum Result {
         case success
         case timedOut
-        
+
         static func fromDispatchResult(_ result: DispatchTimeoutResult) -> Result {
             switch result {
-                case .success: return .success
-                case .timedOut: return .timedOut
+            case .success: return .success
+            case .timedOut: return .timedOut
             }
         }
     }
@@ -28,31 +28,32 @@ class AsynchronousExpectation {
     let description: String
     private(set) var waitGroup: DispatchGroup? = DispatchGroup()
     private let groupLock = NSLock()
-    
+
     init(description: String) {
         self.description = description
     }
-    
+
     func fulfill() {
         groupLock.lock()
         defer { groupLock.unlock() }
-        
+
         waitGroup?.leave()
         waitGroup = nil
     }
-    
+
     func wait(timeout: TimeInterval) -> Result {
         groupLock.lock()
-        
+
         precondition(waitGroup != nil)
         waitGroup!.enter()
 
-        return DispatchQueue.global().sync { [group = self.waitGroup!] in
-            groupLock.unlock()
-            
-            let waitResult = group.wait(timeout: .now() + timeout)
-            return Result.fromDispatchResult(waitResult)
-        }
+        return DispatchQueue.global()
+            .sync { [group = self.waitGroup!] in
+                groupLock.unlock()
+
+                let waitResult = group.wait(timeout: .now() + timeout)
+                return Result.fromDispatchResult(waitResult)
+            }
     }
 }
 
@@ -65,9 +66,10 @@ class AsynchronousExpectationTests: XCTestCase {
 
     func testExpectationFulfills() throws {
         let expectation1 = AsynchronousExpectation(description: "expectation")
-        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) { 
-            expectation1.fulfill()
-        }
+        DispatchQueue.global(qos: .utility)
+            .asyncAfter(deadline: .now() + 0.5) {
+                expectation1.fulfill()
+            }
         let result = expectation1.wait(timeout: 2)
         XCTAssertEqual(result, .success)
     }

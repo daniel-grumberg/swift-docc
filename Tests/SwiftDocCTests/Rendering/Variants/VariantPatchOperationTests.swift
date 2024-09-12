@@ -10,35 +10,48 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftDocC
 
 class VariantPatchOperationTests: XCTestCase {
     func testApplyingPatch() {
         let original = [1, 2, 3]
-        let addVariant = makeVariantCollection(original, patch: [
-            .add(value: [4, 5, 6])
-        ])
+        let addVariant = makeVariantCollection(
+            original,
+            patch: [
+                .add(value: [4, 5, 6])
+            ]
+        )
         XCTAssertEqual(addVariant.value(for: testTraits), [1, 2, 3, 4, 5, 6])
-        
-        let removeVariant = makeVariantCollection(original, patch: [
-            .remove
-        ])
+
+        let removeVariant = makeVariantCollection(
+            original,
+            patch: [
+                .remove
+            ]
+        )
         XCTAssertEqual(removeVariant.value(for: testTraits), [])
-        
-        let replaceVariant = makeVariantCollection(original, patch: [
-            .replace(value: [4, 5, 6])
-        ])
+
+        let replaceVariant = makeVariantCollection(
+            original,
+            patch: [
+                .replace(value: [4, 5, 6])
+            ]
+        )
         XCTAssertEqual(replaceVariant.value(for: testTraits), [4, 5, 6])
-        
-        let mixVariant = makeVariantCollection(original, patch: [
-            .replace(value: [4, 5, 6]),
-            .remove,
-            .add(value: [6, 7]),
-            .add(value: [8, 9]),
-        ])
+
+        let mixVariant = makeVariantCollection(
+            original,
+            patch: [
+                .replace(value: [4, 5, 6]),
+                .remove,
+                .add(value: [6, 7]),
+                .add(value: [8, 9]),
+            ]
+        )
         XCTAssertEqual(mixVariant.value(for: testTraits), [6, 7, 8, 9])
     }
-    
+
     func testApplyingSeriesOfPatchOperations() {
         let stringPatches: [VariantPatchOperation<String>] = [
             .replace(value: "ABC"),
@@ -66,7 +79,7 @@ class VariantPatchOperationTests: XCTestCase {
             XCTAssertEqual(stringVariant.value(for: testTraits), expectedValue)
         }
     }
-    
+
     func testMap() throws {
         let transform: (String) -> String = { "\($0) transformed" }
         let replace = VariantPatchOperation<String>.replace(value: "replace")
@@ -74,29 +87,32 @@ class VariantPatchOperationTests: XCTestCase {
             XCTFail("Expected replace operation")
             return
         }
-        
+
         XCTAssertEqual(value, "replace transformed")
-        
+
         let add = VariantPatchOperation<String>.add(value: "add")
         guard case .add(let value) = add.map(transform) else {
             XCTFail("Expected add operation")
             return
         }
-        
+
         XCTAssertEqual(value, "add transformed")
-        
+
         let remove = VariantPatchOperation<String>.remove.map(transform)
         guard case .remove = remove else {
             XCTFail("Expected remove operation")
             return
         }
     }
-    
+
     private let testTraits = [RenderNode.Variant.Trait.interfaceLanguage("unit-test")]
-    
+
     private func makeVariantCollection<Value>(_ original: Value, patch: [VariantPatchOperation<Value>]) -> VariantCollection<Value> {
-        VariantCollection(defaultValue: original, variants: [
-            .init(traits: testTraits, patch: patch)
-        ])
+        VariantCollection(
+            defaultValue: original,
+            variants: [
+                .init(traits: testTraits, patch: patch)
+            ]
+        )
     }
 }

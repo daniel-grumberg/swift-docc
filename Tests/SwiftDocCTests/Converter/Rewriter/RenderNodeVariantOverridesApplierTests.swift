@@ -10,10 +10,11 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftDocC
 
 class RenderNodeVariantOverridesApplierTests: XCTestCase {
-    
+
     func testReplacesTopLevelValue() throws {
         try assertAppliedRenderNode(
             configureOriginalNode: { renderNode in
@@ -24,7 +25,7 @@ class RenderNodeVariantOverridesApplierTests: XCTestCase {
             }
         )
     }
-    
+
     func testReplacesValueInDictionary() throws {
         try assertAppliedRenderNode(
             configureOriginalNode: { renderNode in
@@ -38,18 +39,18 @@ class RenderNodeVariantOverridesApplierTests: XCTestCase {
             }
         )
     }
-    
+
     func testReplacesValueInArray() throws {
         try assertAppliedRenderNode(
             configureOriginalNode: { renderNode in
                 renderNode.primaryContentSections = [
                     DeclarationsRenderSection(
                         declarations: [
-                            DeclarationRenderSection(languages: nil, platforms: [], tokens: []),
+                            DeclarationRenderSection(languages: nil, platforms: [], tokens: [])
                         ]
-                    ),
+                    )
                 ]
-                
+
                 renderNode.addVariantOverride(
                     pointerComponents: ["primaryContentSections", "0"],
                     value: DeclarationsRenderSection(
@@ -68,12 +69,12 @@ class RenderNodeVariantOverridesApplierTests: XCTestCase {
             }
         )
     }
-    
+
     func testReplacesMultipleValues() throws {
         try assertAppliedRenderNode(
             configureOriginalNode: { renderNode in
                 renderNode.metadata.title = "Title"
-                
+
                 renderNode.addVariantOverride(
                     pointerComponents: ["identifier"],
                     value: ResolvedTopicReference(
@@ -83,7 +84,7 @@ class RenderNodeVariantOverridesApplierTests: XCTestCase {
                         sourceLanguage: .objectiveC
                     )
                 )
-                
+
                 renderNode.addVariantOverride(pointerComponents: ["metadata", "title"], value: "New Title")
             },
             assertion: { appliedRenderNode in
@@ -92,7 +93,7 @@ class RenderNodeVariantOverridesApplierTests: XCTestCase {
             }
         )
     }
-    
+
     func testReplacesValueAtPointerWithEscapedCharacters() throws {
         try assertAppliedRenderNode(
             configureOriginalNode: { renderNode in
@@ -104,7 +105,7 @@ class RenderNodeVariantOverridesApplierTests: XCTestCase {
                     kind: .symbol,
                     estimatedTime: nil
                 )
-                
+
                 renderNode.addVariantOverride(
                     pointerComponents: ["references", "doc://path/to/symbol", "title"],
                     value: "New Title"
@@ -118,7 +119,7 @@ class RenderNodeVariantOverridesApplierTests: XCTestCase {
             }
         )
     }
-    
+
     func testRemovesVariantOverrides() throws {
         try assertAppliedRenderNode(
             configureOriginalNode: { renderNode in
@@ -130,7 +131,7 @@ class RenderNodeVariantOverridesApplierTests: XCTestCase {
             }
         )
     }
-    
+
     func testThrowsErrorForInvalidObjectPointer() {
         XCTAssertThrowsError(
             try assertAppliedRenderNode(
@@ -150,7 +151,7 @@ class RenderNodeVariantOverridesApplierTests: XCTestCase {
             )
         }
     }
-    
+
     func testThrowsErrorForInvalidArrayPointer() {
         XCTAssertThrowsError(
             try assertAppliedRenderNode(
@@ -166,7 +167,7 @@ class RenderNodeVariantOverridesApplierTests: XCTestCase {
             )
         }
     }
-    
+
     func testThrowsErrorForInvalidValuePointer() {
         XCTAssertThrowsError(
             try assertAppliedRenderNode(
@@ -185,7 +186,7 @@ class RenderNodeVariantOverridesApplierTests: XCTestCase {
             )
         }
     }
-    
+
     private func assertAppliedRenderNode(
         configureOriginalNode: ((inout RenderNode) -> ())? = nil,
         traits: [RenderNode.Variant.Trait] = [.interfaceLanguage("objc")],
@@ -200,15 +201,15 @@ class RenderNodeVariantOverridesApplierTests: XCTestCase {
             ),
             kind: .symbol
         )
-       
+
         configureOriginalNode?(&renderNode)
-        
+
         let transformedData = try RenderNodeVariantOverridesApplier()
             .applyVariantOverrides(
                 in: try RenderJSONEncoder.makeEncoder().encode(renderNode),
                 for: traits
             )
-        
+
         let transformedRenderNode = try RenderJSONDecoder.makeDecoder().decode(RenderNode.self, from: transformedData)
         try assertion(transformedRenderNode)
     }
@@ -222,7 +223,7 @@ fileprivate extension RenderNode {
         operation: PatchOperation = .replace
     ) {
         let variantOverrides = self.variantOverrides ?? VariantOverrides()
-        
+
         variantOverrides.add(
             VariantOverride(
                 traits: traits,
@@ -230,11 +231,11 @@ fileprivate extension RenderNode {
                     .replace(
                         pointer: JSONPointer(pathComponents: pointerComponents),
                         value: AnyCodable(value)
-                    ),
+                    )
                 ]
             )
         )
-        
+
         self.variantOverrides = variantOverrides
     }
 }

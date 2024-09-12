@@ -17,12 +17,12 @@ public struct DeprecatedSection: Section {
         return "Deprecated"
     }
     public var content: [Markup]
-    
+
     /// Creates a new deprecation section with the given markup content.
     public init(content: [Markup]) {
         self.content = content
     }
-    
+
     /// Creates a new deprecation section with the given plain text.
     public init(text: String) {
         self.content = [Paragraph(Text(text))]

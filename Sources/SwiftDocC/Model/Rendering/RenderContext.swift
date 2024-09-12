@@ -19,7 +19,7 @@ public struct RenderContext {
     let documentationContext: DocumentationContext
     let bundle: DocumentationBundle
     let renderer: DocumentationContentRenderer
-    
+
     /// Creates a new render context.
     /// - Warning: Creating a render context pre-renders all content that the context provides.
     /// - Parameters:
@@ -31,24 +31,24 @@ public struct RenderContext {
         self.renderer = DocumentationContentRenderer(documentationContext: documentationContext, bundle: bundle)
         createRenderedContent()
     }
-    
+
     /// The pre-rendered content per node reference.
     private(set) public var store = RenderReferenceStore()
-    
+
     /// Creates a set of commonly used pieces of content using the nodes in the given documentation context.
     /// - Note: On macOS and iOS this function creates the content concurrently.
     private mutating func createRenderedContent() {
         let references = documentationContext.knownIdentifiers
-        var topics = [ResolvedTopicReference: RenderReferenceStore.TopicContent]()
+        var topics: [ResolvedTopicReference: RenderReferenceStore.TopicContent] = [:]
         let renderer = self.renderer
         let documentationContext = self.documentationContext
-        
+
         let renderContentFor: (ResolvedTopicReference) -> RenderReferenceStore.TopicContent = { reference in
             var dependencies = RenderReferenceDependencies()
             let renderReference = renderer.renderReference(for: reference, dependencies: &dependencies)
             let canonicalPath = documentationContext.shortestFinitePath(to: reference).flatMap { $0.isEmpty ? nil : $0 }
             let reverseLookup = renderer.taskGroups(for: reference)
-            
+
             return RenderReferenceStore.TopicContent(
                 renderReference: renderReference,
                 canonicalPath: canonicalPath,
@@ -60,7 +60,7 @@ public struct RenderContext {
                 renderReferenceDependencies: dependencies
             )
         }
-        
+
         #if os(macOS) || os(iOS) || os(Android) || os(Windows)
         // Concurrently render content on macOS/iOS, Windows & Android
         let results: [(reference: ResolvedTopicReference, content: RenderReferenceStore.TopicContent)] = references.concurrentPerform { reference, results in
@@ -69,7 +69,7 @@ public struct RenderContext {
         for result in results {
             topics[result.reference] = result.content
         }
-        
+
         #elseif os(Linux)
         // Serially render on Linux
         references.forEach {
@@ -78,21 +78,21 @@ public struct RenderContext {
         #else
         #error("Unexpected platform.")
         #endif
-        
+
         let assets = documentationContext.assetManagers
             .reduce(into: [AssetReference: DataAsset]()) { (storage, element) in
                 let (bundleIdentifier, assetManager) = element
-            
+
                 for (name, asset) in assetManager.storage {
                     storage[AssetReference(assetName: name, bundleIdentifier: bundleIdentifier)] = asset
                 }
             }
-        
+
         // Add all the external content to the topic store
         for (reference, entity) in documentationContext.externalCache {
             topics[reference] = entity.topicContent()
         }
-        
+
         self.store = RenderReferenceStore(topics: topics, assets: assets)
     }
 }

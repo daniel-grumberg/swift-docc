@@ -19,17 +19,17 @@ private var subcommands: [ParsableCommand.Type] {
         Docc.Init.self,
         Docc.Merge.self,
     ]
-#if canImport(NIOHTTP1)
+    #if canImport(NIOHTTP1)
     subcommands.insert(Docc.Preview.self, at: 1)
-#endif
+    #endif
     return subcommands
 }
 
 private var usage: String {
     var usage = "docc convert [<catalog-path>] [--additional-symbol-graph-dir <symbol-graph-dir>] [<other-options>]"
-#if canImport(NIOHTTP1)
+    #if canImport(NIOHTTP1)
     usage.append("\ndocc preview [<catalog-path>] [--port <port-number>] [--additional-symbol-graph-dir <symbol-graph-dir>] [--output-dir <output-dir>] [<other-options>]")
-#endif
+    #endif
     return usage
 }
 
@@ -38,7 +38,8 @@ public struct Docc: ParsableCommand {
     public static var configuration = CommandConfiguration(
         abstract: "Documentation Compiler: compile, analyze, and preview documentation.",
         usage: usage,
-        subcommands: subcommands)
+        subcommands: subcommands
+    )
 
     public init() {}
 }

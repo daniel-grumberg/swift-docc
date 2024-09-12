@@ -17,14 +17,14 @@ public extension CodingUserInfoKey {
 
     /// A user info key to store the current batch index.
     static let batchIndex = CodingUserInfoKey(rawValue: "symbolScaffolding")!
-    
+
     /// A user info key to store the total amount of concurrent batches.
     static let batchCount = CodingUserInfoKey(rawValue: "symbolBatches")!
 }
 
 /// A concurrent symbol graph JSON decoder.
 enum SymbolGraphConcurrentDecoder {
-    
+
     /// Decodes the given data into a symbol graph concurrently.
     /// - Parameters:
     ///   - data: JSON data to decode.
@@ -53,10 +53,9 @@ enum SymbolGraphConcurrentDecoder {
     /// > Note: Since each worker needs to walk over all symbols that are contained in the symbol graph,
     /// it made sense to spread the work equally (in other words to decode each N-th symbol per worker)
     /// so that we can get the best performance out of the concurrent work.
-    
+
     static func decode(_ data: Data, concurrentBatches: Int = 4, using decoder: JSONDecoder = JSONDecoder()) throws -> SymbolGraph {
-        
-        
+
         var symbolGraph: SymbolGraph!
 
         let decodeError = Synchronized<Error?>(nil)
@@ -64,7 +63,7 @@ enum SymbolGraphConcurrentDecoder {
 
         let group = DispatchGroup()
         let queue = DispatchQueue(label: "com.swift.SymbolGraphConcurrentDecoder", qos: .unspecified, attributes: .concurrent)
-        
+
         // Concurrently decode metadata and relationships.
         group.async(queue: queue) {
             do {
@@ -74,36 +73,37 @@ enum SymbolGraphConcurrentDecoder {
                 decodeError.sync({ $0 = error })
             }
         }
-        
+
         // Concurrently decode each batch of symbols in the graph.
-        (0..<concurrentBatches).concurrentPerform { batchIndex in
-            let batchDecoder = JSONDecoder(like: decoder)
-            
-            // Configure the decoder to decode the current batch
-            batchDecoder.userInfo[CodingUserInfoKey.symbolCounter] = Counter()
-            batchDecoder.userInfo[CodingUserInfoKey.batchIndex] = batchIndex
-            batchDecoder.userInfo[CodingUserInfoKey.batchCount] = concurrentBatches
-            
-            // Decode and add the symbols batch to `batches`.
-            do {
-                let batch = try batchDecoder.decode(SymbolGraphBatch.self, from: data)
-                symbols.sync({
-                    for symbol in batch.symbols {
-                        if let existing = $0[symbol.identifier.precise] {
-                            $0[symbol.identifier.precise] = SymbolGraph._symbolToKeepInCaseOfPreciseIdentifierConflict(existing, symbol)
-                        } else {
-                            $0[symbol.identifier.precise] = symbol
+        (0..<concurrentBatches)
+            .concurrentPerform { batchIndex in
+                let batchDecoder = JSONDecoder(like: decoder)
+
+                // Configure the decoder to decode the current batch
+                batchDecoder.userInfo[CodingUserInfoKey.symbolCounter] = Counter()
+                batchDecoder.userInfo[CodingUserInfoKey.batchIndex] = batchIndex
+                batchDecoder.userInfo[CodingUserInfoKey.batchCount] = concurrentBatches
+
+                // Decode and add the symbols batch to `batches`.
+                do {
+                    let batch = try batchDecoder.decode(SymbolGraphBatch.self, from: data)
+                    symbols.sync({
+                        for symbol in batch.symbols {
+                            if let existing = $0[symbol.identifier.precise] {
+                                $0[symbol.identifier.precise] = SymbolGraph._symbolToKeepInCaseOfPreciseIdentifierConflict(existing, symbol)
+                            } else {
+                                $0[symbol.identifier.precise] = symbol
+                            }
                         }
-                    }
-                })
-            } catch {
-                decodeError.sync({ $0 = error })
+                    })
+                } catch {
+                    decodeError.sync({ $0 = error })
+                }
             }
-        }
-        
+
         // Wait until all concurrent tasks have completed.
         group.wait()
-        
+
         // If an error happened during decoding re-throw.
         if let lastError = decodeError.sync({ $0 }) {
             throw lastError
@@ -112,24 +112,24 @@ enum SymbolGraphConcurrentDecoder {
         symbolGraph.symbols = symbols.sync({ $0 })
         return symbolGraph
     }
-    
+
     /// A wrapper type that decodes everything in the symbol graph but the symbols list.
     struct SymbolGraphWithoutSymbols: Decodable {
         /// The decoded symbol graph.
         let symbolGraph: SymbolGraph
-        
+
         typealias CodingKeys = SymbolGraph.CodingKeys
 
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            
+
             let metadata = try container.decode(SymbolGraph.Metadata.self, forKey: .metadata)
             let module = try container.decode(SymbolGraph.Module.self, forKey: .module)
             let relationships = try container.decode([SymbolGraph.Relationship].self, forKey: .relationships)
             self.symbolGraph = SymbolGraph(metadata: metadata, module: module, symbols: [], relationships: relationships)
         }
     }
-    
+
     /// A wrapper type that decodes only a batch of symbols out of a symbol graph.
     struct SymbolGraphBatch: Decodable {
         /// A list of decoded symbols.
@@ -139,13 +139,13 @@ enum SymbolGraphConcurrentDecoder {
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            
+
             symbols = try container.decode([OptionalBatchSymbol].self, forKey: .symbols)
                 // Remove the skipped optional symbols that don't belong to the batch
                 .compactMap(\.symbol)
         }
     }
-    
+
     /// A wrapper type that decodes a symbol only if it belongs to the batch configured
     /// in the given decoder.
     struct OptionalBatchSymbol: Decodable {
@@ -160,23 +160,23 @@ enum SymbolGraphConcurrentDecoder {
             let check = decoder.userInfo[CodingUserInfoKey.batchIndex] as! Int
             let count = (decoder.userInfo[CodingUserInfoKey.symbolCounter] as! Counter).increment()
             let batches = decoder.userInfo[CodingUserInfoKey.batchCount] as! Int
-            
+
             /// Don't decode if this symbol doesn't belong to the current batch.
             guard count % batches == check else { return }
-            
+
             /// Decode the symbol as usual.
             symbol = try SymbolGraph.Symbol(from: decoder)
         }
     }
-    
+
     /// An auto-increment counter.
     class Counter {
         /// The current value of the counter.
         private var count = 0
-        
+
         /// Get the current value and increment.
         func increment() -> Int {
-            defer { count += 1}
+            defer { count += 1 }
             return count
         }
     }
@@ -187,7 +187,7 @@ private extension JSONDecoder {
     /// old one.
     convenience init(like old: JSONDecoder) {
         self.init()
-        
+
         self.userInfo = old.userInfo
         self.dataDecodingStrategy = old.dataDecodingStrategy
         self.dateDecodingStrategy = old.dateDecodingStrategy

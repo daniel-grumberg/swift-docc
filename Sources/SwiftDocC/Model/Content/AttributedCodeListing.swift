@@ -52,7 +52,7 @@ extension AttributedCodeListing {
         /// Indicates whether the code line is empty, which means it contains no code elements.
         public var isEmpty: Bool { return tokens.isEmpty }
     }
-    
+
     /// Creates an attributed code listing from plain text.
     ///
     /// This initializer splits the given plain text by newline characters and represents each line in a plain-text lexical token. Use this API
@@ -74,38 +74,38 @@ extension AttributedCodeListing.Line {
     public enum Token: Hashable, CustomStringConvertible {
         /// Text in a code line with no indicated semantic meaning.
         case plain(String)
-        
+
         /// A keyword reserved by the language.
         ///
         /// Example keywords in the Swift programming language are `func` and `typealias`.
         case keyword(String)
-        
+
         /// An identifier name, such as the name of a symbol.
         case identifier(String)
-        
+
         /// A number literal as written in code.
         case numberLiteral(String)
-        
+
         /// A string literal as written in code.
         case stringLiteral(String)
-        
+
         /// The name of a parameter in a function-like construct.
         case parameterName(String)
-        
+
         /// The name of a generic type parameter.
         case genericTypeParameterName(String)
-        
+
         /// An attribute, typically associated with the declaration of a symbol.
         ///
         /// An attribute consists of a name and a content. The name of the attribute includes syntactic markers, such as the `@` in
         /// Swift. The contents of an attribute are the text that follows the name in the attribute's declaration.
         case attribute(name: String, contents: String?)
-        
+
         /// An annotation in code that indicates the type name of an identifier.
         ///
         /// A type annotation has a name and a unique identifier for the type, if known.
         case typeAnnotation(name: String, usr: String?)
-        
+
         public var description: String {
             switch self {
             case .plain(let string):
@@ -135,15 +135,13 @@ extension AttributedCodeListing.Line {
     }
 }
 
-
 /// A reference to a code listing that hasn't been resolved yet.
 public struct UnresolvedCodeListingReference {
     /// The name identifier of the code listing.
     public var identifier: String
-    
+
     /// Creates an unresolved code listing reference given its name identifier.
     public init(identifier: String) {
         self.identifier = identifier
     }
 }
-

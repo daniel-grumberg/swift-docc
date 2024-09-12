@@ -18,22 +18,26 @@ extension RenderBlockContent: TextIndexing {
         }
     }
 
-    public func rawIndexableTextContent(references: [String : RenderReference]) -> String {
+    public func rawIndexableTextContent(references: [String: RenderReference]) -> String {
         switch self {
         case let .aside(a):
             return a.content.rawIndexableTextContent(references: references)
         case let .orderedList(l):
-            return l.items.map {
-                $0.content.rawIndexableTextContent(references: references)
-            }.joined(separator: " ")
+            return l.items
+                .map {
+                    $0.content.rawIndexableTextContent(references: references)
+                }
+                .joined(separator: " ")
         case let .paragraph(p):
             return p.inlineContent.rawIndexableTextContent(references: references)
         case let .step(s):
             return (s.content + s.caption).rawIndexableTextContent(references: references)
         case let .unorderedList(l):
-            return l.items.map {
-                $0.content.rawIndexableTextContent(references: references)
-            }.joined(separator: " ")
+            return l.items
+                .map {
+                    $0.content.rawIndexableTextContent(references: references)
+                }
+                .joined(separator: " ")
         case let .codeListing(l):
             return l.metadata?.rawIndexableTextContent(references: references) ?? ""
         case let .heading(h):
@@ -43,31 +47,41 @@ extension RenderBlockContent: TextIndexing {
         case .dictionaryExample(let e):
             return e.summary?.rawIndexableTextContent(references: references) ?? ""
         case .table(let t):
-            let content = t.rows.map {
-                return $0.cells.map {
-                    return $0.rawIndexableTextContent(references: references)
-                }.joined(separator: " ")
-            }.joined(separator: " ")
-            
+            let content = t.rows
+                .map {
+                    return $0.cells
+                        .map {
+                            return $0.rawIndexableTextContent(references: references)
+                        }
+                        .joined(separator: " ")
+                }
+                .joined(separator: " ")
+
             let meta = t.metadata?.rawIndexableTextContent(references: references) ?? ""
-            
+
             return content + " " + meta
         case .termList(let l):
-            return l.items.map {
-                let definition = $0.definition.content.rawIndexableTextContent(references: references)
-                return $0.term.inlineContent.rawIndexableTextContent(references: references)
-                    + ( definition.isEmpty ? "" : " \(definition)" )
-            }.joined(separator: " ")
+            return l.items
+                .map {
+                    let definition = $0.definition.content.rawIndexableTextContent(references: references)
+                    return $0.term.inlineContent.rawIndexableTextContent(references: references)
+                        + (definition.isEmpty ? "" : " \(definition)")
+                }
+                .joined(separator: " ")
         case .row(let row):
-            return row.columns.map { column in
-                return column.content.rawIndexableTextContent(references: references)
-            }.joined(separator: " ")
+            return row.columns
+                .map { column in
+                    return column.content.rawIndexableTextContent(references: references)
+                }
+                .joined(separator: " ")
         case .small(let small):
             return small.inlineContent.rawIndexableTextContent(references: references)
         case .tabNavigator(let tabNavigator):
-            return tabNavigator.tabs.map { tab in
-                return tab.content.rawIndexableTextContent(references: references)
-            }.joined(separator: " ")
+            return tabNavigator.tabs
+                .map { tab in
+                    return tab.content.rawIndexableTextContent(references: references)
+                }
+                .joined(separator: " ")
         case .links(let links):
             // Matches the behavior in `RenderInlineContent+TextIndexing` for a
             // `RenderInlineContent.reference`

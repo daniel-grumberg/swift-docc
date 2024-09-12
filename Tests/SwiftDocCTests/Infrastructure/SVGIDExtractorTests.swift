@@ -9,6 +9,7 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class SVGIDExtractorTests: XCTestCase {
@@ -21,10 +22,10 @@ class SVGIDExtractorTests: XCTestCase {
                 </svg>
                 """
             )
-            
+
             XCTAssertEqual(id, "plus-id")
         }
-        
+
         do {
             let id = extractIDFromSVG(
                 """
@@ -33,10 +34,10 @@ class SVGIDExtractorTests: XCTestCase {
                 </svg>
                 """
             )
-            
+
             XCTAssertEqual(id, "plus-id")
         }
-        
+
         do {
             let id = extractIDFromSVG(
                 """
@@ -45,11 +46,11 @@ class SVGIDExtractorTests: XCTestCase {
                 </svg>
                 """
             )
-            
+
             XCTAssertEqual(id, "plus-id")
         }
     }
-    
+
     func testExtractIDFromSVGWithoutID() {
         let id = extractIDFromSVG(
             """
@@ -58,24 +59,24 @@ class SVGIDExtractorTests: XCTestCase {
             </svg>
             """
         )
-        
+
         XCTAssertEqual(id, nil)
     }
-    
+
     func testExtractIDFromInvalidSVG() throws {
         let id = extractIDFromSVG(
             """
             # This is a markdown article
-            
+
             It's hiding as an SVG.
-            
+
             Oh no! 😳
             """
         )
-        
+
         XCTAssertEqual(id, nil)
     }
-    
+
     func extractIDFromSVG(_ source: String) -> String? {
         let svgData = Data(source.utf8)
         return SVGIDExtractor._extractID(from: svgData)

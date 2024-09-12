@@ -8,9 +8,10 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class HasContentTests: XCTestCase {
     func testEmpty() throws {
@@ -18,11 +19,11 @@ class HasContentTests: XCTestCase {
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             let hasContent = Semantic.Analyses.HasContent<Intro>().analyze(directive, children: directive.children, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertTrue(hasContent.isEmpty)
             XCTAssertEqual(1, problems.count)
@@ -31,21 +32,21 @@ class HasContentTests: XCTestCase {
             }
         }
     }
-    
+
     func testHasContent() throws {
         let source = """
-@dir {
-   Some content here.
-}
-"""
+            @dir {
+               Some content here.
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             let hasContent = Semantic.Analyses.HasContent<Intro>().analyze(directive, children: directive.children, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertFalse(hasContent.isEmpty)
             XCTAssertTrue(problems.isEmpty)

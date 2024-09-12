@@ -8,11 +8,12 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocCUtilities
-@testable import SwiftDocC
-import SwiftDocCTestUtilities
 import ArgumentParser
+import SwiftDocCTestUtilities
+import XCTest
+
+@testable import SwiftDocC
+@testable import SwiftDocCUtilities
 
 class ConvertSubcommandSourceRepositoryTests: XCTestCase {
     private let testBundleURL = Bundle.module.url(
@@ -20,13 +21,13 @@ class ConvertSubcommandSourceRepositoryTests: XCTestCase {
         withExtension: "docc",
         subdirectory: "Test Bundles"
     )!
-    
+
     private let testTemplateURL = Bundle.module.url(
         forResource: "Test Template",
         withExtension: nil,
         subdirectory: "Test Resources"
     )!
-    
+
     func testSourceRepositoryAllArgumentsSpecified() throws {
         for sourceService in ["github", "gitlab", "bitbucket"] {
             try assertSourceRepositoryArguments(
@@ -39,7 +40,7 @@ class ConvertSubcommandSourceRepositoryTests: XCTestCase {
             }
         }
     }
-    
+
     func testDoesNotSetSourceRepositoryIfBothCheckoutPathAndsourceServiceBaseURLArgumentsAreMissing() throws {
         try assertSourceRepositoryArguments(
             checkoutPath: nil,
@@ -49,7 +50,7 @@ class ConvertSubcommandSourceRepositoryTests: XCTestCase {
             XCTAssertNil(action.sourceRepository)
         }
     }
-    
+
     func testThrowsValidationErrorWhenSourceServiceIsSpecifiedButNotSourceServiceBaseURL() throws {
         XCTAssertThrowsError(
             try assertSourceRepositoryArguments(
@@ -67,7 +68,7 @@ class ConvertSubcommandSourceRepositoryTests: XCTestCase {
             )
         }
     }
-    
+
     func testThrowsValidationErrorWhenSourceServiceBaseURLIsSpecifiedButNotSourceService() throws {
         XCTAssertThrowsError(
             try assertSourceRepositoryArguments(
@@ -85,7 +86,7 @@ class ConvertSubcommandSourceRepositoryTests: XCTestCase {
             )
         }
     }
-    
+
     func testThrowsValidationErrorWhenSourceServiceBaseURLIsInvalid() throws {
         XCTAssertThrowsError(
             try assertSourceRepositoryArguments(
@@ -100,7 +101,7 @@ class ConvertSubcommandSourceRepositoryTests: XCTestCase {
             )
         }
     }
-    
+
     func testThrowsValidationErrorWhenCheckoutPathIsNotSpecified() throws {
         XCTAssertThrowsError(
             try assertSourceRepositoryArguments(
@@ -118,7 +119,7 @@ class ConvertSubcommandSourceRepositoryTests: XCTestCase {
             )
         }
     }
-    
+
     func testThrowsValidationErrorWhenSourceServiceIsInvalid() throws {
         XCTAssertThrowsError(
             try assertSourceRepositoryArguments(
@@ -133,7 +134,7 @@ class ConvertSubcommandSourceRepositoryTests: XCTestCase {
             )
         }
     }
-    
+
     private func assertSourceRepositoryArguments(
         checkoutPath: String?,
         sourceService: String?,
@@ -141,7 +142,7 @@ class ConvertSubcommandSourceRepositoryTests: XCTestCase {
         assertion: ((ConvertAction) throws -> Void)? = nil
     ) throws {
         SetEnvironmentVariable(TemplateOption.environmentVariableKey, testTemplateURL.path)
-        
+
         var arguments: [String] = [testBundleURL.path]
         if let checkoutPath {
             arguments.append(contentsOf: ["--checkout-path", checkoutPath])
@@ -152,9 +153,9 @@ class ConvertSubcommandSourceRepositoryTests: XCTestCase {
         if let sourceServiceBaseURL {
             arguments.append(contentsOf: ["--source-service-base-url", sourceServiceBaseURL])
         }
-        
+
         let convertOptions = try Docc.Convert.parse(arguments)
-        
+
         let result = try ConvertAction(fromConvertCommand: convertOptions)
         try assertion?(result)
     }

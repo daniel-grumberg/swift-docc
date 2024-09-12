@@ -16,7 +16,8 @@ public struct CoverageAction: Action {
     internal init(
         documentationCoverageOptions: DocumentationCoverageOptions,
         workingDirectory: URL,
-        fileManager: FileManagerProtocol) {
+        fileManager: FileManagerProtocol
+    ) {
         self.documentationCoverageOptions = documentationCoverageOptions
         self.workingDirectory = workingDirectory
         self.fileManager = fileManager
@@ -49,4 +50,3 @@ public struct CoverageAction: Action {
         return ActionResult(didEncounterError: false, outputs: [])
     }
 }
-

@@ -9,9 +9,10 @@
 */
 
 import Foundation
-import XCTest
-@testable import SwiftDocC
 import SwiftDocCTestUtilities
+import XCTest
+
+@testable import SwiftDocC
 
 class DeclarationsRenderSectionTests: XCTestCase {
     func testDecodingTokens() throws {
@@ -31,35 +32,36 @@ class DeclarationsRenderSectionTests: XCTestCase {
 
         for (token, string) in values {
             let jsonData = """
-            {
-                "kind": "declarations",
-                "declarations": [
-                    {
-                        "platforms": [],
-                        "tokens": [
-                            {
-                                "text": "",
-                                "kind": "\(string)"
-                            }
-                        ],
-                        "otherDeclarations": {
-                            "declarations": [
+                {
+                    "kind": "declarations",
+                    "declarations": [
+                        {
+                            "platforms": [],
+                            "tokens": [
                                 {
-                                    "identifier": "identifier",
-                                    "tokens": [
-                                        {
-                                            "text": "",
-                                            "kind": "\(string)"
-                                        }
-                                    ]
+                                    "text": "",
+                                    "kind": "\(string)"
                                 }
                             ],
-                            "displayIndex": 0
+                            "otherDeclarations": {
+                                "declarations": [
+                                    {
+                                        "identifier": "identifier",
+                                        "tokens": [
+                                            {
+                                                "text": "",
+                                                "kind": "\(string)"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "displayIndex": 0
+                            }
                         }
-                    }
-                ]
-            }
-            """.data(using: .utf8)!
+                    ]
+                }
+                """
+                .data(using: .utf8)!
 
             XCTAssertEqual(
                 try JSONDecoder().decode(DeclarationsRenderSection.self, from: jsonData),
@@ -72,7 +74,7 @@ class DeclarationsRenderSectionTests: XCTestCase {
                             declarations: [.init(tokens: [.init(text: "", kind: token)], identifier: "identifier")],
                             displayIndex: 0
                         )
-                    ),
+                    )
                 ])
             )
         }
@@ -87,10 +89,11 @@ class DeclarationsRenderSectionTests: XCTestCase {
                     languages: nil,
                     platforms: [],
                     tokens: [.init(text: "", kind: .string)]
-                )]
+                )
+            ]
             )
         )
-        
+
         let encodedJsonString = try XCTUnwrap(String(data: encodedData, encoding: .utf8))
         XCTAssertFalse(encodedJsonString.contains("otherDeclarations"))
         XCTAssertFalse(encodedJsonString.contains("indexInOtherDeclarations"))
@@ -98,35 +101,36 @@ class DeclarationsRenderSectionTests: XCTestCase {
 
     func testRoundTrip() throws {
         let jsonData = """
-        {
-            "kind": "declarations",
-            "declarations": [
-                {
-                    "platforms": [],
-                    "tokens": [
-                        {
-                            "text": "",
-                            "kind": "label"
-                        }
-                    ],
-                    "otherDeclarations": {
-                        "declarations": [
+            {
+                "kind": "declarations",
+                "declarations": [
+                    {
+                        "platforms": [],
+                        "tokens": [
                             {
-                                "identifier": "identifier",
-                                "tokens": [
-                                    {
-                                        "text": "",
-                                        "kind": "label"
-                                    }
-                                ]
+                                "text": "",
+                                "kind": "label"
                             }
                         ],
-                        "displayIndex": 0
+                        "otherDeclarations": {
+                            "declarations": [
+                                {
+                                    "identifier": "identifier",
+                                    "tokens": [
+                                        {
+                                            "text": "",
+                                            "kind": "label"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "displayIndex": 0
+                        }
                     }
-                }
-            ]
-        }
-        """.data(using: .utf8)!
+                ]
+            }
+            """
+            .data(using: .utf8)!
 
         let value = try JSONDecoder().decode(DeclarationsRenderSection.self, from: jsonData)
         try assertRoundTripCoding(value)
@@ -158,10 +162,13 @@ class DeclarationsRenderSectionTests: XCTestCase {
         )!
 
         let tempURL = try createTempFolder(content: [
-            Folder(name: "unit-test.docc", content: [
-                InfoPlist(displayName: "FancyOverloads", identifier: "com.test.example"),
-                CopyOfFile(original: symbolGraphFile),
-            ])
+            Folder(
+                name: "unit-test.docc",
+                content: [
+                    InfoPlist(displayName: "FancyOverloads", identifier: "com.test.example"),
+                    CopyOfFile(original: symbolGraphFile),
+                ]
+            )
         ])
 
         let (_, bundle, context) = try loadBundle(from: tempURL)
@@ -241,7 +248,7 @@ class DeclarationsRenderSectionTests: XCTestCase {
                 declarationAndHighlights(for: declarations.tokens),
                 [
                     "func overload2(p1: ((Int) -> Int)?, p2: Int)",
-                    "                   ~~   ~~~~~~~~~~          "
+                    "                   ~~   ~~~~~~~~~~          ",
                 ]
             )
 
@@ -321,10 +328,13 @@ class DeclarationsRenderSectionTests: XCTestCase {
         )!
 
         let tempURL = try createTempFolder(content: [
-            Folder(name: "unit-test.docc", content: [
-                InfoPlist(displayName: "FancyOverloads", identifier: "com.test.example"),
-                CopyOfFile(original: symbolGraphFile),
-            ])
+            Folder(
+                name: "unit-test.docc",
+                content: [
+                    InfoPlist(displayName: "FancyOverloads", identifier: "com.test.example"),
+                    CopyOfFile(original: symbolGraphFile),
+                ]
+            )
         ])
 
         let (_, bundle, context) = try loadBundle(from: tempURL)
@@ -351,6 +361,6 @@ class DeclarationsRenderSectionTests: XCTestCase {
 func declarationAndHighlights(for tokens: [DeclarationRenderSection.Token]) -> [String] {
     [
         tokens.map({ $0.text }).joined(),
-        tokens.map({ String(repeating: $0.highlight == .changed ? "~" : " ", count: $0.text.count) }).joined()
+        tokens.map({ String(repeating: $0.highlight == .changed ? "~" : " ", count: $0.text.count) }).joined(),
     ]
 }

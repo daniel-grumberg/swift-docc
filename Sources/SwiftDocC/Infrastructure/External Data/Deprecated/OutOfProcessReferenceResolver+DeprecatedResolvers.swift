@@ -15,7 +15,7 @@ private struct DeprecatedAPIError: DescribedError {
     init(apiName: String = #function) {
         self.apiName = apiName
     }
-    
+
     var errorDescription: String {
         return "\(apiName.singleQuoted) is deprecated and is no longer used."
     }
@@ -75,7 +75,12 @@ extension OutOfProcessReferenceResolver: ExternalReferenceResolver {
 
 // MARK: Fallback Reference Resolver
 
-@available(*, deprecated, renamed: "ConvertServiceFallbackResolver", message: "Use 'ConvertServiceFallbackResolver' instead. This deprecated API will be removed after 6.0 is released")
+@available(
+    *,
+    deprecated,
+    renamed: "ConvertServiceFallbackResolver",
+    message: "Use 'ConvertServiceFallbackResolver' instead. This deprecated API will be removed after 6.0 is released"
+)
 public protocol FallbackReferenceResolver {
     func resolve(_ reference: TopicReference, sourceLanguage: SourceLanguage) -> TopicReferenceResolutionResult
     func entityIfPreviouslyResolved(with reference: ResolvedTopicReference) throws -> DocumentationNode?
@@ -88,7 +93,7 @@ extension OutOfProcessReferenceResolver: FallbackReferenceResolver {
         assertionFailure("\(#function) is deprecated and is no longer used.")
         return nil
     }
-    
+
     public func urlForResolvedReferenceIfPreviouslyResolved(_ reference: ResolvedTopicReference) -> URL? {
         assertionFailure("\(#function) is deprecated and is no longer used.")
         return nil
@@ -97,7 +102,12 @@ extension OutOfProcessReferenceResolver: FallbackReferenceResolver {
 
 // MARK: Fallback Asset Resolver
 
-@available(*, deprecated, renamed: "ConvertServiceFallbackResolver", message: "Use 'ConvertServiceFallbackResolver' instead. This deprecated API will be removed after 6.0 is released")
+@available(
+    *,
+    deprecated,
+    renamed: "ConvertServiceFallbackResolver",
+    message: "Use 'ConvertServiceFallbackResolver' instead. This deprecated API will be removed after 6.0 is released"
+)
 public protocol FallbackAssetResolver {
     func resolve(assetNamed assetName: String, bundleIdentifier: String) -> DataAsset?
 }

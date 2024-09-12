@@ -19,32 +19,32 @@ enum HTMLTemplate: String {
 
 enum StaticHostableTransformerError: DescribedError {
     case dataProviderDoesNotReferenceValidInput(url: URL)
-    
+
     var errorDescription: String {
         switch self {
         case .dataProviderDoesNotReferenceValidInput(let url):
             return """
-            The content of `\(url.absoluteString)` is not in the format expected by the transformer.
-            """
+                The content of `\(url.absoluteString)` is not in the format expected by the transformer.
+                """
         }
     }
 }
 
 /// Navigates the contents of a FileSystemProvider pointing at the data folder of a `.doccarchive` to emit a static hostable website.
 struct StaticHostableTransformer {
-    
+
     /// The internal `FileSystemProvider` reference.
     /// This should be the data folder of an archive.
     private let dataProvider: FileSystemProvider
-    
+
     /// Where the output will be written.
     private let outputURL: URL
-    
+
     /// The index.html file to be used.
     private let indexHTMLData: Data
 
     private let fileManager: FileManagerProtocol
-    
+
     /// Initialise with a dataProvider to the source doccarchive.
     /// - Parameters:
     ///   - dataProvider: Should point to the data folder in a docc archive.
@@ -57,12 +57,12 @@ struct StaticHostableTransformer {
         self.outputURL = outputURL
         self.indexHTMLData = indexHTMLData
     }
-    
+
     /// Creates a static hostable version of the documentation in the data folder of an archive pointed to by the `dataProvider`
     func transform() throws {
 
         let node = dataProvider.fileSystem
-        
+
         // We should be starting at the data folder of a .doccarchive.
         switch node {
         case .directory(let dir):
@@ -71,7 +71,6 @@ struct StaticHostableTransformer {
             throw StaticHostableTransformerError.dataProviderDoesNotReferenceValidInput(url: file.url)
         }
     }
-
 
     /// Create a directory at the provided URL
     ///
@@ -111,13 +110,12 @@ struct StaticHostableTransformer {
         // Create the path for the new directory
         var newDirectory = directorySubPath
         let newPathComponent = currentDirectoryNode.url.lastPathComponent
-        
+
         // We need to ensure the new directory component, if not empty, ends with /
         if !newDirectory.isEmpty && !newDirectory.hasSuffix("/") {
             newDirectory += "/"
         }
         newDirectory += newPathComponent
-
 
         // Create the HTML output directory
 
@@ -152,7 +150,7 @@ struct StaticHostableTransformer {
 }
 
 extension StaticHostableTransformer {
-    
+
     /// Returns the data for the `index.html` file that should be used in the DocC archive
     /// produced by this conversion.
     ///
@@ -170,28 +168,28 @@ extension StaticHostableTransformer {
         fileManager: FileManagerProtocol
     ) throws -> Data {
         let customHostingBasePathProvided = !(hostingBasePath?.isEmpty ?? true)
-        
+
         let indexHTMLFileName: String
         if customHostingBasePathProvided {
             indexHTMLFileName = HTMLTemplate.templateFileName.rawValue
         } else {
             indexHTMLFileName = HTMLTemplate.indexFileName.rawValue
         }
-        
+
         let indexHTMLUrl = htmlTemplateDirectory.appendingPathComponent(
             indexHTMLFileName,
             isDirectory: false
         )
-        
+
         guard let indexHTMLData = fileManager.contents(atPath: indexHTMLUrl.path),
-              var indexHTML = String(data: indexHTMLData, encoding: .utf8)
+            var indexHTML = String(data: indexHTMLData, encoding: .utf8)
         else {
             throw TemplateOption.invalidHTMLTemplateError(
                 path: indexHTMLUrl.path,
                 expectedFile: indexHTMLFileName
             )
         }
-        
+
         if customHostingBasePathProvided, var replacementString = hostingBasePath {
             // We need to ensure that the base path has a leading /
             if !replacementString.hasPrefix("/") {
@@ -205,7 +203,7 @@ extension StaticHostableTransformer {
 
             indexHTML = indexHTML.replacingOccurrences(of: HTMLTemplate.tag.rawValue, with: replacementString)
         }
-        
+
         return Data(indexHTML.utf8)
     }
 }

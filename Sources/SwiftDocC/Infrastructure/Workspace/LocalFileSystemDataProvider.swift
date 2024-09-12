@@ -13,7 +13,7 @@ import Foundation
 /// A type that provides documentation bundles that it discovers by traversing the local file system.
 public struct LocalFileSystemDataProvider: DocumentationWorkspaceDataProvider, FileSystemProvider {
     public var identifier: String = UUID().uuidString
-    
+
     /// The location that this provider searches for documentation bundles in.
     public var rootURL: URL
 
@@ -31,14 +31,14 @@ public struct LocalFileSystemDataProvider: DocumentationWorkspaceDataProvider, F
         self.allowArbitraryCatalogDirectories = allowArbitraryCatalogDirectories
         fileSystem = try LocalFileSystemDataProvider.buildTree(root: rootURL)
     }
-    
+
     /// Builds a virtual file system hierarchy from the contents of a root URL in the local file system.
     /// - Parameter root: The location from which to descend to build the virtual file system.
     /// - Returns: A virtual file system that describe the file and directory structure within the given URL.
     private static func buildTree(root: URL) throws -> FSNode {
         var children: [FSNode] = []
         let childURLs = try FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: [URLResourceKey.isDirectoryKey], options: .skipsHiddenFiles)
-        
+
         for url in childURLs {
             if FileManager.default.directoryExists(atPath: url.path) {
                 children.append(try buildTree(root: url))

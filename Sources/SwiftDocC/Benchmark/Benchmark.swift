@@ -14,10 +14,10 @@ import Foundation
 public class Benchmark: Encodable {
     /// True if the process is supposed to run benchmarks.
     public let isEnabled: Bool
-    
+
     /// If defined, filter the metrics to log with that value.
     public let metricsFilter: String?
-    
+
     /// Creates a new benchmark log that can store metric results.
     /// - Parameters:
     ///   - isEnabled: If `true`, store metrics in the data model.
@@ -27,7 +27,7 @@ public class Benchmark: Encodable {
         self.isEnabled = isEnabled
         self.metricsFilter = metricsFilter
     }
-    
+
     /// The shared instance to use for logging.
     public static let main: Benchmark = Benchmark(
         isEnabled: ProcessInfo.processInfo.environment["DOCC_BENCHMARK"] == "YES",
@@ -52,11 +52,11 @@ public class Benchmark: Encodable {
 
     /// The list of metrics included in this benchmark.
     public var metrics: [BenchmarkMetric] = []
-    
+
     enum CodingKeys: String, CodingKey {
         case date, metrics, arguments, platform
     }
-    
+
     /// Prepare the gathered measurements into a benchmark results.
     ///
     /// The prepared benchmark results are sorted in a stable order that's suitable for presentation.
@@ -64,7 +64,7 @@ public class Benchmark: Encodable {
     /// - Returns: The prepared benchmark results for all the gathered metrics.
     public func results() -> BenchmarkResults? {
         guard isEnabled else { return nil }
-        
+
         let metrics = metrics.compactMap { log -> BenchmarkResults.Metric? in
             guard let result = log.result else {
                 return nil
@@ -73,7 +73,7 @@ public class Benchmark: Encodable {
             let displayName = (log as? DynamicallyIdentifiableMetric)?.displayName ?? type(of: log).displayName
             return .init(id: id, displayName: displayName, value: result)
         }
-        
+
         return BenchmarkResults(
             platformName: platform,
             timestamp: date,
@@ -81,7 +81,7 @@ public class Benchmark: Encodable {
             unorderedMetrics: metrics
         )
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         try results()?.encode(to: encoder)
     }
@@ -133,7 +133,8 @@ public func benchmark<E>(end metric: @autoclosure () -> E?, benchmarkLog log: Be
 ///   - log: The log to add the metric to.
 ///   - body: The closure around which to measure the metric.
 /// - Returns: The return value from the closure.
-public func benchmark<E, Result>(wrap metric: @autoclosure () -> E, benchmarkLog log: Benchmark = .main, body: () throws -> Result) rethrows -> Result where E: BenchmarkBlockMetric {
+public func benchmark<E, Result>(wrap metric: @autoclosure () -> E, benchmarkLog log: Benchmark = .main, body: () throws -> Result) rethrows -> Result
+where E: BenchmarkBlockMetric {
     if log.shouldLogMetricType(E.self) {
         let event = metric()
         event.begin()

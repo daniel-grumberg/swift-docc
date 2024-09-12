@@ -9,6 +9,7 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class DiagnosticSeverityTests: XCTestCase {
@@ -23,7 +24,7 @@ class DiagnosticSeverityTests: XCTestCase {
         XCTAssertNil(DiagnosticSeverity(""))
         XCTAssertNil(DiagnosticSeverity(nil))
     }
-    
+
     func testDiagnosticOrder() {
         // Verify that: error < warning < information < hint
         XCTAssertLessThan(DiagnosticSeverity.error, .warning)

@@ -14,7 +14,7 @@ import XCTest
 // These helpers methods exist to put temp files for different test executions in different locations when running in Swift CI.
 
 extension FileManager {
-    
+
     @available(*, deprecated, message: "Use `createTemporaryDirectory` instead in unit tests to avoid referencing a shared location in Swift CI.")
     var temporaryDirectory: URL {
         XCTFail("Use `createTemporaryDirectory` instead in unit tests to avoid referencing a shared location in Swift CI.")
@@ -23,13 +23,13 @@ extension FileManager {
 }
 
 public extension XCTestCase {
-    
+
     @available(*, deprecated, message: "Use `createTemporaryDirectory` instead in unit tests to avoid referencing a shared location in Swift CI.")
     func NSTemporaryDirectory() -> String {
         XCTFail("Use `createTemporaryDirectory` instead in unit tests to avoid referencing a shared location in Swift CI.")
         return Foundation.NSTemporaryDirectory()
     }
-    
+
     /// Creates a new temporary directory and returns the URL of that directory.
     ///
     /// After the current test method has returned the temporary directory is automatically removed.
@@ -41,7 +41,7 @@ public extension XCTestCase {
     func createTemporaryDirectory(named: String, fileManager: FileManager = .default) throws -> URL {
         try createTemporaryDirectory(pathComponents: named)
     }
-        
+
     /// Creates a new temporary directory and returns the URL of that directory.
     ///
     /// After the current test method has returned the temporary directory is automatically removed.
@@ -53,13 +53,13 @@ public extension XCTestCase {
     func createTemporaryDirectory(pathComponents: String..., fileManager: FileManager = .default) throws -> URL {
         let bundleParentDir = Bundle(for: Self.self).bundleURL.deletingLastPathComponent()
         let baseURL = bundleParentDir.appendingPathComponent(name.replacingWhitespaceAndPunctuation(with: "-"))
-        
+
         var tempURL = baseURL.appendingPathComponent(ProcessInfo.processInfo.globallyUniqueString)
         for component in pathComponents {
             tempURL.appendPathComponent(component)
         }
         tempURL.standardize()
-        
+
         addTeardownBlock {
             do {
                 if fileManager.fileExists(atPath: baseURL.path) {
@@ -69,14 +69,14 @@ public extension XCTestCase {
                 XCTFail("Failed to remove temporary directory: '\(error)'")
             }
         }
-        
+
         if !fileManager.fileExists(atPath: bundleParentDir.path) {
             // Create the base URL directory without intermediate directories so that an error is raised if the parent directory doesn't exist.
             try fileManager.createDirectory(at: baseURL, withIntermediateDirectories: false, attributes: nil)
         }
-         
+
         try fileManager.createDirectory(at: tempURL, withIntermediateDirectories: true, attributes: nil)
-        
+
         return tempURL
     }
 }

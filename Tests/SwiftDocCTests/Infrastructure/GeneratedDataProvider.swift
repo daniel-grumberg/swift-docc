@@ -8,9 +8,10 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import SymbolKit
+import XCTest
+
+@testable import SwiftDocC
 
 class GeneratedDataProviderTests: XCTestCase {
 
@@ -29,9 +30,9 @@ class GeneratedDataProviderTests: XCTestCase {
         )
         var secondSymbolGraph = firstSymbolGraph
         secondSymbolGraph.module.name = "SecondModuleName"
-        
-        let thirdSymbolGraph = firstSymbolGraph // Another symbol graph with the same module name
-        
+
+        let thirdSymbolGraph = firstSymbolGraph  // Another symbol graph with the same module name
+
         let dataProvider = GeneratedDataProvider(
             symbolGraphDataLoader: {
                 switch $0.lastPathComponent {
@@ -46,7 +47,7 @@ class GeneratedDataProviderTests: XCTestCase {
                 }
             }
         )
-        
+
         let options = BundleDiscoveryOptions(
             infoPlistFallbacks: [
                 "CFBundleDisplayName": "Custom Display Name",
@@ -61,19 +62,25 @@ class GeneratedDataProviderTests: XCTestCase {
         let bundles = try dataProvider.bundles(options: options)
         XCTAssertEqual(bundles.count, 1)
         let bundle = try XCTUnwrap(bundles.first)
-        
+
         XCTAssertEqual(bundle.displayName, "Custom Display Name")
-        XCTAssertEqual(bundle.symbolGraphURLs.map { $0.lastPathComponent }.sorted(), [
-            "first.symbols.json",
-            "second.symbols.json",
-            "third.symbols.json",
-            
-        ])
-        XCTAssertEqual(bundle.markupURLs.map { $0.path }.sorted(), [
-            "FirstModuleName.md",
-            "SecondModuleName.md",
-            // No third file since that symbol graph has the same module name as the first
-        ])
+        XCTAssertEqual(
+            bundle.symbolGraphURLs.map { $0.lastPathComponent }.sorted(),
+            [
+                "first.symbols.json",
+                "second.symbols.json",
+                "third.symbols.json",
+
+            ]
+        )
+        XCTAssertEqual(
+            bundle.markupURLs.map { $0.path }.sorted(),
+            [
+                "FirstModuleName.md",
+                "SecondModuleName.md",
+                // No third file since that symbol graph has the same module name as the first
+            ]
+        )
 
         XCTAssertEqual(
             try String(data: dataProvider.contentsOfURL(URL(fileURLWithPath: "FirstModuleName.md")), encoding: .utf8),
@@ -84,7 +91,7 @@ class GeneratedDataProviderTests: XCTestCase {
             "# ``SecondModuleName``"
         )
     }
-    
+
     func testGeneratingSingleModuleBundle() throws {
         let firstSymbolGraph = SymbolGraph(
             metadata: .init(
@@ -98,9 +105,9 @@ class GeneratedDataProviderTests: XCTestCase {
             symbols: [],
             relationships: []
         )
-        
-        let secondSymbolGraph = firstSymbolGraph // Another symbol graph with the same module name
-        
+
+        let secondSymbolGraph = firstSymbolGraph  // Another symbol graph with the same module name
+
         let dataProvider = GeneratedDataProvider(
             symbolGraphDataLoader: {
                 switch $0.lastPathComponent {
@@ -113,7 +120,7 @@ class GeneratedDataProviderTests: XCTestCase {
                 }
             }
         )
-        
+
         let options = BundleDiscoveryOptions(
             infoPlistFallbacks: [
                 "CFBundleDisplayName": "Custom Display Name",
@@ -127,21 +134,28 @@ class GeneratedDataProviderTests: XCTestCase {
         let bundles = try dataProvider.bundles(options: options)
         XCTAssertEqual(bundles.count, 1)
         let bundle = try XCTUnwrap(bundles.first)
-        
+
         XCTAssertEqual(bundle.displayName, "Custom Display Name")
-        XCTAssertEqual(bundle.symbolGraphURLs.map { $0.lastPathComponent }.sorted(), [
-            "first.symbols.json",
-            "second.symbols.json",
-        ])
-        XCTAssertEqual(bundle.markupURLs.map { $0.path }.sorted(), [
-            "FirstModuleName.md",
-            // No second file since that symbol graph has the same module name as the first
-        ])
+        XCTAssertEqual(
+            bundle.symbolGraphURLs.map { $0.lastPathComponent }.sorted(),
+            [
+                "first.symbols.json",
+                "second.symbols.json",
+            ]
+        )
+        XCTAssertEqual(
+            bundle.markupURLs.map { $0.path }.sorted(),
+            [
+                "FirstModuleName.md"
+                // No second file since that symbol graph has the same module name as the first
+            ]
+        )
 
         XCTAssertEqual(
-            try String(data: dataProvider.contentsOfURL(URL(fileURLWithPath: "FirstModuleName.md")), encoding: .utf8), """
+            try String(data: dataProvider.contentsOfURL(URL(fileURLWithPath: "FirstModuleName.md")), encoding: .utf8),
+            """
             # ``FirstModuleName``
-            
+
             @Metadata {
               @DisplayName("Custom Display Name")
             }

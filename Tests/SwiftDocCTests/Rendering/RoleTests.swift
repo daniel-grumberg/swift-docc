@@ -10,6 +10,7 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftDocC
 
 class RoleTests: XCTestCase {
@@ -18,12 +19,12 @@ class RoleTests: XCTestCase {
         "/documentation/MyKit/globalFunction(_:considering:)": "symbol",
         "/tutorials/Test-Bundle/TestTutorial2": "project",
         "/documentation/SideKit": "collection",
-        "/documentation/Test-Bundle/article": "collectionGroup", // it has topic groups
+        "/documentation/Test-Bundle/article": "collectionGroup",  // it has topic groups
         "/tutorials/Test-Bundle/TestTutorialArticle": "article",
         "/tutorials/TestOverview": "overview",
         "/documentation/SideKit/SideClass/init()": "symbol",
     ]
-    
+
     func testNodeRoles() throws {
         let (_, bundle, context) = try testBundleAndContext(copying: "TestBundle")
 
@@ -41,7 +42,7 @@ class RoleTests: XCTestCase {
             }
         }
     }
-    
+
     func testDocumentationRenderReferenceRoles() throws {
         let (_, bundle, context) = try testBundleAndContext(copying: "TestBundle")
 
@@ -65,6 +66,9 @@ class RoleTests: XCTestCase {
 
         XCTAssertEqual((renderNode.references["doc://org.swift.docc.example/tutorials/TestOverview"] as? TopicRenderReference)?.role, "overview")
         XCTAssertEqual((renderNode.references["doc://org.swift.docc.example/tutorials/Test-Bundle/TestTutorialArticle"] as? TopicRenderReference)?.role, "article")
-        XCTAssertEqual((renderNode.references["doc://org.swift.docc.example/tutorials/Test-Bundle/TestTutorial#Create-a-New-AR-Project-%F0%9F%92%BB"] as? TopicRenderReference)?.role, "pseudoSymbol")
+        XCTAssertEqual(
+            (renderNode.references["doc://org.swift.docc.example/tutorials/Test-Bundle/TestTutorial#Create-a-New-AR-Project-%F0%9F%92%BB"] as? TopicRenderReference)?.role,
+            "pseudoSymbol"
+        )
     }
 }

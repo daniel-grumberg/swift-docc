@@ -21,16 +21,16 @@ import Foundation
 /// - ``RenderNodeVariantOverridesApplier``
 public class VariantOverrides: Codable {
     /// The values of the variants, organized by trait.
-    public var values = [VariantOverride]()
-    
+    public var values: [VariantOverride] = []
+
     /// Whether the collection of overrides is empty.
     public var isEmpty: Bool { values.isEmpty }
-    
+
     /// Initializes a value given overrides.
     public init(values: [VariantOverride] = []) {
         add(contentsOf: values)
     }
-    
+
     /// Adds the given override.
     public func add(_ variantOverride: VariantOverride) {
         if let index = values.firstIndex(where: { variantOverride.traits == $0.traits }) {
@@ -39,7 +39,7 @@ public class VariantOverrides: Codable {
             values.append(variantOverride)
         }
     }
-    
+
     /// Adds the given overrides.
     public func add(
         contentsOf variantOverrides: some Collection<VariantOverride>
@@ -48,12 +48,12 @@ public class VariantOverrides: Codable {
             add(variantOverride)
         }
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(values)
     }
-    
+
     public required init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.values = try container.decode([VariantOverride].self)

@@ -13,7 +13,7 @@ import SwiftDocC
 
 /// An independent unit of work in the command-line workflow.
 ///
-/// An `Action` represents a discrete documentation task; it takes options and inputs, 
+/// An `Action` represents a discrete documentation task; it takes options and inputs,
 /// performs its work, reports any problems it encounters, and outputs it generates.
 public protocol Action {
     /// Performs the action and returns an ``ActionResult``.

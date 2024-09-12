@@ -8,23 +8,28 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
+import Foundation
 import Markdown
 import SymbolKit
-import Foundation
 
 extension SourceRange {
     /// Offsets the `SourceRange` using a SymbolKit `SourceRange`.
     mutating func offsetWithRange(_ range: SymbolGraph.LineList.SourceRange) {
         self.offsetWithRange(SourceRange(from: range))
     }
-    
+
     /// Initialize a `SourceRange` from a SymbolKit `SourceRange`.
     init(from symbolGrapSourceRange: SymbolGraph.LineList.SourceRange) {
-        self = SourceLocation(line: symbolGrapSourceRange.start.line,
-                              column: symbolGrapSourceRange.start.character,
-                              source: nil)..<SourceLocation(line: symbolGrapSourceRange.end.line,
-                                                            column: symbolGrapSourceRange.end.character,
-                                                            source: nil)
+        self =
+            SourceLocation(
+                line: symbolGrapSourceRange.start.line,
+                column: symbolGrapSourceRange.start.character,
+                source: nil
+            )..<SourceLocation(
+                line: symbolGrapSourceRange.end.line,
+                column: symbolGrapSourceRange.end.character,
+                source: nil
+            )
     }
 
     /// Offsets the `SourceRange` using another `SourceRange`.
@@ -34,11 +39,10 @@ extension SourceRange {
     mutating func offsetWithRange(_ range: SourceRange) {
         let start = SourceLocation(line: lowerBound.line + range.lowerBound.line, column: lowerBound.column + range.lowerBound.column, source: lowerBound.source)
         let end = SourceLocation(line: upperBound.line + range.lowerBound.line, column: upperBound.column + range.lowerBound.column, source: upperBound.source)
-        
+
         self = start..<end
     }
-    
-    
+
     /// The source file for which this range applies, if it came from an accessible location.
     var source: URL? {
         lowerBound.source ?? upperBound.source

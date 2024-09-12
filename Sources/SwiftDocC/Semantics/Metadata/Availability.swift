@@ -56,11 +56,9 @@ extension Metadata {
             static var defaultCases: [Platform] = [.macOS, .iOS, .watchOS, .tvOS]
 
             public init?(rawValue: String) {
-                for platform in Self.defaultCases {
-                    if platform.rawValue.lowercased() == rawValue.lowercased() {
-                        self = platform
-                        return
-                    }
+                for platform in Self.defaultCases where platform.rawValue.lowercased() == rawValue.lowercased() {
+                    self = platform
+                    return
                 }
                 if rawValue == "*" {
                     // Reserve the `*` platform for when we have decided on how `*` availability should be displayed (https://github.com/swiftlang/swift-docc/issues/969)
@@ -97,10 +95,10 @@ extension Metadata {
         @DirectiveArgumentWrapped
         public var deprecated: SemanticVersion? = nil
 
-        static var keyPaths: [String : AnyKeyPath] = [
-            "platform"     : \Availability._platform,
-            "introduced"   : \Availability._introduced,
-            "deprecated"   : \Availability._deprecated,
+        static var keyPaths: [String: AnyKeyPath] = [
+            "platform": \Availability._platform,
+            "introduced": \Availability._introduced,
+            "deprecated": \Availability._deprecated,
         ]
 
         public let originalMarkup: Markdown.BlockDirective
@@ -114,19 +112,20 @@ extension Metadata {
 
 extension SemanticVersion: DirectiveArgumentValueConvertible {
     static let separator = "."
-    
+
     init?(rawDirectiveArgumentValue: String) {
         guard !rawDirectiveArgumentValue.hasSuffix(Self.separator),
-              !rawDirectiveArgumentValue.hasPrefix(Self.separator) else {
+            !rawDirectiveArgumentValue.hasPrefix(Self.separator)
+        else {
             return nil
         }
-        
+
         // Split the string into major, minor and patch components
         let availabilityComponents = rawDirectiveArgumentValue.split(separator: .init(Self.separator), maxSplits: 2)
         guard !availabilityComponents.isEmpty else {
             return nil
         }
-        
+
         // If any of the components are missing, default to 0
         var intAvailabilityComponents = [0, 0, 0]
         for (index, component) in availabilityComponents.enumerated() {
@@ -134,10 +133,10 @@ extension SemanticVersion: DirectiveArgumentValueConvertible {
             guard let intComponent = Int(component) else {
                 return nil
             }
-            
+
             intAvailabilityComponents[index] = intComponent
         }
-        
+
         self.major = intAvailabilityComponents[0]
         self.minor = intAvailabilityComponents[1]
         self.patch = intAvailabilityComponents[2]
@@ -146,7 +145,7 @@ extension SemanticVersion: DirectiveArgumentValueConvertible {
     static func allowedValues() -> [String]? {
         nil
     }
-    
+
     static func expectedFormat() -> String? {
         return "a semantic version number ('[0-9]+(.[0-9]+)?(.[0-9]+)?')"
     }

@@ -19,11 +19,11 @@ public struct DownloadReference: RenderReference, URLReference, Equatable {
     public static let locationName = "downloads"
 
     public static var baseURL = URL(string: "/\(locationName)/")!
-    
+
     public var type: RenderReferenceType = .download
-    
+
     public var identifier: RenderReferenceIdentifier
-    
+
     /// The location of the downloadable resource.
     public var url: URL
 
@@ -36,7 +36,7 @@ public struct DownloadReference: RenderReference, URLReference, Equatable {
 
     /// The SHA512 hash value for the resource.
     public var checksum: String?
-    
+
     /// Creates a new reference to a downloadable resource.
     ///
     /// - Parameters:
@@ -83,7 +83,7 @@ public struct DownloadReference: RenderReference, URLReference, Equatable {
         try container.encode(type.rawValue, forKey: .type)
         try container.encode(identifier, forKey: .identifier)
         try container.encode(checksum, forKey: .checksum)
-        
+
         // Render URL
         if !encodeUrlVerbatim {
             try container.encode(renderURL(for: url, prefixComponent: encoder.assetPrefixComponent), forKey: .url)
@@ -92,10 +92,10 @@ public struct DownloadReference: RenderReference, URLReference, Equatable {
         }
     }
 
-    static public func ==(lhs: DownloadReference, rhs: DownloadReference) -> Bool {
+    static public func == (lhs: DownloadReference, rhs: DownloadReference) -> Bool {
         lhs.identifier == rhs.identifier
-        && lhs.url == rhs.url
-        && lhs.checksum == rhs.checksum
+            && lhs.url == rhs.url
+            && lhs.checksum == rhs.checksum
     }
 }
 

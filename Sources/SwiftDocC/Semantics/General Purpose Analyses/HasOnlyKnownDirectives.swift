@@ -24,29 +24,37 @@ extension Semantic.Analyses {
             allowsStructuredMarkup: Bool = false
         ) {
             self.severityIfFound = severityIfFound
-            var allowedDirectives = allowedDirectives
+            var allowedDirectives =
+                allowedDirectives
                 /* Comments are always allowed because they are ignored. */
-                + [Comment.directiveName]
-            
+            + [Comment.directiveName]
+
             if allowsStructuredMarkup {
                 allowedDirectives += DirectiveIndex.shared.renderableDirectives.values.map {
                     return $0.directiveName
                 }
             }
             self.allowedDirectives = allowedDirectives
-            
+
             self.allowsMarkup = allowsMarkup
         }
-        
-        public func analyze(_ directive: BlockDirective, children: some Sequence<Markup>, source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) {
+
+        public func analyze(
+            _ directive: BlockDirective,
+            children: some Sequence<Markup>,
+            source: URL?,
+            for bundle: DocumentationBundle,
+            in context: DocumentationContext,
+            problems: inout [Problem]
+        ) {
             if let severity = severityIfFound {
                 let allowedDirectivesList = allowedDirectives.sorted().map { "'\($0)'" }.joined(separator: ", ")
-                
+
                 for child in children {
                     let summary: String?
                     if let childDirective = child as? BlockDirective {
                         if allowedDirectives.contains(childDirective.name) {
-                            summary = nil // This directive is allowed
+                            summary = nil  // This directive is allowed
                         } else {
                             summary = "\(childDirective.name.singleQuoted) directive is unsupported as a child of the \(directive.name.singleQuoted) directive"
                         }
@@ -55,10 +63,17 @@ extension Semantic.Analyses {
                     } else {
                         summary = nil
                     }
-                    
+
                     if let summary {
-                        let diagnostic = Diagnostic(source: source, severity: severity, range: child.range, identifier: "org.swift.docc.HasOnlyKnownDirectives", summary: summary, explanation: "These directives are allowed: \(allowedDirectivesList)")
-                        
+                        let diagnostic = Diagnostic(
+                            source: source,
+                            severity: severity,
+                            range: child.range,
+                            identifier: "org.swift.docc.HasOnlyKnownDirectives",
+                            summary: summary,
+                            explanation: "These directives are allowed: \(allowedDirectivesList)"
+                        )
+
                         var solution: Solution?
                         if let childRange = child.range {
                             solution = Solution(
@@ -68,8 +83,7 @@ extension Semantic.Analyses {
                                 ]
                             )
                         }
-                        
-                        
+
                         problems.append(Problem(diagnostic: diagnostic, possibleSolutions: solution.map { [$0] } ?? []))
                     }
                 }
@@ -77,4 +91,3 @@ extension Semantic.Analyses {
         }
     }
 }
-

@@ -8,12 +8,12 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import SwiftDocC
 import Foundation
+import SwiftDocC
 
 extension Action {
     /// Performs the action and checks for any problems in the result.
-    /// 
+    ///
     /// - Parameter logHandle: The log handle to write encountered warnings and errors to.
     ///
     /// - Throws: `ErrorsEncountered` if any errors are produced while performing the action.

@@ -9,25 +9,26 @@
 */
 
 import Foundation
-import SymbolKit
 import Markdown
+import SymbolKit
 
 /// Translates a symbol's possible values into a render nodes's section.
 struct PossibleValuesSectionTranslator: RenderSectionTranslator {
-    
+
     func translateSection(for symbol: Symbol, renderNode: inout RenderNode, renderNodeTranslator: inout RenderNodeTranslator) -> VariantCollection<CodableContentSection?>? {
-        
+
         return translateSectionToVariantCollection(
-               documentationDataVariants: symbol.possibleValuesSectionVariants
+            documentationDataVariants: symbol.possibleValuesSectionVariants
         ) { _, possibleValuesSection in
             // Render the possible values with the matching description from the
             // possible values listed in the markdown.
             return PossibleValuesRenderSection(
                 title: PropertyListPossibleValuesSection.title,
                 values: possibleValuesSection.possibleValues.map { possibleValueTag in
-                    let valueContent = renderNodeTranslator.visitMarkupContainer(
-                        MarkupContainer(possibleValueTag.contents)
-                    ) as! [RenderBlockContent]
+                    let valueContent =
+                        renderNodeTranslator.visitMarkupContainer(
+                            MarkupContainer(possibleValueTag.contents)
+                        ) as! [RenderBlockContent]
                     return PossibleValuesRenderSection.NamedValue(
                         name: possibleValueTag.value,
                         content: valueContent
@@ -36,6 +37,5 @@ struct PossibleValuesSectionTranslator: RenderSectionTranslator {
             )
         }
     }
-    
-}
 
+}

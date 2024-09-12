@@ -8,8 +8,8 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import SwiftDocC
 import Foundation
+import SwiftDocC
 
 extension ConvertAction {
     /// Creates a convert action from the options in the given convert command.
@@ -19,13 +19,13 @@ extension ConvertAction {
     public init(fromConvertCommand convert: Docc.Convert, withFallbackTemplate fallbackTemplateURL: URL? = nil) throws {
         var standardError = LogHandle.standardError
         let outOfProcessResolver: OutOfProcessReferenceResolver?
-        
+
         FeatureFlags.current.isExperimentalDeviceFrameSupportEnabled = convert.enableExperimentalDeviceFrameSupport
         FeatureFlags.current.isExperimentalLinkHierarchySerializationEnabled = convert.enableExperimentalLinkHierarchySerialization
         FeatureFlags.current.isExperimentalOverloadedSymbolPresentationEnabled = convert.enableExperimentalOverloadedSymbolPresentation
         FeatureFlags.current.isExperimentalMentionedInEnabled = convert.enableExperimentalMentionedIn
         FeatureFlags.current.isParametersAndReturnsValidationEnabled = convert.enableParametersAndReturnsValidation
-        
+
         // If the user-provided a URL for an external link resolver, attempt to
         // initialize an `OutOfProcessReferenceResolver` with the provided URL.
         if let linkResolverURL = convert.outOfProcessLinkResolverOption.linkResolverExecutableURL {
@@ -35,7 +35,8 @@ extension ConvertAction {
                     // If any errors occur while initializing the reference resolver,
                     // or while the link resolver is used, output them to the terminal.
                     print(errorMessage, to: &standardError)
-                })
+                }
+            )
         } else {
             outOfProcessResolver = nil
         }
@@ -44,10 +45,12 @@ extension ConvertAction {
         // into a dictionary. This will throw with a descriptive error upon failure.
         let parsedPlatforms = try PlatformArgumentParser.parse(convert.platforms)
 
-        let additionalSymbolGraphFiles = (convert as _DeprecatedSymbolGraphFilesAccess).additionalSymbolGraphFiles + symbolGraphFiles(
-            in: convert.additionalSymbolGraphDirectory
-        )
-        
+        let additionalSymbolGraphFiles =
+            (convert as _DeprecatedSymbolGraphFilesAccess).additionalSymbolGraphFiles
+            + symbolGraphFiles(
+                in: convert.additionalSymbolGraphDirectory
+            )
+
         let bundleDiscoveryOptions = BundleDiscoveryOptions(
             fallbackDisplayName: convert.fallbackBundleDisplayName,
             fallbackIdentifier: convert.fallbackBundleIdentifier,
@@ -56,7 +59,7 @@ extension ConvertAction {
             fallbackDefaultModuleKind: convert.fallbackDefaultModuleKind,
             additionalSymbolGraphFiles: additionalSymbolGraphFiles
         )
-        
+
         // The `preview` and `convert` action defaulting to the current working directory is only supported
         // when running `docc preview` and `docc convert` without any of the fallback options.
         let documentationBundleURL: URL?
@@ -99,7 +102,7 @@ extension ConvertAction {
 
 private func symbolGraphFiles(in directory: URL?) -> [URL] {
     guard let directory else { return [] }
-    
+
     let subpaths = FileManager.default.subpaths(atPath: directory.path) ?? []
     return subpaths.map { directory.appendingPathComponent($0) }
         .filter { DocumentationBundleFileTypes.isSymbolGraphFile($0) }

@@ -36,7 +36,7 @@ public struct TemplateOption: ParsableArguments {
         // is nil, we fall back to the value provided in CommandLine.arguments[0].
         return Bundle.main.executableURL ?? URL(fileURLWithPath: CommandLine.arguments[0])
     }()
-    
+
     /// The default template location.
     var defaultTemplateURL: URL {
         // This looks for the template relative to the docc executable
@@ -44,15 +44,15 @@ public struct TemplateOption: ParsableArguments {
         //   executable: common-file-path/bin/docc
         //   template:   common-file-path/share/docc/render/
         let templatePath = TemplateOption.doccExecutableLocation
-            .deletingLastPathComponent() // docc
-            .deletingLastPathComponent() // bin
+            .deletingLastPathComponent()  // docc
+            .deletingLastPathComponent()  // bin
             .appendingPathComponent("share", isDirectory: true)
             .appendingPathComponent("docc", isDirectory: true)
             .appendingPathComponent("render", isDirectory: true)
-        
+
         return templatePath
     }
-    
+
     static func invalidHTMLTemplateError(
         path templatePath: String,
         expectedFile expectedFileName: String
@@ -65,7 +65,7 @@ public struct TemplateOption: ParsableArguments {
             """
         )
     }
-    
+
     static func missingHTMLTemplateError(
         path expectedTemplatePath: String
     ) -> ValidationError {
@@ -80,12 +80,14 @@ public struct TemplateOption: ParsableArguments {
     public mutating func validate() throws {
         templateURL = ProcessInfo.processInfo.environment[TemplateOption.environmentVariableKey]
             .map { URL(fileURLWithPath: $0) }
-        
+
         // Validate that the provided template URL represents a directory
-        try URLArgumentValidator.validateHasDirectoryPath(templateURL,
+        try URLArgumentValidator.validateHasDirectoryPath(
+            templateURL,
             forArgumentDescription: """
-            '\(TemplateOption.environmentVariableKey)' environment variable
-            """)
+                '\(TemplateOption.environmentVariableKey)' environment variable
+                """
+        )
 
         // Only perform further validation if a templateURL has been provided
         guard let templateURL else {
@@ -94,7 +96,7 @@ public struct TemplateOption: ParsableArguments {
             }
             return
         }
-        
+
         // Confirm that the provided directory contains an 'index.html' file which is a required part of
         // an HTML template for docc.
         guard FileManager.default.fileExists(atPath: templateURL.appendingPathComponent(HTMLTemplate.indexFileName.rawValue).path)

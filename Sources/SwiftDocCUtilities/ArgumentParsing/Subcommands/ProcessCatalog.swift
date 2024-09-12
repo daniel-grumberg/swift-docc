@@ -18,6 +18,7 @@ extension Docc {
         static var configuration = CommandConfiguration(
             commandName: "process-catalog",
             abstract: "Perform operations on documentation catalogs ('.docc' directories).",
-            subcommands: [EmitGeneratedCuration.self])
+            subcommands: [EmitGeneratedCuration.self]
+        )
     }
 }

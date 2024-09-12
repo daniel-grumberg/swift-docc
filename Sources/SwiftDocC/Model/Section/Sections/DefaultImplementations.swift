@@ -43,8 +43,8 @@ public struct ImplementationsGroup {
 /// To aid documentation discoverability, `DefaultImplementationsSection` lists all default implementations of a
 /// certain requirement, grouped by the type that provides the implementations.
 public struct DefaultImplementationsSection {
-    var targetFallbacks = [TopicReference: String]()
-    
+    var targetFallbacks: [TopicReference: String] = [:]
+
     /// A grouped list of the default implementations.
     public var groups: [ImplementationsGroup] {
         let grouped = Dictionary(grouping: implementations) { imp -> String in
@@ -62,17 +62,17 @@ public struct DefaultImplementationsSection {
         return grouped.keys.sorted()
             .compactMap { name in
                 let groupName = name.isEmpty ? "" : "\(name) "
-                
+
                 return ImplementationsGroup(
                     heading: "\(groupName)Implementations",
                     references: grouped[name]!.map { $0.reference }
                 )
             }
     }
-    
+
     /// A plain list of the default implementations.
     public private(set) var implementations = Set<Implementation>()
-    
+
     mutating func addImplementation(_ implementation: Implementation, fallbackTarget: (reference: TopicReference, title: String)? = nil) {
         if let fallbackTarget {
             targetFallbacks[fallbackTarget.reference] = fallbackTarget.title

@@ -15,7 +15,7 @@ public struct DiscussionSection: Section {
         return "Discussion"
     }
     public var content: [Markup]
-    
+
     /// Creates a new discussion section with the given markup content.
     public init(content: [Markup]) {
         self.content = content

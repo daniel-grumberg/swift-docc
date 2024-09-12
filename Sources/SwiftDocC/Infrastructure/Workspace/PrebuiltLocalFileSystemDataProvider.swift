@@ -19,7 +19,7 @@ public struct PrebuiltLocalFileSystemDataProvider: DocumentationWorkspaceDataPro
         // Ignore the bundle discovery options, these bundles are already built.
         return _bundles
     }
-    
+
     /// Creates a new provider to provide the given documentation bundles.
     /// - Parameter bundles: The existing documentation bundles for this provider to provide.
     public init(bundles: [DocumentationBundle]) {
@@ -31,4 +31,3 @@ public struct PrebuiltLocalFileSystemDataProvider: DocumentationWorkspaceDataPro
         return try Data(contentsOf: url)
     }
 }
-

@@ -8,8 +8,8 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
 import SwiftDocC
+import XCTest
 
 class DocumentationServer_MessageTypeTests: XCTestCase {
     func testMessageTypeDebugDescription() {
@@ -18,7 +18,7 @@ class DocumentationServer_MessageTypeTests: XCTestCase {
             "MessageType(value)"
         )
     }
-    
+
     func testErrorMessageType() {
         XCTAssertEqual(DocumentationServer.MessageType.error.rawValue, "error")
     }

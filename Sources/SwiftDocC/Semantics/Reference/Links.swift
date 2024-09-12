@@ -37,53 +37,54 @@ import Markdown
 public final class Links: Semantic, AutomaticDirectiveConvertible, MarkupContaining {
     public static let introducedVersion = "5.8"
     public let originalMarkup: BlockDirective
-    
+
     /// The inline markup contained in this 'Links' directive.
     ///
     /// This content should not be rendered directly, instead the individual documentation links
     /// inside the first bulleted list should be extracted and previews of the linked
     /// pages should be rendered.
-    @ChildMarkup(numberOfParagraphs: .zeroOrMore)    // ← Set to '.zeroOrMore' because the 'validate()'
-    public private(set) var content: MarkupContainer //   method below already handles errors for missing
-                                                     //   or extraneous content.
-    
+    @ChildMarkup(numberOfParagraphs: .zeroOrMore)  // ← Set to '.zeroOrMore' because the 'validate()'
+    public private(set) var content: MarkupContainer  //   method below already handles errors for missing
+    //   or extraneous content.
+
     /// The specified style that should be used when rendering the specified links.
     @DirectiveArgumentWrapped
     public private(set) var visualStyle: VisualStyle
-    
+
     /// A visual style for the links in a 'Links' directive.
     public enum VisualStyle: String, CaseIterable, DirectiveArgumentValueConvertible {
         /// A list of the linked pages, including their full declaration and abstract.
         case list
-        
+
         /// A grid of items based on the card image for the linked pages.
         ///
         /// Includes each page’s title and card image but excludes their abstracts.
         case compactGrid
-        
+
         /// A grid of items based on the card image for the linked pages.
         ///
         /// Unlike ``compactGrid``, this style includes the abstract for each page.
         case detailedGrid
     }
-    
-    static var keyPaths: [String : AnyKeyPath] = [
-        "content"       : \Links._content,
-        "visualStyle"   : \Links._visualStyle,
+
+    static var keyPaths: [String: AnyKeyPath] = [
+        "content": \Links._content,
+        "visualStyle": \Links._visualStyle,
     ]
-    
+
     override var children: [Semantic] {
         return [content]
     }
-    
+
     var childMarkup: [Markup] {
         return content.elements
     }
-    
+
     func validate(source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) -> Bool {
         _ = Semantic.Analyses.HasExactlyOneUnorderedList<Links, AnyLink>(
             severityIfNotFound: .warning
-        ).analyze(
+        )
+        .analyze(
             originalMarkup,
             children: originalMarkup.children,
             source: source,
@@ -91,11 +92,13 @@ public final class Links: Semantic, AutomaticDirectiveConvertible, MarkupContain
             in: context,
             problems: &problems
         )
-        
+
         return true
     }
-    
-    @available(*, deprecated,
+
+    @available(
+        *,
+        deprecated,
         message: "Do not call directly. Required for 'AutomaticDirectiveConvertible'."
     )
     init(originalMarkup: BlockDirective) {
@@ -105,26 +108,28 @@ public final class Links: Semantic, AutomaticDirectiveConvertible, MarkupContain
 
 extension Links: RenderableDirectiveConvertible {
     func render(with contentCompiler: inout RenderContentCompiler) -> [RenderContent] {
-        guard let firstList = originalMarkup.children.first(where: { child in
-            child is UnorderedList
-        }) else {
+        guard
+            let firstList = originalMarkup.children.first(where: { child in
+                child is UnorderedList
+            })
+        else {
             return []
         }
-        
+
         var linksExtractor = ExtractLinks(mode: .linksDirective)
         _ = linksExtractor.visit(firstList)
-        
+
         contentCompiler.context.diagnosticEngine.emit(linksExtractor.problems)
-        
+
         let resolvedLinks = linksExtractor.links
             .compactMap(\.destination)
             .compactMap { contentCompiler.resolveTopicReference($0) }
             .map(\.absoluteString)
-        
+
         guard !resolvedLinks.isEmpty else {
             return []
         }
-        
+
         let style: RenderBlockContent.Links.Style
         switch visualStyle {
         case .compactGrid:
@@ -134,7 +139,7 @@ extension Links: RenderableDirectiveConvertible {
         case .list:
             style = .list
         }
-        
+
         let renderedLinks = RenderBlockContent.Links(style: style, items: resolvedLinks)
         return [RenderBlockContent.links(renderedLinks)]
     }

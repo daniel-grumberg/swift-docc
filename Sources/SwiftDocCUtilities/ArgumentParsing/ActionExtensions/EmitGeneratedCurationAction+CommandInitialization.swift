@@ -8,8 +8,8 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import Foundation
 import ArgumentParser
+import Foundation
 
 extension EmitGeneratedCurationAction {
     /// Initializes ``EmitGeneratedCurationAction`` from the options in the ``EmitGeneratedCuration`` command.

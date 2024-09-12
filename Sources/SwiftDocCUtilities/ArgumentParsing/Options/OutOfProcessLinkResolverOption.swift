@@ -31,14 +31,18 @@ public struct OutOfProcessLinkResolverOption: ParsableArguments {
     public mutating func validate() throws {
         // If the user-provided an explicit link resolver URL, first validate that it exists,
         // and then that it is executable
-        try URLArgumentValidator.validateFileExists(linkResolverExecutableURL,
-            forArgumentDescription: """
-            '\(OutOfProcessLinkResolverOption.environmentVariableKey)' environment variable")
-            """)
-        
-        try URLArgumentValidator.validateIsExecutableFile(linkResolverExecutableURL,
+        try URLArgumentValidator.validateFileExists(
+            linkResolverExecutableURL,
             forArgumentDescription: """
                 '\(OutOfProcessLinkResolverOption.environmentVariableKey)' environment variable")
-                """)
+                """
+        )
+
+        try URLArgumentValidator.validateIsExecutableFile(
+            linkResolverExecutableURL,
+            forArgumentDescription: """
+                '\(OutOfProcessLinkResolverOption.environmentVariableKey)' environment variable")
+                """
+        )
     }
 }

@@ -8,9 +8,10 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class StackTests: XCTestCase {
     func testEmpty() throws {
@@ -18,11 +19,11 @@ class StackTests: XCTestCase {
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(Stack.directiveName, directive.name)
             let stack = Stack(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNotNil(stack)
@@ -33,25 +34,25 @@ class StackTests: XCTestCase {
             )
         }
     }
-    
+
     func testValid() throws {
         let source = """
-        @Stack {
-          @ContentAndMedia {
-            Text.
+            @Stack {
+              @ContentAndMedia {
+                Text.
 
-            @Image(source: code4.png, alt: "alt")
-          }
-        }
-        """
+                @Image(source: code4.png, alt: "alt")
+              }
+            }
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(Stack.directiveName, directive.name)
             let stack = Stack(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNotNil(stack)
@@ -63,25 +64,25 @@ class StackTests: XCTestCase {
         var source = "@Stack {"
         for _ in 0...Stack.childrenLimit {
             source += """
-            
-            @ContentAndMedia {
-              Text.
 
-              @Image(source: code4.png, alt: "alt")
-            }
-            
-            """
+                @ContentAndMedia {
+                  Text.
+
+                  @Image(source: code4.png, alt: "alt")
+                }
+
+                """
         }
         source += "}"
 
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(Stack.directiveName, directive.name)
             let stack = Stack(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNotNil(stack)

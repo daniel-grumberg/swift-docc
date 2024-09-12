@@ -10,17 +10,18 @@
 */
 
 import PackageDescription
+
 import class Foundation.ProcessInfo
 
 let swiftSettings: [SwiftSetting] = [
-    .unsafeFlags(["-Xfrontend", "-warn-long-expression-type-checking=1000"], .when(configuration: .debug)),
+    .unsafeFlags(["-Xfrontend", "-warn-long-expression-type-checking=1000"], .when(configuration: .debug))
 ]
 
 let package = Package(
     name: "SwiftDocC",
     platforms: [
         .macOS(.v10_15),
-        .iOS(.v13)
+        .iOS(.v13),
     ],
     products: [
         .library(
@@ -34,7 +35,7 @@ let package = Package(
         .executable(
             name: "docc",
             targets: ["docc"]
-        )
+        ),
     ],
     targets: [
         // SwiftDocC library
@@ -68,7 +69,7 @@ let package = Package(
             dependencies: [
                 .target(name: "SwiftDocC"),
                 .product(name: "NIOHTTP1", package: "swift-nio", condition: .when(platforms: [.macOS, .iOS, .linux, .android])),
-                .product(name: "ArgumentParser", package: "swift-argument-parser")
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             swiftSettings: swiftSettings
         ),
@@ -85,7 +86,7 @@ let package = Package(
             ],
             swiftSettings: swiftSettings
         ),
-        
+
         // Test utility library
         .target(
             name: "SwiftDocCTestUtilities",
@@ -100,7 +101,7 @@ let package = Package(
         .executableTarget(
             name: "docc",
             dependencies: [
-                .target(name: "SwiftDocCUtilities"),
+                .target(name: "SwiftDocCUtilities")
             ],
             swiftSettings: swiftSettings
         ),
@@ -109,7 +110,7 @@ let package = Package(
         .executableTarget(
             name: "signal-test-app",
             dependencies: [
-                .target(name: "SwiftDocCUtilities"),
+                .target(name: "SwiftDocCUtilities")
             ],
             path: "Tests/signal-test-app",
             swiftSettings: swiftSettings
@@ -123,7 +124,7 @@ let package = Package(
             ],
             swiftSettings: swiftSettings
         ),
-        
+
     ]
 )
 

@@ -8,9 +8,10 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class XcodeRequirementTests: XCTestCase {
     func testEmpty() throws {
@@ -18,11 +19,11 @@ class XcodeRequirementTests: XCTestCase {
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(XcodeRequirement.directiveName, directive.name)
             let requirement = XcodeRequirement(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNil(requirement)
@@ -37,21 +38,21 @@ class XcodeRequirementTests: XCTestCase {
             XCTAssert(problems.map { $0.diagnostic.severity }.allSatisfy { $0 == .warning })
         }
     }
-    
+
     func testValid() throws {
         let title = "Xcode 10.2 Beta 3"
         let destination = "https://www.example.com/download"
         let source = """
-@XcodeRequirement(title: "\(title)", destination: "\(destination)")
-"""
+            @XcodeRequirement(title: "\(title)", destination: "\(destination)")
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             XCTAssertEqual(XcodeRequirement.directiveName, directive.name)
             let requirement = XcodeRequirement(from: directive, source: nil, for: bundle, in: context, problems: &problems)
             XCTAssertNotNil(requirement)

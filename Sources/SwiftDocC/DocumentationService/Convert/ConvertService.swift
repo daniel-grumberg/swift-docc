@@ -21,17 +21,17 @@ public struct ConvertService: DocumentationService {
 
     /// The message type that this service responds with when the requested conversion was successful.
     public static
-    let convertResponseMessageType: DocumentationServer.MessageType = "convert-response"
+        let convertResponseMessageType: DocumentationServer.MessageType = "convert-response"
 
     /// The message type that this service responds with when the requested conversion failed.
     public static
-    let convertResponseErrorMessageType: DocumentationServer.MessageType = "convert-response-error"
+        let convertResponseErrorMessageType: DocumentationServer.MessageType = "convert-response-error"
 
     public static var handlingTypes = [convertMessageType]
-    
+
     /// Converter that can be injected from a test.
     var converter: DocumentationConverterProtocol?
-    
+
     /// A peer server that can be used for resolving links.
     var linkResolvingServer: DocumentationServer?
 
@@ -42,7 +42,7 @@ public struct ConvertService: DocumentationService {
         self.linkResolvingServer = linkResolvingServer
         self.allowArbitraryCatalogDirectories = allowArbitraryCatalogDirectories
     }
-    
+
     init(
         converter: DocumentationConverterProtocol?,
         linkResolvingServer: DocumentationServer?
@@ -51,7 +51,7 @@ public struct ConvertService: DocumentationService {
         self.linkResolvingServer = linkResolvingServer
         self.allowArbitraryCatalogDirectories = false
     }
-    
+
     public func process(
         _ message: DocumentationServer.Message,
         completion: @escaping (DocumentationServer.Message) -> ()
@@ -71,7 +71,7 @@ public struct ConvertService: DocumentationService {
                     payload: response
                 )
             )
-            
+
         case .failure(let error):
             completion(
                 DocumentationServer.Message(
@@ -105,7 +105,8 @@ public struct ConvertService: DocumentationService {
     ) -> Result<(request: ConvertRequest, messageIdentifier: String), ConvertServiceError> {
         Result {
             return (try JSONDecoder().decode(ConvertRequest.self, from: data), messageIdentifier)
-        }.mapErrorToConvertServiceError {
+        }
+        .mapErrorToConvertServiceError {
             .invalidRequest(underlyingError: $0.localizedDescription)
         }
     }
@@ -122,11 +123,11 @@ public struct ConvertService: DocumentationService {
             // Update DocC's current feature flags based on the ones provided
             // in the request.
             FeatureFlags.current = request.featureFlags
-            
+
             // Set up the documentation context.
 
             let workspace = DocumentationWorkspace()
-            
+
             let provider: DocumentationWorkspaceDataProvider
             if let bundleLocation = request.bundleLocation {
                 // If an on-disk bundle is provided, convert it.
@@ -138,7 +139,7 @@ public struct ConvertService: DocumentationService {
             } else {
                 // Otherwise, convert the in-memory content.
                 var inMemoryProvider = InMemoryContentDataProvider()
-                
+
                 inMemoryProvider.registerBundle(
                     info: request.bundleInfo,
                     symbolGraphs: request.symbolGraphs,
@@ -146,17 +147,17 @@ public struct ConvertService: DocumentationService {
                     tutorialFiles: request.tutorialFiles,
                     miscResourceURLs: request.miscResourceURLs
                 )
-                
+
                 provider = inMemoryProvider
             }
-            
+
             let context = try DocumentationContext(dataProvider: workspace)
             context.knownDisambiguatedSymbolPathComponents = request.knownDisambiguatedSymbolPathComponents
-            
+
             // Enable support for generating documentation for standalone articles and tutorials.
             context.allowsRegisteringArticlesWithoutTechnologyRoot = true
             context.considerDocumentationExtensionsThatDoNotMatchSymbolsAsResolved = true
-            
+
             context.configureSymbolGraph = { symbolGraph in
                 for (symbolIdentifier, overridingDocumentationComment) in request.overridingDocumentationComments ?? [:] {
                     symbolGraph.symbols[symbolIdentifier]?.docComment = SymbolGraph.LineList(
@@ -164,36 +165,38 @@ public struct ConvertService: DocumentationService {
                     )
                 }
             }
-            
+
             if let linkResolvingServer {
                 let resolver = try OutOfProcessReferenceResolver(
                     bundleIdentifier: request.bundleInfo.identifier,
                     server: linkResolvingServer,
                     convertRequestIdentifier: messageIdentifier
                 )
-                
+
                 context.convertServiceFallbackResolver = resolver
                 context.globalExternalSymbolResolver = resolver
             }
 
-            var converter = try self.converter ?? DocumentationConverter(
-                documentationBundleURL: request.bundleLocation ?? URL(fileURLWithPath: "/"),
-                emitDigest: false,
-                documentationCoverageOptions: .noCoverage,
-                currentPlatforms: nil,
-                workspace: workspace,
-                context: context,
-                dataProvider: provider,
-                externalIDsToConvert: request.externalIDsToConvert,
-                documentPathsToConvert: request.documentPathsToConvert,
-                bundleDiscoveryOptions: BundleDiscoveryOptions(
-                    fallbackInfo: request.bundleInfo,
-                    additionalSymbolGraphFiles: []
-                ),
-                emitSymbolSourceFileURIs: request.emitSymbolSourceFileURIs,
-                emitSymbolAccessLevels: true,
-                symbolIdentifiersWithExpandedDocumentation: request.symbolIdentifiersWithExpandedDocumentation
-            )
+            var converter =
+                try self.converter
+                ?? DocumentationConverter(
+                    documentationBundleURL: request.bundleLocation ?? URL(fileURLWithPath: "/"),
+                    emitDigest: false,
+                    documentationCoverageOptions: .noCoverage,
+                    currentPlatforms: nil,
+                    workspace: workspace,
+                    context: context,
+                    dataProvider: provider,
+                    externalIDsToConvert: request.externalIDsToConvert,
+                    documentPathsToConvert: request.documentPathsToConvert,
+                    bundleDiscoveryOptions: BundleDiscoveryOptions(
+                        fallbackInfo: request.bundleInfo,
+                        additionalSymbolGraphFiles: []
+                    ),
+                    emitSymbolSourceFileURIs: request.emitSymbolSourceFileURIs,
+                    emitSymbolAccessLevels: true,
+                    symbolIdentifiersWithExpandedDocumentation: request.symbolIdentifiersWithExpandedDocumentation
+                )
 
             // Run the conversion.
 
@@ -202,9 +205,10 @@ public struct ConvertService: DocumentationService {
 
             guard conversionProblems.isEmpty else {
                 throw ConvertServiceError.conversionError(
-                    underlyingError: DiagnosticConsoleWriter.formattedDescription(for: conversionProblems))
+                    underlyingError: DiagnosticConsoleWriter.formattedDescription(for: conversionProblems)
+                )
             }
-            
+
             let references: RenderReferenceStore?
             if request.includeRenderReferenceStore == true {
                 // Create a reference store and filter non-linkable references.
@@ -223,9 +227,10 @@ public struct ConvertService: DocumentationService {
             } else {
                 references = nil
             }
-            
+
             return (outputConsumer.renderNodes.sync({ $0 }), references)
-        }.mapErrorToConvertServiceError {
+        }
+        .mapErrorToConvertServiceError {
             .conversionError(underlyingError: $0.localizedDescription)
         }
     }
@@ -246,11 +251,12 @@ public struct ConvertService: DocumentationService {
                     renderReferenceStore: renderReferenceStore.map(encoder.encode)
                 )
             )
-        }.mapErrorToConvertServiceError {
+        }
+        .mapErrorToConvertServiceError {
             .invalidResponseMessage(underlyingError: $0.localizedDescription)
         }
     }
-    
+
     /// Takes a base reference store and adds uncurated article references and documentation extensions.
     ///
     /// Uncurated article references and documentation extensions are not included in the reference store the converter produces by default.
@@ -263,15 +269,15 @@ public struct ConvertService: DocumentationService {
         let topicContent = (uncuratedArticles + uncuratedDocumentationExtensions)
             .compactMap { (value, isDocumentationExtensionContent) -> (ResolvedTopicReference, RenderReferenceStore.TopicContent)? in
                 let (topicReference, article) = value
-                
+
                 guard let bundle = context.bundle(identifier: topicReference.bundleIdentifier) else { return nil }
                 let renderer = DocumentationContentRenderer(documentationContext: context, bundle: bundle)
-                
+
                 let documentationNodeKind: DocumentationNode.Kind = isDocumentationExtensionContent ? .unknownSymbol : .article
                 let overridingDocumentationNode = DocumentationContext.documentationNodeAndTitle(for: article, kind: documentationNodeKind, in: bundle)?.node
                 var dependencies = RenderReferenceDependencies()
                 let renderReference = renderer.renderReference(for: topicReference, with: overridingDocumentationNode, dependencies: &dependencies)
-                
+
                 return (
                     topicReference,
                     RenderReferenceStore.TopicContent(
@@ -286,10 +292,13 @@ public struct ConvertService: DocumentationService {
             }
 
         var baseStore = baseReferenceStore ?? RenderReferenceStore()
-        baseStore.topics.merge(topicContent, uniquingKeysWith: { old, _ in
-            // Prioritize content that was in the base store, it might be more accurate.
-            return old
-        })
+        baseStore.topics.merge(
+            topicContent,
+            uniquingKeysWith: { old, _ in
+                // Prioritize content that was in the base store, it might be more accurate.
+                return old
+            }
+        )
         return baseStore
     }
 }

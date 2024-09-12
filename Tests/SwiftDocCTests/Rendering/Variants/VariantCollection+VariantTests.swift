@@ -10,18 +10,20 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftDocC
 
 class VariantCollection_VariantTests: XCTestCase {
-    let testVariant = VariantCollection<String>.Variant(
-        traits: [.interfaceLanguage("a")],
-        patch: [
-            .replace(value: "replace"),
-            .add(value: "add"),
-            .remove,
-        ]
-    )
-    
+    let testVariant = VariantCollection<String>
+        .Variant(
+            traits: [.interfaceLanguage("a")],
+            patch: [
+                .replace(value: "replace"),
+                .add(value: "add"),
+                .remove,
+            ]
+        )
+
     func testMapPatch() throws {
         XCTAssertEqual(
             testVariant.mapPatch { "\($0) transformed" }.patch.map(\.value),

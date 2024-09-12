@@ -19,7 +19,7 @@ public struct TopicsSection: GroupedSection {
         return "Topics"
     }
     public var content: [Markup]
-    
+
     /// Creates a new topics section with the given content.
     /// - Parameters:
     ///   - content: The markup content elements for this section.
@@ -28,10 +28,10 @@ public struct TopicsSection: GroupedSection {
         self.content = content
         self.originalLinkRangesByGroup = originalLinkRangesByGroup.isEmpty ? linkRanges() : originalLinkRangesByGroup
     }
-    
+
     /// Contains the original ranges of the links in this section, in case they were modified.
     var originalLinkRangesByGroup = GroupedLinkRanges()
-    
+
     /// Extracts a list of link ranges from this section grouped by task group.
     private func linkRanges() -> GroupedLinkRanges {
         return taskGroups.map { group -> [SourceRange?] in

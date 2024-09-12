@@ -8,71 +8,72 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
 import Markdown
+import XCTest
+
 @testable import SwiftDocC
 
 class DiagnosticFileWriterTests: XCTestCase {
-    
+
     func testWritesDiagnosticsWhenFinalized() throws {
         let diagnosticFileURL = try createTemporaryDirectory().appendingPathComponent("test-diagnostics.json")
         let writer = DiagnosticFileWriter(outputPath: diagnosticFileURL)
-        
+
         let source = URL(string: "/path/to/file.md")!
         let range = SourceLocation(line: 1, column: 8, source: source)..<SourceLocation(line: 10, column: 21, source: source)
         let identifier = "org.swift.docc.test-identifier"
         let summary = "Test diagnostic summary"
         let solutionSummary = "Test solution summary"
         let explanation = "Test diagnostic explanation."
-        
+
         let replacementRange = SourceLocation(line: 1, column: 8, source: source)..<SourceLocation(line: 1, column: 24, source: source)
         let replacement = Replacement(range: replacementRange, replacement: "Replacement text")
-        
+
         do {
             let solution = Solution(summary: solutionSummary, replacements: [replacement])
             let diagnostic = Diagnostic(source: source, severity: .warning, range: range, identifier: identifier, summary: summary, explanation: explanation)
             let problem = Problem(diagnostic: diagnostic, possibleSolutions: [solution])
-            
+
             writer.receive([problem])
             XCTAssertFalse(FileManager.default.fileExists(atPath: diagnosticFileURL.pathExtension))
         }
-        
+
         do {
             let firstSolutionSummary = "Test first solution summary!"  // end with punctuation
-            let secondSolutionSummary = "Test second solution summary" // end without punctuation
+            let secondSolutionSummary = "Test second solution summary"  // end without punctuation
             let firstSolution = Solution(summary: firstSolutionSummary, replacements: [replacement])
             let secondSolution = Solution(summary: secondSolutionSummary, replacements: [])
-            
+
             let diagnostic = Diagnostic(source: source, severity: .information, range: range, identifier: identifier, summary: summary, explanation: explanation)
             let problem = Problem(diagnostic: diagnostic, possibleSolutions: [firstSolution, secondSolution])
-            
+
             writer.receive([problem])
             XCTAssertFalse(FileManager.default.fileExists(atPath: diagnosticFileURL.pathExtension))
         }
-        
+
         let firstInsertRange = SourceLocation(line: 1, column: 8, source: source)..<SourceLocation(line: 1, column: 8, source: source)
         let secondInsertRange = SourceLocation(line: 1, column: 14, source: source)..<SourceLocation(line: 1, column: 14, source: source)
         let firstReplacement = Replacement(range: firstInsertRange, replacement: "ABC")
         let secondReplacement = Replacement(range: secondInsertRange, replacement: "abc")
-        
+
         do {
             let solution = Solution(summary: solutionSummary, replacements: [firstReplacement, secondReplacement])
-            
+
             let diagnostic = Diagnostic(source: source, severity: .error, range: range, identifier: identifier, summary: summary, explanation: explanation)
             let problem = Problem(diagnostic: diagnostic, possibleSolutions: [solution])
-            
+
             writer.receive([problem])
             XCTAssertFalse(FileManager.default.fileExists(atPath: diagnosticFileURL.pathExtension))
         }
-        
+
         try writer.flush()
         XCTAssert(FileManager.default.fileExists(atPath: diagnosticFileURL.path))
-        
+
         let diagnosticFile = try JSONDecoder().decode(DiagnosticFile.self, from: Data(contentsOf: diagnosticFileURL))
-        
+
         XCTAssertEqual(diagnosticFile.version, DiagnosticFile.currentVersion)
         XCTAssertEqual(diagnosticFile.diagnostics.count, 3)
-        
+
         do {
             let diagnostic = try XCTUnwrap(diagnosticFile.diagnostics.first)
             XCTAssertEqual(diagnostic.source, source)
@@ -95,7 +96,7 @@ class DiagnosticFileWriterTests: XCTestCase {
             XCTAssertEqual(replacement.range.end.column, replacementRange.upperBound.column)
             XCTAssertEqual(diagnostic.notes.count, 0, "Found unexpected notes: \(diagnostic.notes)")
         }
-        
+
         do {
             let diagnostic = try XCTUnwrap(diagnosticFile.diagnostics.dropFirst().first)
             XCTAssertEqual(diagnostic.source, source)
@@ -125,7 +126,7 @@ class DiagnosticFileWriterTests: XCTestCase {
             }
             XCTAssertEqual(diagnostic.notes.count, 0, "Found unexpected notes: \(diagnostic.notes)")
         }
-        
+
         do {
             let diagnostic = try XCTUnwrap(diagnosticFile.diagnostics.dropFirst(2).first)
             XCTAssertEqual(diagnostic.source, source)
@@ -159,28 +160,28 @@ class DiagnosticFileWriterTests: XCTestCase {
             XCTAssertEqual(diagnostic.notes.count, 0, "Found unexpected notes: \(diagnostic.notes)")
         }
     }
-    
+
     func testVerifyVersionIsValidForDecoding() throws {
         let version1_0_0 = SemanticVersion(major: 1, minor: 0, patch: 0)
         let version1_0_1 = SemanticVersion(major: 1, minor: 0, patch: 1)
         let version1_2_3 = SemanticVersion(major: 1, minor: 2, patch: 3)
         let version2_0_0 = SemanticVersion(major: 2, minor: 0, patch: 0)
-        
+
         XCTAssertNoThrow(try DiagnosticFile.verifyIsSupported(version1_0_0, current: version1_0_0))
         XCTAssertNoThrow(try DiagnosticFile.verifyIsSupported(version1_0_0, current: version1_0_1))
         XCTAssertNoThrow(try DiagnosticFile.verifyIsSupported(version1_0_0, current: version1_2_3))
         XCTAssertThrowsError(try DiagnosticFile.verifyIsSupported(version1_0_0, current: version2_0_0))
-        
+
         XCTAssertNoThrow(try DiagnosticFile.verifyIsSupported(version1_0_1, current: version1_0_0))
         XCTAssertNoThrow(try DiagnosticFile.verifyIsSupported(version1_0_1, current: version1_0_1))
         XCTAssertNoThrow(try DiagnosticFile.verifyIsSupported(version1_0_1, current: version1_2_3))
         XCTAssertThrowsError(try DiagnosticFile.verifyIsSupported(version1_0_1, current: version2_0_0))
-        
+
         XCTAssertNoThrow(try DiagnosticFile.verifyIsSupported(version1_2_3, current: version1_0_0))
         XCTAssertNoThrow(try DiagnosticFile.verifyIsSupported(version1_2_3, current: version1_0_1))
         XCTAssertNoThrow(try DiagnosticFile.verifyIsSupported(version1_2_3, current: version1_2_3))
         XCTAssertThrowsError(try DiagnosticFile.verifyIsSupported(version1_2_3, current: version2_0_0))
-        
+
         XCTAssertThrowsError(try DiagnosticFile.verifyIsSupported(version2_0_0, current: version1_0_0))
         XCTAssertThrowsError(try DiagnosticFile.verifyIsSupported(version2_0_0, current: version1_0_1))
         XCTAssertThrowsError(try DiagnosticFile.verifyIsSupported(version2_0_0, current: version1_2_3))

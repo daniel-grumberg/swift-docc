@@ -9,18 +9,19 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class DocumentationContext_MixedLanguageLinkResolutionTests: XCTestCase {
-    
+
     func testResolvingLinksWhenSymbolHasSameNameInBothLanguages() throws {
-         let (_, _, context) = try testBundleAndContext(copying: "MixedLanguageFrameworkComplexLinks") { url in
-             let swiftSymbolGraph = url.appendingPathComponent("symbol-graph/swift/ObjCLinks.symbols.json")
-             try String(contentsOf: swiftSymbolGraph)
-                 .replacingOccurrences(of: "FooSwift", with: "FooObjC")
-                 .write(to: swiftSymbolGraph, atomically: true, encoding: .utf8)
-         }
-        
+        let (_, _, context) = try testBundleAndContext(copying: "MixedLanguageFrameworkComplexLinks") { url in
+            let swiftSymbolGraph = url.appendingPathComponent("symbol-graph/swift/ObjCLinks.symbols.json")
+            try String(contentsOf: swiftSymbolGraph)
+                .replacingOccurrences(of: "FooSwift", with: "FooObjC")
+                .write(to: swiftSymbolGraph, atomically: true, encoding: .utf8)
+        }
+
         func assertCanResolveSymbolLinks(
             symbolPaths: String...,
             parentPath: String,
@@ -37,7 +38,7 @@ class DocumentationContext_MixedLanguageLinkResolutionTests: XCTestCase {
                     ),
                     fromSymbolLink: true
                 )
-                
+
                 switch resolutionResult {
                 case .success:
                     continue
@@ -53,21 +54,28 @@ class DocumentationContext_MixedLanguageLinkResolutionTests: XCTestCase {
                 }
             }
         }
-        
+
         // See MixedLanguageFrameworkComplexLinks.docc/OriginalSource.h for the class in which this test resolves links.
-        
+
         assertCanResolveSymbolLinks(
-            symbolPaths: "first(_:one:)", "first:one:", "second:two:", "second(_:two:)",
+            symbolPaths: "first(_:one:)",
+            "first:one:",
+            "second:two:",
+            "second(_:two:)",
             parentPath: "FooObjC"
         )
-        
+
         assertCanResolveSymbolLinks(
-            symbolPaths: "FooObjC", "second:two:", "second(_:two:)",
+            symbolPaths: "FooObjC",
+            "second:two:",
+            "second(_:two:)",
             parentPath: "FooObjC/first(_:one:)"
         )
-        
+
         assertCanResolveSymbolLinks(
-            symbolPaths: "FooObjC", "first:one:", "first(_:one:)",
+            symbolPaths: "FooObjC",
+            "first:one:",
+            "first(_:one:)",
             parentPath: "FooObjC/second(_:two:)"
         )
     }

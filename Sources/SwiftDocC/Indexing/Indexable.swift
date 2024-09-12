@@ -8,9 +8,7 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-/**
- A value that can collect plain text content for use in search indexing.
- */
+/// A value that can collect plain text content for use in search indexing.
 public protocol TextIndexing {
     /**
      Headings and sub-headings to drive search results.
@@ -27,15 +25,13 @@ public protocol TextIndexing {
     func rawIndexableTextContent(references: [String: RenderReference]) -> String
 }
 
-/**
- A value that can provide search results.
- */
+/// A value that can provide search results.
 public protocol Indexable {
     /**
      A list of ``IndexingRecord``s that can become search results.
-     
+
      > Note: A document may have a search result for itself and sometimes notable subsections.
-     
+
      - throws: ``IndexingError``
      */
     func indexingRecords(onPage page: ResolvedTopicReference) throws -> [IndexingRecord]

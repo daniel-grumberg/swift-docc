@@ -10,6 +10,7 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftDocC
 
 class AbsoluteSymbolLinkTests: XCTestCase {
@@ -19,7 +20,7 @@ class AbsoluteSymbolLinkTests: XCTestCase {
             "doc://org.swift.ShapeKit/documentation/ShapeKit/ParentType/Test-swift.class/",
             "doc://org.swift.ShapeKit/documentation/ShapeKit/ParentType/Test-swift.class/testFunc()-k2k9d",
         ]
-        
+
         let expectedLinkDescriptions = [
             """
             {
@@ -49,40 +50,40 @@ class AbsoluteSymbolLinkTests: XCTestCase {
             }
             """,
         ]
-        
+
         let absoluteSymbolLinks = validLinks.compactMap(AbsoluteSymbolLink.init(string:))
-        
+
         XCTAssertEqual(absoluteSymbolLinks.count, expectedLinkDescriptions.count)
-        
+
         for (absoluteSymbolLink, expectedDescription) in zip(absoluteSymbolLinks, expectedLinkDescriptions) {
             XCTAssertEqual(absoluteSymbolLink.description, expectedDescription)
         }
     }
-    
+
     func testCreationOfInvalidLinkWithBadScheme() {
         XCTAssertNil(
             AbsoluteSymbolLink(string: "dc://org.swift.ShapeKit/documentation/ShapeKit")
         )
-        
+
         XCTAssertNil(
             AbsoluteSymbolLink(string: "http://org.swift.ShapeKit/documentation/ShapeKit")
         )
-        
+
         XCTAssertNil(
             AbsoluteSymbolLink(string: "https://org.swift.ShapeKit/documentation/ShapeKit")
         )
     }
-    
+
     func testCreationOfInvalidLinkWithoutDocumentationPath() {
         XCTAssertNil(
             AbsoluteSymbolLink(string: "doc://org.swift.ShapeKit/tutorials/ShapeKit")
         )
-        
+
         XCTAssertNil(
             AbsoluteSymbolLink(string: "doc://org.swift.ShapeKit/ShapeKit")
         )
     }
-    
+
     func testCreationOfInvalidLinkWithNoBundleID() {
         XCTAssertNil(
             AbsoluteSymbolLink(string: "doc:///documentation/ShapeKit")
@@ -91,51 +92,55 @@ class AbsoluteSymbolLinkTests: XCTestCase {
             AbsoluteSymbolLink(string: "doc:/documentation/ShapeKit")
         )
     }
-    
+
     func testCreationOfInvalidLinkWithBadSuffix() {
         XCTAssertNil(
             // Empty suffix
             AbsoluteSymbolLink(string: "doc://org.swift.ShapeKit/ShapeKit/ParentType/Test-swift.class/testFunc()-")
         )
-        
+
         XCTAssertNil(
             // Empty suffix
             AbsoluteSymbolLink(string: "doc://org.swift.ShapeKit/ShapeKit/ParentType/Test-/testFunc()")
         )
-        
+
         XCTAssertNil(
             // Empty suffix
             AbsoluteSymbolLink(string: "doc://org.swift.ShapeKit/ShapeKit/ParentType-/Test/testFunc()")
         )
-        
+
         XCTAssertNil(
             // Empty suffix
             AbsoluteSymbolLink(string: "doc://org.swift.ShapeKit/ShapeKit-/ParentType/Test/testFunc()")
         )
-        
+
         XCTAssertNil(
             // Invalid type
             AbsoluteSymbolLink(string: "doc://org.swift.ShapeKit/ShapeKit/ParentType/Test-swift.class/testFunc()-swift.funny-1s4Rt")
         )
-        
+
         XCTAssertNil(
             // Invalid type
             AbsoluteSymbolLink(string: "doc://org.swift.ShapeKit/ShapeKit/ParentType/Test-swift.clss-5f7h9/testFunc()")
         )
     }
-    
+
     func testCreationOfValidLinksFromRenderNode() throws {
-        let symbolJSON = try String(contentsOf: Bundle.module.url(
-            forResource: "symbol-with-automatic-see-also-section", withExtension: "json",
-            subdirectory: "Converter Fixtures")!)
+        let symbolJSON = try String(
+            contentsOf: Bundle.module.url(
+                forResource: "symbol-with-automatic-see-also-section",
+                withExtension: "json",
+                subdirectory: "Converter Fixtures"
+            )!
+        )
 
         let renderNode = try RenderNodeTransformer(renderNodeData: symbolJSON.data(using: .utf8)!)
-        
+
         let references = Array(renderNode.renderNode.references.keys).sorted()
-        
+
         let absoluteSymbolLinks = references.map(AbsoluteSymbolLink.init(string:))
         let absoluteSymbolLinkDescriptions = absoluteSymbolLinks.map(\.?.description)
-        
+
         let expectedDescriptions: [String?] = [
             // doc://org.swift.docc.example/documentation/MyKit
             """
@@ -210,7 +215,7 @@ class AbsoluteSymbolLinkTests: XCTestCase {
             // doc://org.swift.docc.example/tutorials/TechnologyX/Tutorial4:
             nil,
         ]
-        
+
         for (index, expectedDescription) in expectedDescriptions.enumerated() {
             XCTAssertEqual(
                 absoluteSymbolLinkDescriptions[index],
@@ -221,7 +226,7 @@ class AbsoluteSymbolLinkTests: XCTestCase {
             )
         }
     }
-    
+
     func testCompileSymbolGraphAndValidateLinks() throws {
         let (_, _, context) = try testBundleAndContext(named: "TestBundle")
         let expectedDescriptions = [
@@ -517,22 +522,22 @@ class AbsoluteSymbolLinkTests: XCTestCase {
             """,
         ]
         XCTAssertEqual(expectedDescriptions.count, context.documentationCache.symbolReferences.count)
-        
+
         let validatedSymbolLinkDescriptions = context.documentationCache.symbolReferences
             .map(\.url.absoluteString)
             .sorted()
             .compactMap(AbsoluteSymbolLink.init(string:))
             .map(\.description)
-        
+
         XCTAssertEqual(validatedSymbolLinkDescriptions.count, context.documentationCache.symbolReferences.count)
         for (symbolLinkDescription, expectedDescription) in zip(validatedSymbolLinkDescriptions, expectedDescriptions) {
             XCTAssertEqual(symbolLinkDescription, expectedDescription)
         }
     }
-    
+
     func testCompileOverloadedSymbolGraphAndValidateLinks() throws {
         let (_, _, context) = try testBundleAndContext(named: "OverloadedSymbols")
-        
+
         let expectedDescriptions = [
             // doc://com.shapes.ShapeKit/documentation/ShapeKit:
             """
@@ -835,28 +840,27 @@ class AbsoluteSymbolLinkTests: XCTestCase {
             }
             """,
         ]
-        
+
         XCTAssertEqual(expectedDescriptions.count, context.documentationCache.count)
-        
+
         let validatedSymbolLinkDescriptions = context.documentationCache.allReferences
             .map(\.url.absoluteString)
             .sorted()
             .compactMap(AbsoluteSymbolLink.init(string:))
             .map(\.description)
-        
+
         XCTAssertEqual(validatedSymbolLinkDescriptions.count, context.documentationCache.count)
         for (symbolLinkDescription, expectedDescription) in zip(validatedSymbolLinkDescriptions, expectedDescriptions) {
             XCTAssertEqual(symbolLinkDescription, expectedDescription)
         }
     }
-    
+
     func testLinkComponentStringConversion() throws {
         let (_, _, context) = try testBundleAndContext(named: "OverloadedSymbols")
-        
+
         let bundlePathComponents = context.documentationCache.allReferences
             .flatMap(\.pathComponents)
-        
-        
+
         bundlePathComponents.forEach { component in
             let symbolLinkComponent = AbsoluteSymbolLink.LinkComponent(string: component)
             // Assert that round-trip conversion doesn't change the string representation

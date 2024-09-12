@@ -9,8 +9,8 @@
 */
 
 import Foundation
-import XCTest
 import SwiftDocC
+import XCTest
 
 /*
     This file contains API for working with folder hierarchies, and is extensible to allow for testing
@@ -56,12 +56,12 @@ public struct Folder: File {
         self.name = name
         self.content = content
     }
-    
+
     public let name: String
 
     /// The files and sub folders that this folder contains.
     public let content: [File]
-    
+
     public func appendingFile(_ newFile: File) -> Folder {
         return Folder(name: name, content: content + [newFile])
     }
@@ -123,7 +123,7 @@ public struct InfoPlist: File, DataRepresentable {
     public func data() throws -> Data {
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .xml
-        
+
         return try encoder.encode([
             Content.CodingKeys.displayName.rawValue: content.displayName,
             Content.CodingKeys.identifier.rawValue: content.identifier,
@@ -138,7 +138,7 @@ public struct TextFile: File, DataRepresentable {
         self.name = name
         self.utf8Content = utf8Content
     }
-    
+
     public let name: String
 
     /// The UTF8 content of the file.
@@ -155,7 +155,7 @@ public struct JSONFile<Content: Codable>: File, DataRepresentable {
         self.name = name
         self.content = content
     }
-    
+
     public let name: String
 
     /// The UTF8 content of the file.
@@ -172,20 +172,20 @@ public struct CopyOfFile: File, DataRepresentable {
         case notAFile(URL)
         var errorDescription: String {
             switch self {
-                case .notAFile(let url): return "Original url is not a file: '\(url.path)'"
+            case .notAFile(let url): return "Original url is not a file: '\(url.path)'"
             }
         }
     }
-    
+
     /// The original file.
     public let original: URL
     public let name: String
-    
+
     public init(original: URL, newName: String? = nil) {
         self.original = original
         self.name = newName ?? original.lastPathComponent
     }
-    
+
     public func data() throws -> Data {
         // Note that `CopyOfFile` always reads a file from disk and so it's okay
         // to use `FileManager.default` directly here instead of `FileManagerProtocol`.
@@ -193,7 +193,7 @@ public struct CopyOfFile: File, DataRepresentable {
         guard FileManager.default.fileExists(atPath: original.path, isDirectory: &isDirectory), !isDirectory.boolValue else { throw Error.notAFile(original) }
         return try Data(contentsOf: original)
     }
-    
+
     public func write(to url: URL) throws {
         try FileManager.default.copyItem(at: original, to: url)
     }
@@ -204,21 +204,19 @@ public struct CopyOfFolder: File {
     let original: URL
     public let name: String
     let shouldCopyFile: (URL) -> Bool
-    
+
     public init(original: URL, newName: String? = nil, filter shouldCopyFile: @escaping (URL) -> Bool = { _ in true }) {
         self.original = original
         self.name = newName ?? original.lastPathComponent
         self.shouldCopyFile = shouldCopyFile
     }
-    
+
     public func write(to url: URL) throws {
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false, attributes: nil)
-        for filePath in try FileManager.default.contentsOfDirectory(atPath: original.path) {
-            // `contentsOfDirectory(atPath)` includes hidden files, skipHiddenFiles option doesn't help on Linux.
-            guard !filePath.hasPrefix(".") else { continue }
+        for filePath in try FileManager.default.contentsOfDirectory(atPath: original.path) where !filePath.hasPrefix(".") {
             let originalFileURL = original.appendingPathComponent(filePath)
             guard shouldCopyFile(originalFileURL) else { continue }
-            
+
             try FileManager.default.copyItem(at: originalFileURL, to: url.appendingPathComponent(filePath))
         }
     }
@@ -228,7 +226,7 @@ public struct CopyOfFolder: File {
 public struct DataFile: File, DataRepresentable {
     public var name: String
     var _data: Data
-    
+
     public init(name: String, data: Data) {
         self.name = name
         self._data = data
@@ -277,14 +275,15 @@ extension Folder {
             return []
         }
         typealias Path = [String]
-        
+
         func _makeStructure(paths: [Path], accumulatedBasePath: String) -> [File] {
             assert(paths.allSatisfy { !$0.isEmpty })
-            
-            let grouped = [String: [Path]](grouping: paths, by: { $0.first! }).mapValues {
-                $0.map { Array($0.dropFirst()) }
-            }
-            
+
+            let grouped = [String: [Path]](grouping: paths, by: { $0.first! })
+                .mapValues {
+                    $0.map { Array($0.dropFirst()) }
+                }
+
             return grouped.map { pathComponent, remaining in
                 let absolutePath = "\(accumulatedBasePath)/\(pathComponent)"
                 if remaining == [[]] && !isEmptyDirectoryCheck(absolutePath) {
@@ -294,12 +293,12 @@ extension Folder {
                 }
             }
         }
-        
-        if filePaths.allSatisfy({ $0.hasPrefix("/")}) {
+
+        if filePaths.allSatisfy({ $0.hasPrefix("/") }) {
             let subPaths = filePaths.map { $0.dropFirst() }.filter { !$0.isEmpty }
             return [Folder(name: "", content: _makeStructure(paths: subPaths.map { String($0).components(separatedBy: CharacterSet(charactersIn: "/")) }, accumulatedBasePath: ""))]
         }
-        
+
         return _makeStructure(paths: filePaths.map { $0.components(separatedBy: CharacterSet(charactersIn: "/")) }, accumulatedBasePath: "")
     }
 }
@@ -308,7 +307,7 @@ private func makeMinimalTestRenderNode(path: String) -> RenderNode {
     let reference = ResolvedTopicReference(bundleIdentifier: "org.swift.test", path: path, sourceLanguage: .swift)
     let rawReference = reference.url.absoluteString
     let title = path.components(separatedBy: "/").last ?? path
-    
+
     var renderNode = RenderNode(identifier: reference, kind: .article)
     renderNode.metadata.title = title
     renderNode.references = [
@@ -327,7 +326,7 @@ private func makeMinimalTestRenderNode(path: String) -> RenderNode {
 private struct DumpableNode {
     var name: String
     var children: [DumpableNode]?
-    
+
     init(_ file: File) {
         if let folder = file as? Folder {
             name = file.name
@@ -360,7 +359,7 @@ extension File {
     /// ```
     public func dump() -> String {
         Self.dump(.init(self))
-            .trimmingCharacters(in: .newlines) // remove the trailing newline
+            .trimmingCharacters(in: .newlines)  // remove the trailing newline
     }
 
     private static func dump(_ node: DumpableNode, decorator: String = "") -> String {
@@ -374,7 +373,7 @@ extension File {
             return result + "\n"
         }
         result.append("/\n")
-        
+
         let sortedChildren = children.sorted(by: { lhs, rhs in
             // Sort files before folders if the folder name is a prefix of the file name
             switch (lhs.children, rhs.children) {
@@ -388,7 +387,7 @@ extension File {
                 return lhs.name < rhs.name
             }
         })
-        
+
         for (index, child) in sortedChildren.enumerated() {
             var decorator = decorator
             if decorator.hasSuffix("├") {
@@ -397,7 +396,7 @@ extension File {
             if decorator.hasSuffix("╰") {
                 decorator = decorator.dropLast() + "   "
             }
-            let newDecorator = decorator + (index == sortedChildren.count-1 ? "╰" : "├")
+            let newDecorator = decorator + (index == sortedChildren.count - 1 ? "╰" : "├")
             result.append(dump(child, decorator: newDecorator))
         }
         return result
