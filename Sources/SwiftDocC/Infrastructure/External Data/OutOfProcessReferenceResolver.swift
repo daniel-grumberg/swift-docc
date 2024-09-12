@@ -50,10 +50,10 @@ import SymbolKit
 /// - ``Response``
 public class OutOfProcessReferenceResolver: ExternalDocumentationSource, GlobalExternalSymbolResolver {
     private let externalLinkResolvingClient: ExternalLinkResolving
-    
+
     /// The bundle identifier for the reference resolver in the other process.
     public let bundleIdentifier: String
-    
+
     /// Creates a new reference resolver that interacts with another executable.
     ///
     /// Initializing the resolver will also launch the other executable. The other executable will remain running for the lifetime of this object.
@@ -70,13 +70,13 @@ public class OutOfProcessReferenceResolver: ExternalDocumentationSource, GlobalE
         guard fileManager.isExecutableFile(atPath: processLocation.path) else {
             throw Error.resolverNotExecutable(processLocation)
         }
-        
+
         let longRunningProcess = try LongRunningProcess(location: processLocation, errorOutputHandler: errorOutputHandler)
-        
+
         guard case let .bundleIdentifier(decodedBundleIdentifier) = try longRunningProcess.sendAndWait(request: nil as Request?) as Response else {
             throw Error.invalidBundleIdentifierOutputFromExecutable(processLocation)
         }
-        
+
         self.bundleIdentifier = decodedBundleIdentifier
         self.externalLinkResolvingClient = longRunningProcess
     }
@@ -92,22 +92,26 @@ public class OutOfProcessReferenceResolver: ExternalDocumentationSource, GlobalE
     public init(bundleIdentifier: String, server: DocumentationServer, convertRequestIdentifier: String?) throws {
         self.bundleIdentifier = bundleIdentifier
         self.externalLinkResolvingClient = LongRunningService(
-            server: server, convertRequestIdentifier: convertRequestIdentifier)
+            server: server,
+            convertRequestIdentifier: convertRequestIdentifier
+        )
     }
-    
+
     // MARK: External Reference Resolver
-    
+
     public func resolve(_ reference: TopicReference) -> TopicReferenceResolutionResult {
         switch reference {
         case .resolved(let resolved):
             return resolved
-            
+
         case let .unresolved(unresolvedReference):
             guard unresolvedReference.bundleIdentifier == bundleIdentifier else {
-                fatalError("""
+                fatalError(
+                    """
                     Attempted to resolve a local reference externally: \(unresolvedReference.description.singleQuoted).
                     DocC should never pass a reference to an external resolver unless it matches that resolver's bundle identifier.
-                    """)
+                    """
+                )
             }
             do {
                 guard let unresolvedTopicURL = unresolvedReference.topicURL.components.url else {
@@ -115,13 +119,13 @@ public class OutOfProcessReferenceResolver: ExternalDocumentationSource, GlobalE
                     return .failure(unresolvedReference, TopicReferenceResolutionErrorInfo("URL \(unresolvedReference.topicURL.absoluteString.singleQuoted) is not valid."))
                 }
                 let resolvedInformation = try resolveInformationForTopicURL(unresolvedTopicURL)
-                return .success( resolvedReference(for: resolvedInformation) )
+                return .success(resolvedReference(for: resolvedInformation))
             } catch let error {
                 return .failure(unresolvedReference, TopicReferenceResolutionErrorInfo(error))
             }
         }
     }
-    
+
     @_spi(ExternalLinks)  // LinkResolver.ExternalEntity isn't stable API yet
     public func entity(with reference: ResolvedTopicReference) -> LinkResolver.ExternalEntity {
         guard let resolvedInformation = referenceCache[reference.url] else {
@@ -129,23 +133,23 @@ public class OutOfProcessReferenceResolver: ExternalDocumentationSource, GlobalE
         }
         return makeEntity(with: resolvedInformation, reference: reference.absoluteString)
     }
-    
+
     @_spi(ExternalLinks)  // LinkResolver.ExternalEntity isn't stable API yet
     public func symbolReferenceAndEntity(withPreciseIdentifier preciseIdentifier: String) -> (ResolvedTopicReference, LinkResolver.ExternalEntity)? {
         guard let resolvedInformation = try? resolveInformationForSymbolIdentifier(preciseIdentifier) else { return nil }
-        
+
         let reference = ResolvedTopicReference(
             bundleIdentifier: "com.externally.resolved.symbol",
             path: "/\(preciseIdentifier)",
             sourceLanguages: sourceLanguages(for: resolvedInformation)
         )
-        let entity =  makeEntity(with: resolvedInformation, reference: reference.absoluteString)
+        let entity = makeEntity(with: resolvedInformation, reference: reference.absoluteString)
         return (reference, entity)
     }
-    
+
     private func makeEntity(with resolvedInformation: ResolvedInformation, reference: String) -> LinkResolver.ExternalEntity {
         let (kind, role) = DocumentationContentRenderer.renderKindAndRole(resolvedInformation.kind, semantic: nil)
-        
+
         var renderReference = TopicRenderReference(
             identifier: .init(reference),
             title: resolvedInformation.title,
@@ -172,7 +176,10 @@ public class OutOfProcessReferenceResolver: ExternalDocumentationSource, GlobalE
             }
             if let declarationFragments = variant.declarationFragments {
                 renderReference.fragmentsVariants.variants.append(
-                    .init(traits: variant.traits, patch: [.replace(value: declarationFragments?.declarationFragments.map { DeclarationRenderSection.Token(fragment: $0, identifier: nil) })])
+                    .init(
+                        traits: variant.traits,
+                        patch: [.replace(value: declarationFragments?.declarationFragments.map { DeclarationRenderSection.Token(fragment: $0, identifier: nil) })]
+                    )
                 )
             }
         }
@@ -181,66 +188,70 @@ public class OutOfProcessReferenceResolver: ExternalDocumentationSource, GlobalE
             linkReferences: (resolvedInformation.references ?? []).compactMap { $0 as? LinkReference },
             imageReferences: (resolvedInformation.references ?? []).compactMap { $0 as? ImageReference }
         )
-        
-        return LinkResolver.ExternalEntity(topicRenderReference: renderReference, renderReferenceDependencies: dependencies, sourceLanguages: resolvedInformation.availableLanguages)
+
+        return LinkResolver.ExternalEntity(
+            topicRenderReference: renderReference,
+            renderReferenceDependencies: dependencies,
+            sourceLanguages: resolvedInformation.availableLanguages
+        )
     }
-    
+
     // MARK: Implementation
-    
+
     private var referenceCache: [URL: ResolvedInformation] = [:]
     private var symbolCache: [String: ResolvedInformation] = [:]
     private var assetCache: [AssetReference: DataAsset] = [:]
-    
+
     /// Makes a call to the other process to resolve information about a page based on its URL.
     func resolveInformationForTopicURL(_ topicURL: URL) throws -> ResolvedInformation {
         if let cachedInformation = referenceCache[topicURL] {
             return cachedInformation
         }
-        
+
         let response: Response = try externalLinkResolvingClient.sendAndWait(request: Request.topic(topicURL))
-        
+
         switch response {
         case .bundleIdentifier:
             throw Error.executableSentBundleIdentifierAgain
-            
+
         case .errorMessage(let errorMessage):
             throw Error.forwardedErrorFromClient(errorMessage: errorMessage)
-            
+
         case .resolvedInformation(let resolvedInformation):
             // Cache the information for the resolved reference, that's what's will be used when returning the entity later.
             let resolvedReference = resolvedReference(for: resolvedInformation)
             referenceCache[resolvedReference.url] = resolvedInformation
             return resolvedInformation
-            
+
         default:
             throw Error.unexpectedResponse(response: response, requestDescription: "topic URL")
         }
     }
-    
+
     /// Makes a call to the other process to resolve information about a symbol based on its precise identifier.
     private func resolveInformationForSymbolIdentifier(_ preciseIdentifier: String) throws -> ResolvedInformation {
         if let cachedInformation = symbolCache[preciseIdentifier] {
             return cachedInformation
         }
-        
+
         let response: Response = try externalLinkResolvingClient.sendAndWait(request: Request.symbol(preciseIdentifier))
-        
+
         switch response {
         case .bundleIdentifier:
             throw Error.executableSentBundleIdentifierAgain
-            
+
         case .errorMessage(let errorMessage):
             throw Error.forwardedErrorFromClient(errorMessage: errorMessage)
-            
+
         case .resolvedInformation(let resolvedInformation):
-             symbolCache[preciseIdentifier] = resolvedInformation
-             return resolvedInformation
-            
+            symbolCache[preciseIdentifier] = resolvedInformation
+            return resolvedInformation
+
         default:
             throw Error.unexpectedResponse(response: response, requestDescription: "symbol ID")
         }
     }
-    
+
     private func resolvedReference(for resolvedInformation: ResolvedInformation) -> ResolvedTopicReference {
         return ResolvedTopicReference(
             bundleIdentifier: bundleIdentifier,
@@ -249,7 +260,7 @@ public class OutOfProcessReferenceResolver: ExternalDocumentationSource, GlobalE
             sourceLanguages: sourceLanguages(for: resolvedInformation)
         )
     }
-    
+
     private func sourceLanguages(for resolvedInformation: ResolvedInformation) -> Set<SourceLanguage> {
         // It is expected that the available languages contains the main language
         return resolvedInformation.availableLanguages.union(CollectionOfOne(resolvedInformation.language))
@@ -262,12 +273,14 @@ private protocol ExternalLinkResolving {
 
 private class LongRunningService: ExternalLinkResolving {
     var client: ExternalReferenceResolverServiceClient
-    
+
     init(server: DocumentationServer, convertRequestIdentifier: String?) {
         self.client = ExternalReferenceResolverServiceClient(
-            server: server, convertRequestIdentifier: convertRequestIdentifier)
+            server: server,
+            convertRequestIdentifier: convertRequestIdentifier
+        )
     }
-    
+
     func sendAndWait<Request: Codable & CustomStringConvertible, Response: Codable>(request: Request?) throws -> Response {
         let responseData = try client.sendAndWait(request)
         return try JSONDecoder().decode(Response.self, from: responseData)
@@ -278,47 +291,48 @@ private class LongRunningService: ExternalLinkResolving {
 ///
 /// This private class is only used by the ``OutOfProcessReferenceResolver`` and shouldn't be used for general communication with other processes.
 private class LongRunningProcess: ExternalLinkResolving {
-    
+
     #if os(macOS) || os(Linux) || os(Android)
     private let process: Process
-    
+
     init(location: URL, errorOutputHandler: @escaping (String) -> Void) throws {
         let process = Process()
         process.executableURL = location
-        
+
         process.standardInput = input
         process.standardOutput = output
         process.standardError = errorOutput
-        
+
         try process.run()
-        
+
         let errorReadSource = DispatchSource.makeReadSource(fileDescriptor: errorOutput.fileHandleForReading.fileDescriptor, queue: .main)
         errorReadSource.setEventHandler { [errorOutput] in
             let data = errorOutput.fileHandleForReading.availableData
-            let errorMessage = String(data: data, encoding: .utf8)
+            let errorMessage =
+                String(data: data, encoding: .utf8)
                 ?? "<\(ByteCountFormatter.string(fromByteCount: Int64(data.count), countStyle: .memory)) of non-utf8 data>"
-            
+
             errorOutputHandler(errorMessage)
         }
         errorReadSource.resume()
         self.errorReadSource = errorReadSource
-        
+
         self.process = process
     }
     deinit {
         process.terminate()
         errorReadSource.cancel()
     }
-    
+
     private let input = Pipe()
     private let output = Pipe()
     private let errorOutput = Pipe()
     private let errorReadSource: DispatchSourceRead
-        
+
     func sendAndWait<Request: Codable & CustomStringConvertible, Response: Codable>(request: Request?) throws -> Response {
         if let request {
             guard let requestString = String(data: try JSONEncoder().encode(request), encoding: .utf8)?.appending("\n"),
-                  let requestData = requestString.data(using: .utf8)
+                let requestData = requestString.data(using: .utf8)
             else {
                 throw OutOfProcessReferenceResolver.Error.unableToEncodeRequestToClient(requestDescription: request.description)
             }
@@ -328,7 +342,7 @@ private class LongRunningProcess: ExternalLinkResolving {
         guard !response.isEmpty else {
             throw OutOfProcessReferenceResolver.Error.processDidExit(code: Int(process.terminationStatus))
         }
-        
+
         // It's not guaranteed that the full response will be available all at once.
         while true {
             // If a pipe is empty, checking `availableData` will block until there is new data to read.
@@ -336,8 +350,8 @@ private class LongRunningProcess: ExternalLinkResolving {
                 // To avoid blocking forever we check if the response can be decoded after each chunk of data.
                 return try JSONDecoder().decode(Response.self, from: response)
             } catch {
-                if case DecodingError.dataCorrupted = error,     // If the data wasn't valid JSON, read more data and try to decode it again.
-                    response.count.isMultiple(of: Int(PIPE_BUF)) // To reduce the risk of deadlocking, check that bytes so far is a multiple of the pipe buffer size.
+                if case DecodingError.dataCorrupted = error,  // If the data wasn't valid JSON, read more data and try to decode it again.
+                    response.count.isMultiple(of: Int(PIPE_BUF))  // To reduce the risk of deadlocking, check that bytes so far is a multiple of the pipe buffer size.
                 {
                     let moreResponseData = output.fileHandleForReading.availableData
                     guard !moreResponseData.isEmpty else {
@@ -346,23 +360,23 @@ private class LongRunningProcess: ExternalLinkResolving {
                     response += moreResponseData
                     continue
                 }
-            
+
                 // Other errors are re-thrown as wrapped errors.
                 throw OutOfProcessReferenceResolver.Error.unableToDecodeResponseFromClient(response, error)
             }
         }
     }
-    
+
     #else
-        
+
     init(location: URL, errorOutputHandler: @escaping (String) -> Void) {
         fatalError("Cannot initialize an out of process resolver outside of macOS or Linux platforms.")
     }
-    
+
     func sendAndWait<Request: Codable & CustomStringConvertible, Response: Codable>(request: Request?) throws -> Response {
         fatalError("Cannot call sendAndWait in non macOS/Linux platform.")
     }
-    
+
     #endif
 }
 
@@ -370,7 +384,7 @@ extension OutOfProcessReferenceResolver {
     /// Errors that may occur when communicating with an external reference resolver.
     enum Error: Swift.Error, DescribedError {
         // Setup
-        
+
         /// No file exists at the specified location.
         case missingResolverAt(URL)
         /// The file at the specified location is not an executable.
@@ -379,9 +393,9 @@ extension OutOfProcessReferenceResolver {
         case processDidExit(code: Int)
         /// The other process didn't send a bundle identifier as its first message.
         case invalidBundleIdentifierOutputFromExecutable(URL)
-        
+
         // Loop
-        
+
         /// The other process sent a bundle identifier again, after it was already received.
         case executableSentBundleIdentifierAgain
         /// A wrapped error message from the external link resolver.
@@ -396,7 +410,7 @@ extension OutOfProcessReferenceResolver {
         case unknownTypeOfRequest
         /// Received an unknown type of response to sent request.
         case unexpectedResponse(response: Response, requestDescription: String)
-        
+
         /// A plain text representation of the error message.
         var errorDescription: String {
             switch self {
@@ -431,9 +445,9 @@ extension OutOfProcessReferenceResolver {
 }
 
 extension OutOfProcessReferenceResolver {
-    
+
     // MARK: Request & Response
-    
+
     /// A request message to send to the external link resolver.
     ///
     /// This can either be a request to resolve a topic URL or to resolve a symbol based on its precise identifier.
@@ -444,13 +458,13 @@ extension OutOfProcessReferenceResolver {
         case symbol(String)
         /// A request to resolve an asset.
         case asset(AssetReference)
-        
+
         private enum CodingKeys: CodingKey {
             case topic
             case symbol
             case asset
         }
-        
+
         public func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
             switch self {
@@ -462,7 +476,7 @@ extension OutOfProcessReferenceResolver {
                 try container.encode(assetReference, forKey: .asset)
             }
         }
-        
+
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             switch container.allKeys.first {
@@ -476,7 +490,7 @@ extension OutOfProcessReferenceResolver {
                 throw OutOfProcessReferenceResolver.Error.unknownTypeOfRequest
             }
         }
-        
+
         /// A plain text representation of the request message.
         public var description: String {
             switch self {
@@ -502,14 +516,14 @@ extension OutOfProcessReferenceResolver {
         case resolvedInformation(ResolvedInformation)
         /// A response with information about the resolved asset.
         case asset(DataAsset)
-        
+
         enum CodingKeys: String, CodingKey {
             case bundleIdentifier
             case errorMessage
             case resolvedInformation
             case asset
         }
-        
+
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             switch container.allKeys.first {
@@ -525,7 +539,7 @@ extension OutOfProcessReferenceResolver {
                 throw OutOfProcessReferenceResolver.Error.invalidResponseKindFromClient
             }
         }
-        
+
         public func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
             switch self {
@@ -540,23 +554,23 @@ extension OutOfProcessReferenceResolver {
             }
         }
     }
-    
+
     // MARK: Resolved Information
-    
+
     /// A type used to transfer information about a resolved reference to DocC from from a reference resolver in another executable.
     public struct ResolvedInformation: Codable {
         // This type is duplicating the information from LinkDestinationSummary with some minor differences.
         // Changes generally need to be made in both places. It would be good to replace this with LinkDestinationSummary.
         // FIXME: https://github.com/swiftlang/swift-docc/issues/802
-        
+
         /// Information about the resolved kind.
         public let kind: DocumentationNode.Kind
         /// Information about the resolved URL.
         public let url: URL
         /// Information about the resolved title.
-        public let title: String // DocumentationNode.Name
+        public let title: String  // DocumentationNode.Name
         /// Information about the resolved abstract.
-        public let abstract: String // Markup
+        public let abstract: String  // Markup
         /// Information about the resolved language.
         public let language: SourceLanguage
         /// Information about the languages where the resolved node is available.
@@ -565,38 +579,38 @@ extension OutOfProcessReferenceResolver {
         public let platforms: [PlatformAvailability]?
         /// Information about the resolved declaration fragments, if any.
         public let declarationFragments: DeclarationFragments?
-        
+
         // We use the real types here because they're Codable and don't have public member-wise initializers.
-        
+
         /// Platform availability for a resolved symbol reference.
         public typealias PlatformAvailability = AvailabilityRenderItem
-        
+
         /// The declaration fragments for a resolved symbol reference.
         public typealias DeclarationFragments = SymbolGraph.Symbol.DeclarationFragments
-        
+
         /// The platform names, derived from the platform availability.
         public var platformNames: Set<String>? {
             return platforms.map { platforms in Set(platforms.compactMap { $0.name }) }
         }
-        
+
         /// Images that are used to represent the summarized element.
         public var topicImages: [TopicImage]?
-                
+
         /// References used in the content of the summarized element.
         public var references: [RenderReference]?
-        
+
         /// The variants of content (kind, url, title, abstract, language, declaration) for this resolver information.
         public var variants: [Variant]?
-       
+
         /// A value that indicates whether this symbol is under development and likely to change.
         var isBeta: Bool {
             guard let platforms, !platforms.isEmpty else {
                 return false
             }
-            
+
             return platforms.allSatisfy { $0.isBeta == true }
         }
-        
+
         /// Creates a new resolved information value with all its values.
         ///
         /// - Parameters:
@@ -636,19 +650,19 @@ extension OutOfProcessReferenceResolver {
             self.references = references
             self.variants = variants
         }
-        
+
         /// A variant of content for the resolved information.
         ///
         /// - Note: All properties except for ``traits`` are optional. If a property is `nil` it means that the value is the same as the resolved information's value.
         public struct Variant: Codable {
             /// The traits of the variant.
             public let traits: [RenderNode.Variant.Trait]
-            
+
             /// A wrapper for variant values that can either be specified, meaning the variant has a custom value, or not, meaning the variant has the same value as the resolved information.
             ///
             /// This alias is used to make the property declarations more explicit while at the same time offering the convenient syntax of optionals.
             public typealias VariantValue = Optional
-            
+
             /// The kind of the variant or `nil` if the kind is the same as the resolved information.
             public let kind: VariantValue<DocumentationNode.Kind>
             /// The url of the variant or `nil` if the url is the same as the resolved information.
@@ -663,7 +677,7 @@ extension OutOfProcessReferenceResolver {
             ///
             /// If the resolver information has a declaration but the variant doesn't, this property will be `Optional.some(nil)`.
             public let declarationFragments: VariantValue<DeclarationFragments?>
-            
+
             /// Creates a new resolved information variant with the values that are different from the resolved information values.
             ///
             /// - Parameters:
@@ -709,10 +723,10 @@ extension OutOfProcessReferenceResolver.ResolvedInformation {
         case references
         case variants
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        
+
         kind = try container.decode(DocumentationNode.Kind.self, forKey: .kind)
         url = try container.decode(URL.self, forKey: .url)
         title = try container.decode(String.self, forKey: .title)
@@ -722,16 +736,17 @@ extension OutOfProcessReferenceResolver.ResolvedInformation {
         platforms = try container.decodeIfPresent([OutOfProcessReferenceResolver.ResolvedInformation.PlatformAvailability].self, forKey: .platforms)
         declarationFragments = try container.decodeIfPresent(OutOfProcessReferenceResolver.ResolvedInformation.DeclarationFragments.self, forKey: .declarationFragments)
         topicImages = try container.decodeIfPresent([TopicImage].self, forKey: .topicImages)
-        references = try container.decodeIfPresent([CodableRenderReference].self, forKey: .references).map { decodedReferences in
-            decodedReferences.map(\.reference)
-        }
+        references = try container.decodeIfPresent([CodableRenderReference].self, forKey: .references)
+            .map { decodedReferences in
+                decodedReferences.map(\.reference)
+            }
         variants = try container.decodeIfPresent([OutOfProcessReferenceResolver.ResolvedInformation.Variant].self, forKey: .variants)
-        
+
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        
+
         try container.encode(self.kind, forKey: .kind)
         try container.encode(self.url, forKey: .url)
         try container.encode(self.title, forKey: .title)
@@ -750,7 +765,7 @@ extension OutOfProcessReferenceResolver: ConvertServiceFallbackResolver {
     @_spi(ExternalLinks)
     public func entityIfPreviouslyResolved(with reference: ResolvedTopicReference) -> LinkResolver.ExternalEntity? {
         guard referenceCache.keys.contains(reference.url) else { return nil }
-        
+
         var entity = entity(with: reference)
         // The entity response doesn't include the assets that it references.
         // Before returning the entity, make sure that its references assets are included among the image dependencies.
@@ -761,21 +776,22 @@ extension OutOfProcessReferenceResolver: ConvertServiceFallbackResolver {
         }
         return entity
     }
-    
+
     func resolve(assetNamed assetName: String) -> DataAsset? {
         return try? resolveInformationForAsset(named: assetName)
     }
-    
+
     func resolveInformationForAsset(named assetName: String) throws -> DataAsset {
         let assetReference = AssetReference(assetName: assetName, bundleIdentifier: bundleIdentifier)
         if let asset = assetCache[assetReference] {
             return asset
         }
-        
-        let response = try externalLinkResolvingClient.sendAndWait(
-            request: Request.asset(AssetReference(assetName: assetName, bundleIdentifier: bundleIdentifier))
-        ) as Response
-        
+
+        let response =
+            try externalLinkResolvingClient.sendAndWait(
+                request: Request.asset(AssetReference(assetName: assetName, bundleIdentifier: bundleIdentifier))
+            ) as Response
+
         switch response {
         case .asset(let asset):
             assetCache[assetReference] = asset

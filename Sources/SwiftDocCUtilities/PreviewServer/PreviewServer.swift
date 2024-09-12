@@ -48,51 +48,52 @@ final class PreviewServer {
         case cannotStartServer(port: Int)
         /// The given port is not available
         case portNotAvailable(port: Int)
-        
+
         var errorDescription: String {
             switch self {
-                case .failedToStart: return "Failed to start preview server"
-                case .pathNotFound(let path): return "The preview content path '\(path)' is not found"
-                case .cannotStartServer(let port): return "Can't start the preview server on port \(port)"
-                case .portNotAvailable(let port): return "Port \(port) is not available at the moment, "
+            case .failedToStart: return "Failed to start preview server"
+            case .pathNotFound(let path): return "The preview content path '\(path)' is not found"
+            case .cannotStartServer(let port): return "Can't start the preview server on port \(port)"
+            case .portNotAvailable(let port):
+                return "Port \(port) is not available at the moment, "
                     + "try a different port number by adding the option '--port XXXX' "
                     + "to your command invocation where XXXX is the desired (free) port."
             }
         }
     }
-    
+
     private let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
     private let threadPool = NIOThreadPool(numberOfThreads: System.coreCount)
 
     private var bootstrap: ServerBootstrap!
     internal var channel: Channel!
-    
+
     private let contentURL: URL
-    
+
     /// A list of server-bind destinations.
     public enum Bind: CustomStringConvertible {
         /// A port on the local machine.
         case localhost(port: Int)
-        
+
         /// A file socket on disk.
         case socket(path: String)
-        
+
         var description: String {
             switch self {
-            case .localhost(port: let port):
+            case .localhost(let port):
                 return "localhost:\(port)"
-            case .socket(path: let path):
+            case .socket(let path):
                 return path
             }
         }
     }
-    
+
     /// Where to try binding the server; can be an ip address or a socket.
     private let bindTo: Bind
-    
+
     /// The output to write log messages to.
     private var logHandle: LogHandle
-    
+
     /// Creates a new preview server with the given content directory, bind destination, and credentials.
     ///
     /// - Parameters:
@@ -105,7 +106,7 @@ final class PreviewServer {
         guard contentPathExists && isDirectory.boolValue else {
             throw Error.pathNotFound(contentURL.path)
         }
-        
+
         self.contentURL = contentURL
         self.bindTo = bindTo
         self.logHandle = logHandle
@@ -129,20 +130,21 @@ final class PreviewServer {
             // Configure the channel handler - it handles plain HTTP requests
             .childChannelInitializer { channel in
                 // HTTP pipeline
-                return channel.pipeline.configureHTTPServerPipeline(withErrorHandling: true).flatMap {
-                    channel.pipeline.addHandler(PreviewHTTPHandler(fileIO: fileIO, rootURL: self.contentURL))
-                }
+                return channel.pipeline.configureHTTPServerPipeline(withErrorHandling: true)
+                    .flatMap {
+                        channel.pipeline.addHandler(PreviewHTTPHandler(fileIO: fileIO, rootURL: self.contentURL))
+                    }
             }
-            
+
             // Enable TCP_NODELAY for the accepted Channels
             .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
             .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 16)
             .childChannelOption(ChannelOptions.allowRemoteHalfClosure, value: true)
-        
+
         // Start the server
         threadPool.start()
-        
+
         do {
             // Bind to the given destination
             switch bindTo {
@@ -154,27 +156,27 @@ final class PreviewServer {
         } catch let error as NIO.IOError where error.errnoCode == EADDRINUSE {
             // The given port is not available.
             switch bindTo {
-                case .localhost(let port): throw Error.portNotAvailable(port: port)
-                default: throw error
+            case .localhost(let port): throw Error.portNotAvailable(port: port)
+            default: throw error
             }
         } catch {
             // Cannot bind the given address/port.
             switch bindTo {
-                case .localhost(let port): throw Error.cannotStartServer(port: port)
-                default: throw error
+            case .localhost(let port): throw Error.cannotStartServer(port: port)
+            default: throw error
             }
         }
-        
+
         guard let _ = channel.localAddress else {
             throw Error.failedToStart
         }
-        
+
         onReady?()
-        
+
         // This will block until the server is stopped
         try channel.closeFuture.wait()
     }
-    
+
     /// Stops the current preview server.
     /// - throws: If the server fails to close the communication channel or the async infrastructure.
     func stop() throws {

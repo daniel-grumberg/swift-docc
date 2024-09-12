@@ -17,7 +17,7 @@ indirect enum JSON: Codable {
     case number(Double)
     case boolean(Bool)
     case null
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if container.decodeNil() {
@@ -34,7 +34,7 @@ indirect enum JSON: Codable {
             self = .dictionary(try container.decode([String: JSON].self))
         }
     }
-    
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
@@ -50,7 +50,7 @@ indirect enum JSON: Codable {
             try container.encode(boolean)
         case .null:
             try container.encodeNil()
-            
+
         }
     }
 }
@@ -63,7 +63,7 @@ extension JSON: CustomDebugStringConvertible {
         } else {
             encoder.outputFormatting = [.prettyPrinted]
         }
-        
+
         do {
             let data = try encoder.encode(self)
             return String(data: data, encoding: .utf8) ?? "JSON(error decoding UTF8 string)"
@@ -74,7 +74,7 @@ extension JSON: CustomDebugStringConvertible {
 }
 
 extension JSON {
-    
+
     subscript(key: Any) -> JSON? {
         get {
             if let array = self.array, let index = key as? Int, index < array.count {
@@ -86,7 +86,7 @@ extension JSON {
             }
         }
     }
-    
+
     /// Returns a `JSON` dictionary, if possible.
     var dictionary: [String: JSON]? {
         switch self {
@@ -136,7 +136,7 @@ extension JSON {
             return nil
         }
     }
-    
+
 }
 
 extension JSON {
@@ -144,26 +144,26 @@ extension JSON {
     struct IntegerKey: CodingKey {
         var intValue: Int?
         var stringValue: String
-        
+
         init(_ value: Int) {
             self.intValue = value
             self.stringValue = value.description
         }
-        
+
         init(_ value: String) {
             self.intValue = nil
             self.stringValue = value
         }
-        
+
         init?(intValue: Int) {
             self.init(intValue)
         }
-        
+
         init?(stringValue: String) {
             guard let intValue = Int(stringValue) else {
                 return nil
             }
-            
+
             self.intValue = intValue
             self.stringValue = stringValue
         }

@@ -8,16 +8,18 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-import SymbolKit
 import Markdown
+import SymbolKit
+import XCTest
+
 @testable import SwiftDocC
 
 class DocumentationContentRendererTests: XCTestCase {
     func testReplacesTypeIdentifierSubHeadingFragmentWithIdentifierForSwift() throws {
-        let subHeadingFragments = documentationContentRenderer
+        let subHeadingFragments =
+            documentationContentRenderer
             .subHeadingFragments(for: nodeWithSubheadingAndNavigatorVariants)
-        
+
         XCTAssertEqual(
             subHeadingFragments.defaultValue,
             [
@@ -35,48 +37,56 @@ class DocumentationContentRendererTests: XCTestCase {
                 ),
                 DeclarationRenderSection.Token(
                     text: "ClassInSwift",
-                    
+
                     // The 'typeIdentifier' value of the symbol's declaration is replaced with an 'identifier'.
                     kind: .identifier,
                     identifier: nil,
                     preciseIdentifier: nil
-                )
+                ),
             ]
         )
     }
-    
+
     func testDoesNotReplaceSubHeadingFragmentsForOtherLanguagesThanSwift() throws {
-        let subHeadingFragments = documentationContentRenderer
+        let subHeadingFragments =
+            documentationContentRenderer
             .subHeadingFragments(for: nodeWithSubheadingAndNavigatorVariants)
-        
+
         guard case .replace(let fragments) = subHeadingFragments.variants.first?.patch.first else {
             XCTFail("Unexpected patch")
             return
         }
-        
+
         XCTAssertEqual(
             fragments,
             [
                 DeclarationRenderSection.Token(
                     text: "class",
-                    kind: .keyword, identifier: nil, preciseIdentifier: nil
+                    kind: .keyword,
+                    identifier: nil,
+                    preciseIdentifier: nil
                 ),
                 DeclarationRenderSection.Token(
                     text: " ",
-                    kind: .text, identifier: nil, preciseIdentifier: nil
+                    kind: .text,
+                    identifier: nil,
+                    preciseIdentifier: nil
                 ),
                 DeclarationRenderSection.Token(
                     text: "ClassInAnotherLanguage",
-                    kind: .typeIdentifier, identifier: nil, preciseIdentifier: nil
-                )
+                    kind: .typeIdentifier,
+                    identifier: nil,
+                    preciseIdentifier: nil
+                ),
             ]
         )
     }
-    
+
     func testReplacesTypeIdentifierNavigatorFragmentWithIdentifierForSwift() throws {
-        let navigatorFragments = documentationContentRenderer
+        let navigatorFragments =
+            documentationContentRenderer
             .navigatorFragments(for: nodeWithSubheadingAndNavigatorVariants)
-        
+
         XCTAssertEqual(
             navigatorFragments.defaultValue,
             [
@@ -94,40 +104,47 @@ class DocumentationContentRendererTests: XCTestCase {
                 ),
                 DeclarationRenderSection.Token(
                     text: "ClassInSwift",
-                    
+
                     // The 'typeIdentifier' value of the symbol's declaration is replaced with an 'identifier'.
                     kind: .identifier,
                     identifier: nil,
                     preciseIdentifier: nil
-                )
+                ),
             ]
         )
     }
-    
+
     func testDoesNotReplacesNavigatorFragmentsForOtherLanguagesThanSwift() throws {
-        let navigatorFragments = documentationContentRenderer
+        let navigatorFragments =
+            documentationContentRenderer
             .navigatorFragments(for: nodeWithSubheadingAndNavigatorVariants)
-        
+
         guard case .replace(let fragments) = navigatorFragments.variants.first?.patch.first else {
             XCTFail("Unexpected patch")
             return
         }
-        
+
         XCTAssertEqual(
             fragments,
             [
                 DeclarationRenderSection.Token(
                     text: "class",
-                    kind: .keyword, identifier: nil, preciseIdentifier: nil
+                    kind: .keyword,
+                    identifier: nil,
+                    preciseIdentifier: nil
                 ),
                 DeclarationRenderSection.Token(
                     text: " ",
-                    kind: .text, identifier: nil, preciseIdentifier: nil
+                    kind: .text,
+                    identifier: nil,
+                    preciseIdentifier: nil
                 ),
                 DeclarationRenderSection.Token(
                     text: "ClassInAnotherLanguage",
-                    kind: .typeIdentifier, identifier: nil, preciseIdentifier: nil
-                )
+                    kind: .typeIdentifier,
+                    identifier: nil,
+                    preciseIdentifier: nil
+                ),
             ]
         )
     }
@@ -154,7 +171,7 @@ private extension DocumentationContentRendererTests {
             )
         )
     }
-    
+
     var nodeWithSubheadingAndNavigatorVariants: DocumentationNode {
         var node = DocumentationNode(
             reference: ResolvedTopicReference(
@@ -167,14 +184,14 @@ private extension DocumentationContentRendererTests {
             sourceLanguage: .swift,
             availableSourceLanguages: [
                 .swift,
-                .init(id: DocumentationDataVariantsTrait.otherLanguage.interfaceLanguage!)
+                .init(id: DocumentationDataVariantsTrait.otherLanguage.interfaceLanguage!),
             ],
             name: .symbol(name: ""),
             markup: Document(parsing: ""),
             semantic: nil,
             platformNames: nil
         )
-        
+
         node.semantic = Symbol(
             kindVariants: .init(values: [
                 .swift: SymbolGraph.Symbol.Kind(parsedIdentifier: .class, displayName: "Class"),
@@ -210,7 +227,7 @@ private extension DocumentationContentRendererTests {
             ]),
             roleHeadingVariants: .init(swiftVariant: ""),
             platformNameVariants: .init(swiftVariant: nil),
-            moduleReference: ResolvedTopicReference(bundleIdentifier: "", path: "", sourceLanguage: .swift), // This information isn't used anywhere.
+            moduleReference: ResolvedTopicReference(bundleIdentifier: "", path: "", sourceLanguage: .swift),  // This information isn't used anywhere.
             externalIDVariants: .init(swiftVariant: nil),
             accessLevelVariants: .init(swiftVariant: nil),
             availabilityVariants: .init(swiftVariant: Availability(availability: [])),
@@ -230,7 +247,7 @@ private extension DocumentationContentRendererTests {
             httpResponsesSectionVariants: .init(swiftVariant: nil),
             redirectsVariants: .init(swiftVariant: nil)
         )
-        
+
         return node
     }
 }

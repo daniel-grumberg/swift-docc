@@ -64,7 +64,7 @@ public class DocumentationWorkspace: DocumentationContextDataProvider {
         case unknownBundle(id: String)
         /// A data provider with the provided ID wasn't found in the workspace.
         case unknownProvider(id: String)
-        
+
         /// A plain-text description of the error.
         public var errorDescription: String {
             switch self {
@@ -75,7 +75,7 @@ public class DocumentationWorkspace: DocumentationContextDataProvider {
             }
         }
     }
-    
+
     /// Reads the data for a given file in a given documentation bundle.
     ///
     /// - Parameters:
@@ -88,11 +88,11 @@ public class DocumentationWorkspace: DocumentationContextDataProvider {
         guard let providerID = bundleToProvider[bundle.identifier] else {
             throw WorkspaceError.unknownBundle(id: bundle.identifier)
         }
-        
+
         guard let provider = providers[providerID] else {
             throw WorkspaceError.unknownProvider(id: providerID)
         }
-        
+
         return try provider.contentsOfURL(url)
     }
 
@@ -106,7 +106,7 @@ public class DocumentationWorkspace: DocumentationContextDataProvider {
     public weak var delegate: DocumentationContextDataProviderDelegate?
     /// Creates a new, empty documentation workspace.
     public init() {}
-    
+
     /// Adds a new data provider to the workspace.
     ///
     /// Adding a data provider also adds the documentation bundles that it provides, and notifies the ``delegate`` of the added bundles.
@@ -118,7 +118,7 @@ public class DocumentationWorkspace: DocumentationContextDataProvider {
         // We must add the provider before adding the bundle so that the delegate
         // may start making requests immediately.
         providers[provider.identifier] = provider
-        
+
         for bundle in try provider.bundles(options: options) {
             bundles[bundle.identifier] = bundle
             bundleToProvider[bundle.identifier] = provider.identifier
@@ -139,7 +139,7 @@ public class DocumentationWorkspace: DocumentationContextDataProvider {
             bundleToProvider[bundle.identifier] = nil
             try delegate?.dataProvider(self, didRemoveBundle: bundle)
         }
-        
+
         // The provider must be removed after removing the bundle so that the delegate
         // may continue making requests as part of removing the bundle.
         providers[provider.identifier] = nil

@@ -24,5 +24,5 @@ func xlog(_ message: String) {
 }
 #endif
 
-fileprivate func xlog_fallback(_ message: String) {
+private func xlog_fallback(_ message: String) {
 }

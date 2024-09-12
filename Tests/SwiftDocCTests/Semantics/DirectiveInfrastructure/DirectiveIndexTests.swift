@@ -8,9 +8,10 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class DirectiveIndexTests: XCTestCase {
     func testDirectiveIndexHasExpectedDirectives() {
@@ -57,7 +58,7 @@ class DirectiveIndexTests: XCTestCase {
             ]
         )
     }
-    
+
     func testDirectiveIndexHasExpectedRenderableDirectives() {
         XCTAssertEqual(
             DirectiveIndex.shared.renderableDirectives.keys.sorted(),

@@ -46,7 +46,7 @@ public struct DefaultAvailability: Codable, Equatable {
             case platformVersion = "version"
             case unavailable
         }
-        
+
         /// The different availability states that can be declared.
         /// Unavailable or Available with an introduced version.
         enum VersionInformation: Hashable {
@@ -56,7 +56,7 @@ public struct DefaultAvailability: Codable, Equatable {
 
         /// The name of the platform, e.g. "macOS".
         public var platformName: PlatformName
-        
+
         /// The availability version state information, e.g unavailable
         internal var versionInformation: VersionInformation
 
@@ -65,7 +65,7 @@ public struct DefaultAvailability: Codable, Equatable {
         public var platformVersion: String {
             return introducedVersion ?? "0.0"
         }
-        
+
         /// A string representation of the version for this platform
         /// or nil if it's unavailable.
         public var introducedVersion: String? {
@@ -86,7 +86,7 @@ public struct DefaultAvailability: Codable, Equatable {
             self.platformName = platformName
             self.versionInformation = .available(version: platformVersion)
         }
-        
+
         /// Creates a new module availability with a given platform name and platform availability set as unavailable.
         ///
         /// - Parameters:
@@ -109,7 +109,7 @@ public struct DefaultAvailability: Codable, Equatable {
                 throw DocumentationBundle.PropertyListError.invalidVersionString(introducedVersion)
             }
         }
-        
+
         public func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(platformName, forKey: .platformName)
@@ -126,41 +126,42 @@ public struct DefaultAvailability: Codable, Equatable {
     ///
     /// For example: "ModuleName" -> ["macOS 10.15", "iOS 13.0"]
     var modules: [String: [ModuleAvailability]]
-    
+
     /// Fallback availability information for platforms we either don't emit SGFs for
     /// or have the same availability information as another platform.
-    static let fallbackPlatforms: [PlatformName : PlatformName] = [
-        .catalyst:.iOS,
-        .iPadOS:.iOS
+    static let fallbackPlatforms: [PlatformName: PlatformName] = [
+        .catalyst: .iOS,
+        .iPadOS: .iOS,
     ]
 
     /// Creates a default availability module.
     /// - Parameter modules: A map of modules and the default platform availability for symbols in that module.
     public init(with modules: [String: [ModuleAvailability]]) {
-            self.modules = modules.mapValues { platformAvailabilities -> [DefaultAvailability.ModuleAvailability] in
+        self.modules = modules.mapValues { platformAvailabilities -> [DefaultAvailability.ModuleAvailability] in
             // If a module doesn't contain default availability information for any of the fallback platforms,
             // infer it from the corresponding mapped value.
-            platformAvailabilities + DefaultAvailability.fallbackPlatforms.compactMap { (platform, fallbackPlatform) in
-                if !platformAvailabilities.contains(where: { $0.platformName == platform }),
-                   let fallbackAvailability = platformAvailabilities.first(where: { $0.platformName == fallbackPlatform }),
-                   let fallbackIntroducedVersion = fallbackAvailability.introducedVersion
-                {
-                    return DefaultAvailability.ModuleAvailability(
-                        platformName: platform,
-                        platformVersion: fallbackIntroducedVersion
-                    )
+            platformAvailabilities
+                + DefaultAvailability.fallbackPlatforms.compactMap { (platform, fallbackPlatform) in
+                    if !platformAvailabilities.contains(where: { $0.platformName == platform }),
+                        let fallbackAvailability = platformAvailabilities.first(where: { $0.platformName == fallbackPlatform }),
+                        let fallbackIntroducedVersion = fallbackAvailability.introducedVersion
+                    {
+                        return DefaultAvailability.ModuleAvailability(
+                            platformName: platform,
+                            platformVersion: fallbackIntroducedVersion
+                        )
+                    }
+                    return nil
                 }
-                return nil
-            }
         }
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let modules = try container.decode([String: [ModuleAvailability]].self)
         self.init(with: modules)
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(modules)

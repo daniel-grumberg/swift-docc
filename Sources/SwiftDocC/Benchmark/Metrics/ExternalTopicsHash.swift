@@ -17,7 +17,7 @@ extension Benchmark {
     public class ExternalTopicsHash: BenchmarkMetric {
         public static let identifier = "external-topics-hash"
         public static let displayName = "External Topics Checksum"
-        
+
         /// Creates a new metric that stores the checksum of the successfully externally resolved links.
         /// - Parameter context: A documentation context that the external links were resolved in.
         public init(context: DocumentationContext) {
@@ -25,21 +25,23 @@ extension Benchmark {
             guard !context.externallyResolvedLinks.isEmpty else {
                 return
             }
-            
+
             // Make a flat string of all successfully resolved external topics.
             // Note: We have to sort the URLs to produce a stable checksum.
-            let sourceString = context.externallyResolvedLinks.values.compactMap({
-                switch $0 {
-                case .success(let resolved):
-                    return resolved.absoluteString
-                case .failure(_, _):
-                    return nil
-                }
-            }).sorted().joined()
+            let sourceString = context.externallyResolvedLinks.values
+                .compactMap({
+                    switch $0 {
+                    case .success(let resolved):
+                        return resolved.absoluteString
+                    case .failure(_, _):
+                        return nil
+                    }
+                })
+                .sorted().joined()
 
             result = .checksum(Checksum.md5(of: Data(sourceString.utf8)))
         }
-        
+
         public var result: MetricValue?
     }
 }

@@ -14,7 +14,7 @@ public struct RenderNodeTransformationComposition: RenderNodeTransforming {
     public var first: RenderNodeTransforming
     /// The second transformation to apply.
     public var second: RenderNodeTransforming
-    
+
     /// Initializes a transformation that applies two transformations, one after the other.
     ///
     /// - Parameters:
@@ -24,7 +24,7 @@ public struct RenderNodeTransformationComposition: RenderNodeTransforming {
         self.first = first
         self.second = second
     }
-    
+
     /// Applies the two transformations, in sequence, to a given render node.
     ///
     /// The composed transformation passes the output from the first transformation as the input to the second transformation.
@@ -41,10 +41,15 @@ public struct RenderNodeTransformationComposition: RenderNodeTransforming {
     ///   - renderNode: The node to transform.
     ///   - context: The context in which the composed transformation transforms the node.
     /// - Returns: The transformed node, and a possibly modified context that's passed through both transformers.
-    public func transform(renderNode: RenderNode, context: RenderNodeTransformationContext)
-        -> RenderNodeTransformationResult {
-        return [first, second].reduce((renderNode: renderNode, context: context)) { result, transformation in
-            transformation.transform(renderNode: result.renderNode, context: result.context)
-        }
+    public func transform(
+        renderNode: RenderNode,
+        context: RenderNodeTransformationContext
+    )
+        -> RenderNodeTransformationResult
+    {
+        return [first, second]
+            .reduce((renderNode: renderNode, context: context)) { result, transformation in
+                transformation.transform(renderNode: result.renderNode, context: result.context)
+            }
     }
 }

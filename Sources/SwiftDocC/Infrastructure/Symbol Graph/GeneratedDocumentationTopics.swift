@@ -9,20 +9,20 @@
 */
 
 import Foundation
-import SymbolKit
 import Markdown
+import SymbolKit
 
 /// A collection of APIs to generate documentation topics.
 enum GeneratedDocumentationTopics {
-    
+
     /// An index of types and symbols they inherit.
     struct InheritedSymbols {
-        var implementingTypes = [ResolvedTopicReference: Collections]()
-        
+        var implementingTypes: [ResolvedTopicReference: Collections] = [:]
+
         /// An index of the default implementation providers for a single type.
         struct Collections {
-            var inheritedFromTypeName = [String: APICollection]()
-            
+            var inheritedFromTypeName: [String: APICollection] = [:]
+
             /// A collection of symbols a single type inherits from a single provider.
             struct APICollection {
                 /// The title of the collection.
@@ -30,17 +30,24 @@ enum GeneratedDocumentationTopics {
                 /// A reference to the parent of the collection.
                 let parentReference: ResolvedTopicReference
                 /// A list of topic references for the collection.
-                var identifiers = [ResolvedTopicReference]()
+                var identifiers: [ResolvedTopicReference] = []
             }
         }
-        
+
         /// Adds a given inherited symbol to the index.
         /// - Parameters:
         ///   - childReference: The inherited symbol reference.
         ///   - reference: The parent type reference.
         ///   - originDisplayName: The origin display name as provided by the symbol graph.
         ///   - extendedModuleName: Extended module name.
-        mutating func add(_ childReference: ResolvedTopicReference, to reference: ResolvedTopicReference, childSymbol: SymbolGraph.Symbol, originDisplayName: String, originSymbol: SymbolGraph.Symbol?, extendedModuleName: String) throws {
+        mutating func add(
+            _ childReference: ResolvedTopicReference,
+            to reference: ResolvedTopicReference,
+            childSymbol: SymbolGraph.Symbol,
+            originDisplayName: String,
+            originSymbol: SymbolGraph.Symbol?,
+            extendedModuleName: String
+        ) throws {
             let fromType: String
             let typeSimpleName: String
             if let originSymbol, originSymbol.pathComponents.count > 1 {
@@ -61,7 +68,7 @@ enum GeneratedDocumentationTopics {
                 // splitting the name of the parent type and the symbol name. Using the count
                 // of the symbol name (+1 for the period splitting the names)
                 // from the source is a reliable way to support this.
-                
+
                 let parentSymbolName = originDisplayName.dropLast(childSymbolName.count + 1)
                 fromType = String(parentSymbolName)
                 typeSimpleName = String(parentSymbolName.split(separator: ".").last ?? parentSymbolName)
@@ -79,53 +86,61 @@ enum GeneratedDocumentationTopics {
                 // Get the fully qualified type.
                 fromType = typeComponents.dropLast().joined(separator: ".")
                 // The name of the type is second to last.
-                typeSimpleName = String(typeComponents[typeComponents.count-2])
+                typeSimpleName = String(typeComponents[typeComponents.count - 2])
             }
 
             // Create a type with inherited symbols, if needed.
             if !implementingTypes.keys.contains(reference) {
                 implementingTypes[reference] = Collections()
             }
-            
+
             // Create a new default implementations provider, if needed.
             if !implementingTypes[reference]!.inheritedFromTypeName.keys.contains(fromType) {
                 implementingTypes[reference]!.inheritedFromTypeName[fromType] = Collections.APICollection(title: "\(typeSimpleName) Implementations", parentReference: reference)
             }
-            
+
             // Add the default implementation.
             implementingTypes[reference]!.inheritedFromTypeName[fromType]!.identifiers.append(childReference)
         }
     }
-    
+
     private static let defaultImplementationGroupTitle = "Default Implementations"
-    
-    private static func createCollectionNode(parent: ResolvedTopicReference, title: String, identifiers: [ResolvedTopicReference], context: DocumentationContext, bundle: DocumentationBundle) throws {
+
+    private static func createCollectionNode(
+        parent: ResolvedTopicReference,
+        title: String,
+        identifiers: [ResolvedTopicReference],
+        context: DocumentationContext,
+        bundle: DocumentationBundle
+    ) throws {
         let automaticCurationSourceLanguage: SourceLanguage
         let automaticCurationSourceLanguages: Set<SourceLanguage>
         automaticCurationSourceLanguage = identifiers.first?.sourceLanguage ?? .swift
         automaticCurationSourceLanguages = Set(identifiers.flatMap { identifier in context.sourceLanguages(for: identifier) })
-        
+
         // Create the collection topic reference
         let collectionReference = ResolvedTopicReference(
             bundleIdentifier: bundle.identifier,
-            path: NodeURLGenerator.Path.documentationCuration(
-                parentPath: parent.path,
-                articleName: title
-            ).stringValue,
+            path: NodeURLGenerator.Path
+                .documentationCuration(
+                    parentPath: parent.path,
+                    articleName: title
+                )
+                .stringValue,
             sourceLanguages: automaticCurationSourceLanguages
         )
-        
+
         // Add the topic graph node
         let collectionTopicGraphNode = TopicGraph.Node(reference: collectionReference, kind: .collection, source: .external, title: title, isResolvable: false)
         context.topicGraph.addNode(collectionTopicGraphNode)
 
         // Curate the collection task group under the collection parent type
-        
+
         let node = try context.entity(with: parent)
         if let symbol = node.semantic as? Symbol {
             for trait in node.availableVariantTraits {
                 guard let language = trait.interfaceLanguage,
-                      automaticCurationSourceLanguages.lazy.map(\.id).contains(language)
+                    automaticCurationSourceLanguages.lazy.map(\.id).contains(language)
                 else {
                     // If the collection is not available in this trait, don't curate it in this symbol's variant.
                     continue
@@ -146,7 +161,7 @@ enum GeneratedDocumentationTopics {
         } else {
             fatalError("createCollectionNode() should be used only to add nodes under symbols.")
         }
-        
+
         // Curate all inherited symbols under the collection node
         for childReference in identifiers {
             if let childTopicGraphNode = context.topicGraph.nodeWithReference(childReference) {
@@ -156,7 +171,7 @@ enum GeneratedDocumentationTopics {
 
         // Create an article to provide content for the node
         var collectionArticle: Article
-        
+
         // Find matching doc extension or create an empty article.
         if let docExtensionMatch = context.uncuratedDocumentationExtensions[collectionReference]?.value {
             collectionArticle = docExtensionMatch
@@ -187,7 +202,7 @@ enum GeneratedDocumentationTopics {
 
         // Add the curation task groups to the article
         collectionArticle.automaticTaskGroups = collectionTaskGroups
-        
+
         // Create the documentation node
         let collectionNode = DocumentationNode(
             reference: collectionReference,
@@ -208,7 +223,7 @@ enum GeneratedDocumentationTopics {
             context.nodeAnchorSections[anchor.reference] = anchor
         }
     }
-    
+
     /// Creates an API collection in the given documentation context for all inherited symbols according to the symbol graph.
     ///
     /// Inspects the given symbol relationships and extracts all inherited symbols into a separate level in the documentation hierarchy -
@@ -233,30 +248,37 @@ enum GeneratedDocumentationTopics {
     ///   - bundle: The current documentation bundle.
     static func createInheritedSymbolsAPICollections(relationships: [SymbolGraph.Relationship], context: DocumentationContext, bundle: DocumentationBundle) throws {
         var inheritanceIndex = InheritedSymbols()
-        
+
         // Walk the symbol graph relationships and look for parent <-> child links that stem in a different module.
         for relationship in relationships {
-            
+
             // Check the relationship type
             if relationship.kind == .memberOf,
-               // Check that there is origin information (i.e. the symbol is inherited)
-               let origin = relationship[mixin: SymbolGraph.Relationship.SourceOrigin.self],
-               // Resolve the containing type
-               let parent = context.documentationCache[relationship.target],
-               // Resolve the child
-               let child = context.documentationCache[relationship.source],
-               // Get the child symbol
-               let childSymbol = child.symbol,
-               // Get the swift extension data
-               let extends = childSymbol[mixin: SymbolGraph.Symbol.Swift.Extension.self]
+                // Check that there is origin information (i.e. the symbol is inherited)
+                let origin = relationship[mixin: SymbolGraph.Relationship.SourceOrigin.self],
+                // Resolve the containing type
+                let parent = context.documentationCache[relationship.target],
+                // Resolve the child
+                let child = context.documentationCache[relationship.source],
+                // Get the child symbol
+                let childSymbol = child.symbol,
+                // Get the swift extension data
+                let extends = childSymbol[mixin: SymbolGraph.Symbol.Swift.Extension.self]
             {
                 let originSymbol = context.documentationCache[origin.identifier]?.symbol
-                
+
                 // Add the inherited symbol to the index.
-                try inheritanceIndex.add(child.reference, to: parent.reference, childSymbol: childSymbol, originDisplayName: origin.displayName, originSymbol: originSymbol, extendedModuleName: extends.extendedModule)
+                try inheritanceIndex.add(
+                    child.reference,
+                    to: parent.reference,
+                    childSymbol: childSymbol,
+                    originDisplayName: origin.displayName,
+                    originSymbol: originSymbol,
+                    extendedModuleName: extends.extendedModule
+                )
             }
         }
-        
+
         // Create the API Collection nodes and the necessary topic graph curation.
         for (typeReference, collections) in inheritanceIndex.implementingTypes where !collections.inheritedFromTypeName.isEmpty {
             for (_, collection) in collections.inheritedFromTypeName where !collection.identifiers.isEmpty {
@@ -265,7 +287,7 @@ enum GeneratedDocumentationTopics {
             }
         }
     }
-    
+
     static func isInheritedSymbolsAPICollectionNode(_ reference: ResolvedTopicReference, in topicGraph: TopicGraph) -> Bool {
         guard let node = topicGraph.nodeWithReference(reference) else { return false }
         return !node.isResolvable

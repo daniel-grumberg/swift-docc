@@ -19,8 +19,15 @@ extension Semantic.Analyses {
             self.severityIfFound = severityIfFound
             self.allowedArguments = allowedArguments
         }
-        
-        public func analyze(_ directive: BlockDirective, children: some Sequence<Markup>, source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) -> [String: Markdown.DirectiveArgument] {
+
+        public func analyze(
+            _ directive: BlockDirective,
+            children: some Sequence<Markup>,
+            source: URL?,
+            for bundle: DocumentationBundle,
+            in context: DocumentationContext,
+            problems: inout [Problem]
+        ) -> [String: Markdown.DirectiveArgument] {
             let arguments = directive.arguments(problems: &problems)
             if let severity = severityIfFound {
                 let unknownKeys = Set(arguments.keys).subtracting(allowedArguments)
@@ -28,10 +35,10 @@ extension Semantic.Analyses {
                 let unknownKeyIssues: [String] = unknownKeys.lazy.map { unknownKey in
                     var summary = "Unknown argument '\(unknownKey)' in \(Parent.directiveName)."
                     if !unusedKeys.isEmpty {
-                        let unusedKeyList = unusedKeys.sorted().map { "'\($0)'"}.joined(separator: ", ")
+                        let unusedKeyList = unusedKeys.sorted().map { "'\($0)'" }.joined(separator: ", ")
                         summary += " These arguments are currently unused but allowed: \(unusedKeyList)."
                     }
-                    
+
                     return summary
                 }
                 let newProblems: [Problem] = unknownKeyIssues.map { summary in
@@ -44,4 +51,3 @@ extension Semantic.Analyses {
         }
     }
 }
-

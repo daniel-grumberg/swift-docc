@@ -9,9 +9,10 @@
 */
 
 import Foundation
-@testable import SwiftDocC
 import SymbolKit
 import XCTest
+
+@testable import SwiftDocC
 
 class SemaToRenderNodeSourceRepositoryTests: XCTestCase {
     func testDoesNotEmitsSourceRepositoryInformationWhenNoSourceIsGiven() throws {
@@ -21,10 +22,10 @@ class SemaToRenderNodeSourceRepositoryTests: XCTestCase {
                 converter.sourceRepository = nil
             }
         )
-        
+
         XCTAssertNil(try outputConsumer.renderNode(withTitle: "MyStruct").metadata.remoteSource)
     }
-    
+
     func testEmitsSourceRepositoryInformationForSymbolsWhenPresent() throws {
         let outputConsumer = try renderNodeConsumer(
             for: "SourceLocations",

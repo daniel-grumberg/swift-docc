@@ -37,19 +37,32 @@ extension Semantic.Analyses {
                 if let message {
                     extraMessage = ": " + message
                 }
-                let diagnostic = Diagnostic(source: source, severity: severity, range: directive.range, identifier: "org.swift.docc.DeprecatedArgument.\(Converter.argumentName)", summary: "\(Converter.argumentName.singleQuoted) is deprecated" + extraMessage)
+                let diagnostic = Diagnostic(
+                    source: source,
+                    severity: severity,
+                    range: directive.range,
+                    identifier: "org.swift.docc.DeprecatedArgument.\(Converter.argumentName)",
+                    summary: "\(Converter.argumentName.singleQuoted) is deprecated" + extraMessage
+                )
                 problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
             }
             guard let value = Converter.convert(argument.value) else {
-                let diagnostic = Diagnostic(source: source, severity: .warning, range: argument.valueRange, identifier: "org.swift.docc.DeprecatedArgument.\(Converter.argumentName).ConversionFailed", summary: "Can't convert \(argument.value.singleQuoted) to type \(Converter.ArgumentValue.self)")
-                let solutions = Converter.allowedValues().map { allowedValues -> [Solution] in
-                    return allowedValues.compactMap { allowedValue -> Solution? in
-                        guard let range = argument.valueRange else {
-                            return nil
+                let diagnostic = Diagnostic(
+                    source: source,
+                    severity: .warning,
+                    range: argument.valueRange,
+                    identifier: "org.swift.docc.DeprecatedArgument.\(Converter.argumentName).ConversionFailed",
+                    summary: "Can't convert \(argument.value.singleQuoted) to type \(Converter.ArgumentValue.self)"
+                )
+                let solutions = Converter.allowedValues()
+                    .map { allowedValues -> [Solution] in
+                        return allowedValues.compactMap { allowedValue -> Solution? in
+                            guard let range = argument.valueRange else {
+                                return nil
+                            }
+                            return Solution(summary: "Use allowed value \(allowedValue.singleQuoted)", replacements: [Replacement(range: range, replacement: allowedValue)])
                         }
-                        return Solution(summary: "Use allowed value \(allowedValue.singleQuoted)", replacements: [Replacement(range: range, replacement: allowedValue)])
                     }
-                }
                 problems.append(Problem(diagnostic: diagnostic, possibleSolutions: solutions ?? []))
                 return nil
             }

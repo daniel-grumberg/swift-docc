@@ -27,42 +27,43 @@ import SwiftDocCTestUtilities
 // class PreviewServerTests: XCTestCase {
 class PreviewServerTests {
 
-     func createTemporaryDirectory(
-         fileManager: FileManager = .default
-     ) throws -> URL {
-         fatalError("This test is disabled by not conforming to XCTestCase. This helper is added here to make the code compile. This should never be called.")
-     }
-    
+    func createTemporaryDirectory(
+        fileManager: FileManager = .default
+    ) throws -> URL {
+        fatalError("This test is disabled by not conforming to XCTestCase. This helper is added here to make the code compile. This should never be called.")
+    }
+
     public func createTempFolder(content: [File]) throws -> URL {
         fatalError("This test is disabled by not conforming to XCTestCase. This helper is added here to make the code compile. This should never be called.")
     }
-    
+
     func testPreviewServerBeforeStarted() throws {
         // Create test content
         let tempFolderURL = try createTempFolder(content: [
-            TextFile(name: "index.html", utf8Content: "index"),
+            TextFile(name: "index.html", utf8Content: "index")
         ])
 
         let socketURL = try createTemporaryDirectory().appendingPathComponent("sock")
-        
+
         // Run test server
         var log = LogHandle.none
         let server = try PreviewServer(contentURL: tempFolderURL, bindTo: .socket(path: socketURL.path), logHandle: &log)
 
         // Assert server starts
         let expectationStarted = AsynchronousExpectation(description: "Server before start")
-        DispatchQueue.global().async {
-            do {
-                try server.start() {
-                    expectationStarted.fulfill()
+        DispatchQueue.global()
+            .async {
+                do {
+                    try server.start {
+                        expectationStarted.fulfill()
+                    }
+                } catch {
+                    XCTFail(error.localizedDescription)
                 }
-            } catch {
-                XCTFail(error.localizedDescription)
             }
-        }
-        
+
         XCTAssertNotEqual(expectationStarted.wait(timeout: 5.0), .timedOut)
-        
+
         do {
             try server.stop()
         } catch {
@@ -92,54 +93,79 @@ class PreviewServerTests {
             TextFile(name: "theme-settings.json", utf8Content: "JSON content"),
             TextFile(name: "favicon.ico", utf8Content: "icon content"),
             TextFile(name: "apple-logo.svg", utf8Content: "svg content"),
-            Folder(name: "data", content: [
-                TextFile(name: "test.js", utf8Content: "data content"),
-            ]),
-            Folder(name: "css", content: [
-                TextFile(name: "test.css", utf8Content: "css content"),
-            ]),
-            Folder(name: "js", content: [
-                TextFile(name: "test.js", utf8Content: "js content"),
-            ]),
-            Folder(name: "fonts", content: [
-                TextFile(name: "test.tff", utf8Content: "fonts content"),
-            ]),
-            Folder(name: "images", content: [
-                TextFile(name: "test.png", utf8Content: "images content"),
-            ]),
-            Folder(name: "img", content: [
-                TextFile(name: "test.gif", utf8Content: "img content"),
-            ]),
-            Folder(name: "videos", content: [
-                TextFile(name: "test.mov", utf8Content: "videos content"),
-            ]),
-            Folder(name: "downloads", content: [
-                TextFile(name: "test.zip", utf8Content: "downloads content"),
-            ])
+            Folder(
+                name: "data",
+                content: [
+                    TextFile(name: "test.js", utf8Content: "data content")
+                ]
+            ),
+            Folder(
+                name: "css",
+                content: [
+                    TextFile(name: "test.css", utf8Content: "css content")
+                ]
+            ),
+            Folder(
+                name: "js",
+                content: [
+                    TextFile(name: "test.js", utf8Content: "js content")
+                ]
+            ),
+            Folder(
+                name: "fonts",
+                content: [
+                    TextFile(name: "test.tff", utf8Content: "fonts content")
+                ]
+            ),
+            Folder(
+                name: "images",
+                content: [
+                    TextFile(name: "test.png", utf8Content: "images content")
+                ]
+            ),
+            Folder(
+                name: "img",
+                content: [
+                    TextFile(name: "test.gif", utf8Content: "img content")
+                ]
+            ),
+            Folder(
+                name: "videos",
+                content: [
+                    TextFile(name: "test.mov", utf8Content: "videos content")
+                ]
+            ),
+            Folder(
+                name: "downloads",
+                content: [
+                    TextFile(name: "test.zip", utf8Content: "downloads content")
+                ]
+            ),
         ])
     }
-    
+
     func testPreviewServerPaths() throws {
         let tempFolderURL = try makeTempFolder()
-        
+
         // Socket URL
         let socketURL = try createTemporaryDirectory().appendingPathComponent("sock")
-        
+
         // Create the server
         var log = LogHandle.none
         let server = try PreviewServer(contentURL: tempFolderURL, bindTo: .socket(path: socketURL.path), logHandle: &log)
 
         // Start the server
         let expectationStarted = AsynchronousExpectation(description: "Server before start")
-        DispatchQueue.global().async {
-            do {
-                try server.start() {
-                    expectationStarted.fulfill()
+        DispatchQueue.global()
+            .async {
+                do {
+                    try server.start {
+                        expectationStarted.fulfill()
+                    }
+                } catch {
+                    XCTFail(error.localizedDescription)
                 }
-            } catch {
-                XCTFail(error.localizedDescription)
             }
-        }
         XCTAssertNotEqual(expectationStarted.wait(timeout: 5.0), .timedOut)
 
         // Test server paths
@@ -158,37 +184,38 @@ class PreviewServerTests {
         assertServer(socketPath: socketURL.path, path: "/downloads/test.zip", matchesContent: "downloads content")
 
         assertServerError(socketPath: socketURL.path, path: "/downloads/NOTFOUND.zip", errorStatusCode: 404)
-        
+
         // Verify that the server stops serving content.
         XCTAssertNoThrow(try server.stop())
 
         let client = HTTPClient(to: .unixDomainSocket(path: socketURL.path), path: "/")
         XCTAssertThrowsError(try client.connect())
     }
-    
+
     func testConcurrentRequests() throws {
         let tempFolderURL = try makeTempFolder()
-        
+
         // Socket URL
         let socketURL = try createTemporaryDirectory().appendingPathComponent("sock")
-        
+
         // Create the server
         var log = LogHandle.none
         let server = try PreviewServer(contentURL: tempFolderURL, bindTo: .socket(path: socketURL.path), logHandle: &log)
 
         // Start the server
         let expectationStarted = AsynchronousExpectation(description: "Server before start")
-        DispatchQueue.global().async {
-            do {
-                try server.start() {
-                    expectationStarted.fulfill()
+        DispatchQueue.global()
+            .async {
+                do {
+                    try server.start {
+                        expectationStarted.fulfill()
+                    }
+                } catch {
+                    XCTFail(error.localizedDescription)
                 }
-            } catch {
-                XCTFail(error.localizedDescription)
             }
-        }
         XCTAssertNotEqual(expectationStarted.wait(timeout: 5.0), .timedOut)
-        
+
         // Make 5000 HTTP requests; 1000 concurrent batches x 5 requests
         DispatchQueue.concurrentPerform(iterations: 1000) { _ in
             assertServer(socketPath: socketURL.path, path: "/data/test.js", matchesContent: "data content")
@@ -199,7 +226,7 @@ class PreviewServerTests {
         }
         XCTAssertNoThrow(try server.stop())
     }
-    
+
     func testPreviewServerBindDescription() {
         let localhostBind = PreviewServer.Bind.localhost(port: 1234)
         XCTAssertEqual("\(localhostBind)", "localhost:1234")

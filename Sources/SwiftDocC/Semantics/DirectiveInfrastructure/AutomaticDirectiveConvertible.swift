@@ -18,7 +18,7 @@ import Markdown
 /// converted from a given block directive markup object.
 protocol AutomaticDirectiveConvertible: DirectiveConvertible, Semantic {
     init(originalMarkup: BlockDirective)
-    
+
     /// Returns false if the directive is invalid and should not be initialized.
     ///
     /// Implement this method to perform additional validation after
@@ -32,7 +32,7 @@ protocol AutomaticDirectiveConvertible: DirectiveConvertible, Semantic {
         in context: DocumentationContext,
         problems: inout [Problem]
     ) -> Bool
-    
+
     /// The key paths to any property wrapped directive arguments, child directives,
     /// or child markup properties.
     ///
@@ -69,8 +69,8 @@ protocol AutomaticDirectiveConvertible: DirectiveConvertible, Semantic {
     ///             self.originalMarkup = originalMarkup
     ///         }
     ///     }
-    static var keyPaths: [String : AnyKeyPath] { get }
-    
+    static var keyPaths: [String: AnyKeyPath] { get }
+
     /// A Boolean value that is true if this directive should be hidden from documentation.
     static var hiddenFromDocumentation: Bool { get }
 }
@@ -79,7 +79,7 @@ extension AutomaticDirectiveConvertible {
     public static var directiveName: String {
         String(describing: self)
     }
-    
+
     func validate(
         source: URL?,
         for bundle: DocumentationBundle,
@@ -88,7 +88,7 @@ extension AutomaticDirectiveConvertible {
     ) -> Bool {
         return true
     }
-    
+
     public static var hiddenFromDocumentation: Bool { false }
 }
 
@@ -112,8 +112,8 @@ extension AutomaticDirectiveConvertible {
         for bundle: DocumentationBundle,
         in context: DocumentationContext
     ) {
-        var problems = [Problem]()
-        
+        var problems: [Problem] = []
+
         self.init(
             from: directive,
             source: source,
@@ -122,7 +122,7 @@ extension AutomaticDirectiveConvertible {
             problems: &problems
         )
     }
-    
+
     public init?(
         from directive: BlockDirective,
         source: URL?,
@@ -132,9 +132,9 @@ extension AutomaticDirectiveConvertible {
     ) {
         precondition(directive.name == Self.directiveName)
         self.init(originalMarkup: directive)
-        
+
         let reflectedDirective = DirectiveIndex.shared.reflection(of: type(of: self))
-        
+
         let arguments = Semantic.Analyses.HasOnlyKnownArguments<Self>(
             severityIfFound: .warning,
             allowedArguments: reflectedDirective.arguments.map(\.name)
@@ -147,11 +147,11 @@ extension AutomaticDirectiveConvertible {
             in: context,
             problems: &problems
         )
-        
+
         // If we encounter an unrecoverable error while parsing directives,
         // set this value to true.
         var unableToCreateParentDirective = false
-        
+
         for reflectedArgument in reflectedDirective.arguments {
             let parsedValue = Semantic.Analyses.ArgumentValueParser<Self>(
                 severityIfNotFound: reflectedArgument.required ? .warning : nil,
@@ -164,14 +164,14 @@ extension AutomaticDirectiveConvertible {
                 valueTypeDiagnosticName: reflectedArgument.typeDisplayName
             )
             .analyze(directive, arguments: arguments, problems: &problems)
-            
+
             if let parsedValue {
                 reflectedArgument.setValue(on: self, to: parsedValue)
             } else if !reflectedArgument.storedAsOptional {
                 unableToCreateParentDirective = true
             }
         }
-        
+
         Semantic.Analyses.HasOnlyKnownDirectives<Self>(
             severityIfFound: .warning,
             allowedDirectives: reflectedDirective.childDirectives.map(\.name),
@@ -185,9 +185,9 @@ extension AutomaticDirectiveConvertible {
             in: context,
             problems: &problems
         )
-        
+
         var remainder = MarkupContainer(directive.children)
-        
+
         // Comments are always allowed so extract them from the
         // directive's children.
         (_, remainder) = Semantic.Analyses.extractAll(
@@ -198,7 +198,7 @@ extension AutomaticDirectiveConvertible {
             in: context,
             problems: &problems
         )
-        
+
         for childDirective in reflectedDirective.childDirectives {
             switch childDirective.requirements {
             case .one:
@@ -212,15 +212,15 @@ extension AutomaticDirectiveConvertible {
                     in: context,
                     problems: &problems
                 )
-                
+
                 guard let parsedDirective else {
                     if !childDirective.storedAsArray && !childDirective.storedAsOptional {
                         unableToCreateParentDirective = true
                     }
-                    
+
                     continue
                 }
-                
+
                 if childDirective.storedAsArray {
                     childDirective.setValue(on: self, to: [parsedDirective])
                 } else {
@@ -237,15 +237,15 @@ extension AutomaticDirectiveConvertible {
                     in: context,
                     problems: &problems
                 )
-                
+
                 guard let parsedDirective else {
                     if childDirective.storedAsArray && !childDirective.storedAsOptional {
                         childDirective.setValue(on: self, to: [DirectiveConvertible.Type]())
                     }
-                    
+
                     continue
                 }
-                
+
                 if childDirective.storedAsArray {
                     childDirective.setValue(on: self, to: [parsedDirective])
                 } else {
@@ -261,7 +261,7 @@ extension AutomaticDirectiveConvertible {
                     in: context,
                     problems: &problems
                 )
-                
+
                 if !parsedDirectives.isEmpty || !childDirective.storedAsOptional {
                     childDirective.setValue(on: self, to: parsedDirectives)
                 }
@@ -276,60 +276,63 @@ extension AutomaticDirectiveConvertible {
                     in: context,
                     problems: &problems
                 )
-                
+
                 if !parsedDirectives.isEmpty || !childDirective.storedAsOptional {
                     childDirective.setValue(on: self, to: parsedDirectives)
                 }
             }
         }
-        
+
         let supportsChildMarkup: Bool
         if case let .supportsMarkup(markupRequirements) = reflectedDirective.childMarkupSupport,
             let firstChildMarkup = markupRequirements.first
         {
             guard markupRequirements.count < 2 else {
-                fatalError("""
+                fatalError(
+                    """
                     Automatic directive conversion is not supported for directives \
                     with multiple '@ChildMarkup' properties.
                     """
                 )
             }
-            
+
             let content: MarkupContainer
             if firstChildMarkup.required {
-                content = Semantic.Analyses.HasContent<Self>().analyze(
-                    directive,
-                    children: remainder,
-                    source: source,
-                    for: bundle,
-                    in: context,
-                    problems: &problems
-                )
+                content = Semantic.Analyses.HasContent<Self>()
+                    .analyze(
+                        directive,
+                        children: remainder,
+                        source: source,
+                        for: bundle,
+                        in: context,
+                        problems: &problems
+                    )
             } else if !remainder.isEmpty {
                 content = MarkupContainer(remainder)
             } else {
                 content = MarkupContainer()
             }
-            
+
             firstChildMarkup.setValue(on: self, to: content)
-            
+
             supportsChildMarkup = true
         } else {
             supportsChildMarkup = false
         }
-        
+
         if !remainder.isEmpty && reflectedDirective.childDirectives.isEmpty && !supportsChildMarkup {
-            let removeInnerContentReplacement: [Solution] = directive.children.range.map {
-                [
-                    Solution(
-                        summary: "Remove inner content",
-                        replacements: [
-                            Replacement(range: $0, replacement: "")
-                        ]
-                    )
-                ]
-            } ?? []
-            
+            let removeInnerContentReplacement: [Solution] =
+                directive.children.range.map {
+                    [
+                        Solution(
+                            summary: "Remove inner content",
+                            replacements: [
+                                Replacement(range: $0, replacement: "")
+                            ]
+                        )
+                    ]
+                } ?? []
+
             let noInnerContentDiagnostic = Diagnostic(
                 source: source,
                 severity: .warning,
@@ -338,7 +341,7 @@ extension AutomaticDirectiveConvertible {
                 summary: "The \(Self.directiveName.singleQuoted) directive does not support inner content",
                 explanation: "Elements inside this directive will be ignored"
             )
-            
+
             problems.append(
                 Problem(
                     diagnostic: noInnerContentDiagnostic,
@@ -359,14 +362,14 @@ extension AutomaticDirectiveConvertible {
                     \(Self.directiveName.singleQuoted) directive.
                     """
             )
-            
+
             problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
         }
-        
+
         guard !unableToCreateParentDirective else {
             return nil
         }
-        
+
         guard validate(source: source, for: bundle, in: context, problems: &problems) else {
             return nil
         }

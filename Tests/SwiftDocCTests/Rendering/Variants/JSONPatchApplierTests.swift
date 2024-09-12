@@ -10,6 +10,7 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftDocC
 
 class JSONPatchApplierTests: XCTestCase {
@@ -25,7 +26,7 @@ class JSONPatchApplierTests: XCTestCase {
             )
         )
     }
-    
+
     func testReplacesArrayValue() throws {
         XCTAssertEqual(
             try apply(
@@ -41,7 +42,7 @@ class JSONPatchApplierTests: XCTestCase {
             )
         )
     }
-    
+
     func testReplacesNestedValue() throws {
         XCTAssertEqual(
             try apply(
@@ -60,7 +61,7 @@ class JSONPatchApplierTests: XCTestCase {
             )
         )
     }
-    
+
     func testRemovesDictionaryValue() throws {
         XCTAssertEqual(
             try apply(
@@ -70,7 +71,7 @@ class JSONPatchApplierTests: XCTestCase {
             Model(baz: nil)
         )
     }
-    
+
     func testRemovesArrayValue() throws {
         XCTAssertEqual(
             try apply(
@@ -86,7 +87,7 @@ class JSONPatchApplierTests: XCTestCase {
             )
         )
     }
-    
+
     func testAddsDictionaryValue() throws {
         XCTAssertEqual(
             try apply(
@@ -106,7 +107,7 @@ class JSONPatchApplierTests: XCTestCase {
             Model(bar: [.init(foo: "foo")])
         )
     }
-    
+
     func testAddsArrayValue() throws {
         XCTAssertEqual(
             try apply(
@@ -116,7 +117,7 @@ class JSONPatchApplierTests: XCTestCase {
             Model(bar: [.init(foo: "foo"), .init()])
         )
     }
-    
+
     func testAddsArrayValueAtTheEnd() throws {
         XCTAssertEqual(
             try apply(
@@ -143,7 +144,7 @@ class JSONPatchApplierTests: XCTestCase {
             )
         )
     }
-    
+
     func testThrowsErrorForInvalidRemoveObjectPointer() throws {
         XCTAssertThrowsError(
             try apply(
@@ -160,7 +161,7 @@ class JSONPatchApplierTests: XCTestCase {
             )
         }
     }
-    
+
     func testThrowsErrorForInvalidRemoveArrayPointer() throws {
         XCTAssertThrowsError(
             try apply(
@@ -177,7 +178,7 @@ class JSONPatchApplierTests: XCTestCase {
             )
         }
     }
-    
+
     func testThrowsErrorForInvalidAddArrayPointer() throws {
         XCTAssertThrowsError(
             try apply(
@@ -193,7 +194,7 @@ class JSONPatchApplierTests: XCTestCase {
             )
         }
     }
-    
+
     func testThrowsErrorForInvalidValuePointer() throws {
         XCTAssertThrowsError(
             try apply(
@@ -212,19 +213,20 @@ class JSONPatchApplierTests: XCTestCase {
             )
         }
     }
-    
+
     private func apply(_ patch: JSONPatchOperation..., to model: Model) throws -> Model {
-        try JSONDecoder().decode(
-            Model.self,
-            from: JSONPatchApplier().apply(patch, to: JSONEncoder().encode(model))
-        )
+        try JSONDecoder()
+            .decode(
+                Model.self,
+                from: JSONPatchApplier().apply(patch, to: JSONEncoder().encode(model))
+            )
     }
-    
+
     private struct Model: Codable, Equatable {
         var baz: String?
         var foo: [Int] = []
         var bar: [Model] = []
-        
+
         struct Model: Codable, Equatable {
             var bar: String? = nil
             var foo: String? = nil

@@ -8,8 +8,9 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-@testable import SwiftDocCUtilities
 import XCTest
+
+@testable import SwiftDocCUtilities
 
 class URL_IsAbsoluteWebURLTests: XCTestCase {
     func testisAbsoluteWebURL() throws {

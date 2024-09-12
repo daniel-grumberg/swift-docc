@@ -18,7 +18,7 @@ import SymbolKit
 extension SymbolKit.SymbolGraph.Symbol.AccessControl: Swift.Comparable {
     private var level: Int? {
         switch self {
-        case .private : return 1
+        case .private: return 1
         case .filePrivate: return 2
         case .internal: return 3
         case .public: return 4
@@ -28,10 +28,11 @@ extension SymbolKit.SymbolGraph.Symbol.AccessControl: Swift.Comparable {
             return nil
         }
     }
-    
+
     public static func < (lhs: SymbolGraph.Symbol.AccessControl, rhs: SymbolGraph.Symbol.AccessControl) -> Bool {
         guard let lhs = lhs.level,
-              let rhs = rhs.level else {
+            let rhs = rhs.level
+        else {
             return false
         }
         return lhs < rhs

@@ -10,13 +10,14 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftDocC
 
 class DefaultCodeBlockSyntaxTests: XCTestCase {
     enum Errors: Error {
         case noCodeBlockFound
     }
-    
+
     var renderSectionWithLanguageDefault: ContentRenderSection!
     var renderSectionWithoutLanguageDefault: ContentRenderSection!
 
@@ -25,7 +26,12 @@ class DefaultCodeBlockSyntaxTests: XCTestCase {
 
     override func setUpWithError() throws {
         func renderSection(for bundle: DocumentationBundle, in context: DocumentationContext) throws -> ContentRenderSection {
-            let identifier = ResolvedTopicReference(bundleIdentifier: "org.swift.docc.example", path: "/documentation/Test-Bundle/Default-Code-Listing-Syntax", fragment: nil, sourceLanguage: .swift)
+            let identifier = ResolvedTopicReference(
+                bundleIdentifier: "org.swift.docc.example",
+                path: "/documentation/Test-Bundle/Default-Code-Listing-Syntax",
+                fragment: nil,
+                sourceLanguage: .swift
+            )
 
             let node = try context.entity(with: identifier)
             var translator = RenderNodeTranslator(context: context, bundle: bundle, identifier: node.reference)
@@ -75,20 +81,26 @@ class DefaultCodeBlockSyntaxTests: XCTestCase {
 
         XCTAssertEqual("swift", fencedCodeListing.language, "Default a language of 'CDDefaultCodeListingLanguage' if  it is set in the 'Info.plist'")
 
-        XCTAssertEqual(fencedCodeListing.lines, [
-            "// With no language set, this should highlight to 'swift' because the 'CDDefaultCodeListingLanguage' key is set to 'swift'.",
-            "func foo()",
-        ])
+        XCTAssertEqual(
+            fencedCodeListing.lines,
+            [
+                "// With no language set, this should highlight to 'swift' because the 'CDDefaultCodeListingLanguage' key is set to 'swift'.",
+                "func foo()",
+            ]
+        )
     }
 
     func testDefaultCodeBlockSyntaxForNonFencedCodeListing() throws {
         let indentedCodeListing = try codeListing(at: 2, in: renderSectionWithLanguageDefault)
 
         XCTAssertEqual("swift", indentedCodeListing.language, "Default a language of 'CDDefaultCodeListingLanguage' if  it is set in the 'Info.plist'")
-        XCTAssertEqual(indentedCodeListing.lines, [
-            "/// This is a non fenced code listing and should also default to the 'CDDefaultCodeListingLanguage' language.",
-            "func foo()",
-        ])
+        XCTAssertEqual(
+            indentedCodeListing.lines,
+            [
+                "/// This is a non fenced code listing and should also default to the 'CDDefaultCodeListingLanguage' language.",
+                "func foo()",
+            ]
+        )
     }
 
     func testExplicitlySetLanguageOverridesBundleDefault() throws {
@@ -96,10 +108,13 @@ class DefaultCodeBlockSyntaxTests: XCTestCase {
 
         XCTAssertEqual("objective-c", explicitlySetLanguageCodeListing.language, "The explicit language of the code listing should override the bundle's default language")
 
-        XCTAssertEqual(explicitlySetLanguageCodeListing.lines, [
-            "/// This is a fenced code block with an explicit language set, and it should override the default language for the bundle.",
-            "- (void)foo;",
-        ])
+        XCTAssertEqual(
+            explicitlySetLanguageCodeListing.lines,
+            [
+                "/// This is a fenced code block with an explicit language set, and it should override the default language for the bundle.",
+                "- (void)foo;",
+            ]
+        )
     }
 
     func testHasNoLanguageWhenNoPlistKeySetAndNoExplicitLanguageProvided() throws {

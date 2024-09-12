@@ -8,19 +8,20 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class TutorialReferenceTests: XCTestCase {
     func testEmpty() throws {
         let source = """
-@TutorialReference
-"""
+            @TutorialReference
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let tutorialReference = TutorialReference(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNil(tutorialReference)
         XCTAssertEqual(1, problems.count)
@@ -29,16 +30,16 @@ class TutorialReferenceTests: XCTestCase {
             XCTAssertEqual(.warning, problem.diagnostic.severity)
         }
     }
-    
+
     func testValid() throws {
         let tutorialLink = "doc:MyTutorial"
         let source = """
-@TutorialReference(tutorial: "\(tutorialLink)")
-"""
+            @TutorialReference(tutorial: "\(tutorialLink)")
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let tutorialReference = TutorialReference(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNotNil(tutorialReference)
         tutorialReference.map { tutorialReference in
@@ -49,16 +50,16 @@ class TutorialReferenceTests: XCTestCase {
         }
         XCTAssertTrue(problems.isEmpty)
     }
-    
+
     func testMissingPath() throws {
         let tutorialLink = "doc:"
         let source = """
-        @TutorialReference(tutorial: "\(tutorialLink)")
-        """
+            @TutorialReference(tutorial: "\(tutorialLink)")
+            """
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0)! as! BlockDirective
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        var problems = [Problem]()
+        var problems: [Problem] = []
         let tutorialReference = TutorialReference(from: directive, source: nil, for: bundle, in: context, problems: &problems)
         XCTAssertNil(tutorialReference)
         XCTAssertEqual(problems.count, 1)

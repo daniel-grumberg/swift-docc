@@ -9,6 +9,7 @@
 */
 
 import Foundation
+
 #if os(Windows)
 import WinSDK
 #endif
@@ -27,7 +28,7 @@ import WinSDK
 public class Synchronized<Value> {
     /// A value that requires synchronized access.
     private var value: Value
-    
+
     #if os(macOS) || os(iOS)
     /// A lock type appropriate for the current platform.
     /// > Note: To avoid access race reports we manage the memory manually.
@@ -40,7 +41,7 @@ public class Synchronized<Value> {
     #else
     #error("Unsupported platform")
     #endif
-    
+
     /// Creates a new synchronization over the given value.
     /// - Parameter value: A value that requires synchronous access.
     public init(_ value: Value) {
@@ -60,12 +61,12 @@ public class Synchronized<Value> {
         #error("Unsupported platform")
         #endif
     }
-    
+
     deinit {
         // Release the lock's memory.
         lock.deallocate()
     }
-    
+
     /// Performs a given block of code while synchronizing over the type's stored value.
     /// - Parameter block: A throwing block of work that optionally returns a value.
     /// - Returns: Returns the returned value of `block`, if any.
@@ -83,7 +84,7 @@ public class Synchronized<Value> {
         #else
         #error("Unsupported platform")
         #endif
-        
+
         return try block(&value)
     }
 }
@@ -104,7 +105,7 @@ public extension Lock {
     convenience init() {
         self.init(())
     }
-    
+
     @discardableResult
     func sync<Result>(_ block: () throws -> Result) rethrows -> Result {
         #if os(macOS) || os(iOS)

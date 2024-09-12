@@ -8,30 +8,31 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
 import Foundation
+import SwiftDocCTestUtilities
+import XCTest
+
 @testable import SwiftDocC
 @testable import SwiftDocCUtilities
-import SwiftDocCTestUtilities
 
 class StaticHostableTransformerTests: StaticHostingBaseTests {
 
     /// Creates a DocC archive and then archive then executes and TransformForStaticHostingAction on it to produce static content which is then validated.
     func testStaticHostableTransformerOutput() throws {
-        
+
         // Convert a test bundle as input for the StaticHostableTransformer
         let bundleURL = Bundle.module.url(forResource: "TestBundle", withExtension: "docc", subdirectory: "Test Bundles")!
         let targetURL = try createTemporaryDirectory()
 
         let fileManager = FileManager.default
-        
+
         let templateURL = try createTemporaryDirectory().appendingPathComponent("template")
         try Folder.emptyHTMLTemplateDirectory.write(to: templateURL)
         defer { try? fileManager.removeItem(at: templateURL) }
-        
+
         let targetBundleURL = targetURL.appendingPathComponent("Result.doccarchive")
         defer { try? fileManager.removeItem(at: targetBundleURL) }
-        
+
         var action = try ConvertAction(
             documentationBundleURL: bundleURL,
             outOfProcessResolver: nil,
@@ -43,58 +44,62 @@ class StaticHostableTransformerTests: StaticHostingBaseTests {
             temporaryDirectory: createTemporaryDirectory()
         )
         _ = try action.perform(logHandle: .none)
-        
+
         let outputURL = try createTemporaryDirectory().appendingPathComponent("output")
 
         let testTemplateURL = try createTemporaryDirectory().appendingPathComponent("testTemplate")
         try Folder.testHTMLTemplateDirectory.write(to: testTemplateURL)
 
-        let basePath =  "test/folder"
+        let basePath = "test/folder"
         let indexHTML = Folder.testHTMLTemplate(basePath: basePath)
-        
+
         let indexHTMLData = try StaticHostableTransformer.indexHTMLData(in: testTemplateURL, with: basePath, fileManager: fileManager)
-        
+
         let dataURL = targetBundleURL.appendingPathComponent(NodeURLGenerator.Path.dataFolderName)
         let dataProvider = try LocalFileSystemDataProvider(rootURL: dataURL)
         let transformer = StaticHostableTransformer(dataProvider: dataProvider, fileManager: fileManager, outputURL: outputURL, indexHTMLData: indexHTMLData)
-        
+
         try transformer.transform()
-        
+
         var isDirectory: ObjCBool = false
-        
+
         // Test an output folder exists
         guard fileManager.fileExists(atPath: outputURL.path, isDirectory: &isDirectory) else {
             XCTFail("StaticHostableTransformer failed to create output folder")
             return
         }
-        
+
         // Test the output folder really is a folder.
         XCTAssert(isDirectory.boolValue)
-        
+
         // Test the content of the output folder.
         let expectedContent = ["documentation", "tutorials"]
         let output = try fileManager.contentsOfDirectory(atPath: outputURL.path).sorted()
-        
+
         XCTAssertEqual(output, expectedContent, "Unexpected output")
         for item in output {
-            
+
             // Test the content of the documentation and tutorial folders match the expected content from the doccarchive.
             switch item {
             case "documentation":
-                compareJSONFolder(fileManager: fileManager,
-                               output: outputURL.appendingPathComponent("documentation"),
-                               input:  dataURL.appendingPathComponent("documentation"),
-                               indexHTML: indexHTML)
+                compareJSONFolder(
+                    fileManager: fileManager,
+                    output: outputURL.appendingPathComponent("documentation"),
+                    input: dataURL.appendingPathComponent("documentation"),
+                    indexHTML: indexHTML
+                )
             case "tutorials":
-                compareJSONFolder(fileManager: fileManager,
-                               output: outputURL.appendingPathComponent("tutorials"),
-                               input:  dataURL.appendingPathComponent("tutorials"),
-                               indexHTML: indexHTML)
+                compareJSONFolder(
+                    fileManager: fileManager,
+                    output: outputURL.appendingPathComponent("tutorials"),
+                    input: dataURL.appendingPathComponent("tutorials"),
+                    indexHTML: indexHTML
+                )
             default:
                 continue
             }
         }
-        
+
     }
 
     /// Creates a DocC archive and then archive then executes and TransformForStaticHostingAction on it to produce static content which is then validated.
@@ -102,25 +107,27 @@ class StaticHostableTransformerTests: StaticHostingBaseTests {
         let testTemplateURL = try createTemporaryDirectory().appendingPathComponent("testTemplate")
         try Folder.testHTMLTemplateDirectory.write(to: testTemplateURL)
 
-        let basePaths = ["test": "test",
-                         "/test": "test",
-                         "test/": "test",
-                         "/test/": "test",
-                         "test/test": "test/test",
-                         "/test/test": "test/test",
-                         "test/test/": "test/test",
-                         "/test/test/": "test/test"]
+        let basePaths = [
+            "test": "test",
+            "/test": "test",
+            "test/": "test",
+            "/test/": "test",
+            "test/test": "test/test",
+            "/test/test": "test/test",
+            "test/test/": "test/test",
+            "/test/test/": "test/test",
+        ]
 
         for (basePath, testValue) in basePaths {
 
             let indexHTMLData = try StaticHostableTransformer.indexHTMLData(in: testTemplateURL, with: basePath, fileManager: FileManager.default)
             let testIndexHTML = String(decoding: indexHTMLData, as: UTF8.self)
             let indexHTML = Folder.testHTMLTemplate(basePath: testValue)
-            
+
             XCTAssertEqual(indexHTML, testIndexHTML, "Template HTML not transformed as expected")
         }
     }
-    
+
     func testStaticHostableTransformerIndexHTMLOutput() throws {
         // Convert a test bundle as input for the StaticHostableTransformer
         let bundleURL = Bundle.module.url(forResource: "TestBundle", withExtension: "docc", subdirectory: "Test Bundles")!
@@ -149,24 +156,25 @@ class StaticHostableTransformerTests: StaticHostingBaseTests {
         let testTemplateURL = try createTemporaryDirectory().appendingPathComponent("testTemplate")
         try Folder.testHTMLTemplateDirectory.write(to: testTemplateURL)
 
-        let basePaths = ["test": "test",
-                         "/test": "test",
-                         "test/": "test",
-                         "/test/": "test",
-                         "test/test": "test/test",
-                         "/test/test": "test/test",
-                         "test/test/": "test/test",
-                         "/test/test/": "test/test"]
+        let basePaths = [
+            "test": "test",
+            "/test": "test",
+            "test/": "test",
+            "/test/": "test",
+            "test/test": "test/test",
+            "/test/test": "test/test",
+            "test/test/": "test/test",
+            "/test/test/": "test/test",
+        ]
 
         let fileManager = FileManager.default
         for (basePath, testValue) in basePaths {
             let outputURL = try createTemporaryDirectory().appendingPathComponent("output")
             let indexHTMLData = try StaticHostableTransformer.indexHTMLData(in: testTemplateURL, with: basePath, fileManager: FileManager.default)
-          
+
             let transformer = StaticHostableTransformer(dataProvider: dataProvider, fileManager: fileManager, outputURL: outputURL, indexHTMLData: indexHTMLData)
 
             try transformer.transform()
-
 
             // Test an output folder exists
             guard fileManager.fileExists(atPath: outputURL.path) else {
@@ -178,7 +186,6 @@ class StaticHostableTransformerTests: StaticHostingBaseTests {
             try compareIndexHTML(fileManager: fileManager, folder: outputURL, indexHTML: indexHTML)
         }
     }
-
 
     private func compareIndexHTML(fileManager: FileManagerProtocol, folder: URL, indexHTML: String) throws {
 
@@ -195,4 +202,3 @@ class StaticHostableTransformerTests: StaticHostingBaseTests {
         }
     }
 }
-

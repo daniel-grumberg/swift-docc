@@ -8,13 +8,11 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-/**
- A solution to a `Problem`.
- */
+/// A solution to a `Problem`.
 public struct Solution: Hashable {
     /// A *brief* description of what the solution is.
     public var summary: String
-    
+
     /// The replacements necessary to fix a problem.
     public var replacements: [Replacement]
 

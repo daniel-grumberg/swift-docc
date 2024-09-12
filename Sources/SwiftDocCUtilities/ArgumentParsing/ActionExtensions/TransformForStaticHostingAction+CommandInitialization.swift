@@ -8,9 +8,8 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import Foundation
 import ArgumentParser
-
+import Foundation
 
 extension TransformForStaticHostingAction {
     /// Initializes ``TransformForStaticHostingAction`` from the options in the ``TransformForStaticHosting`` command.
@@ -18,17 +17,18 @@ extension TransformForStaticHostingAction {
     ///   - cmd: The emit command this `TransformForStaticHostingAction` will be based on.
     init(fromCommand cmd: Docc.ProcessArchive.TransformForStaticHosting, withFallbackTemplate fallbackTemplateURL: URL? = nil) throws {
         // Initialize the `TransformForStaticHostingAction` from the options provided by the `EmitStaticHostable` command
-        
+
         guard let htmlTemplateFolder = cmd.templateOption.templateURL ?? fallbackTemplateURL else {
             throw TemplateOption.missingHTMLTemplateError(
                 path: cmd.templateOption.defaultTemplateURL.path
             )
         }
-        
+
         try self.init(
             documentationBundleURL: cmd.documentationArchive.urlOrFallback,
             outputURL: cmd.outputURL,
             hostingBasePath: cmd.hostingBasePath,
-            htmlTemplateDirectory: htmlTemplateFolder )
+            htmlTemplateDirectory: htmlTemplateFolder
+        )
     }
 }

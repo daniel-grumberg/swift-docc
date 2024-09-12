@@ -9,16 +9,19 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 // Creates a formatted string in the form of "X/Y% (X/Y)"
 func ratio(_ x: Int, _ y: Int, length: Int? = nil) -> String {
     let percentage = RatioStatistic.numberFormatter.string(from: NSNumber(value: Double(x) / Double(y)))!
-    let result = percentage
+    let result =
+        percentage
         .appending(" (\(x)/\(y))")
     guard let length else { return result }
-    
-    return result
+
+    return
+        result
         .appending(String(repeating: " ", count: length - result.count))
 }
 
@@ -32,12 +35,12 @@ class CoverageSummaryTests: XCTestCase {
             shouldGenerateDetailed: false
         )
         let expected = """
-                | Abstract        | Curated         | Code Listing
-Types           | (0/0)           | (0/0)           | (0/0)
-Members         | (0/0)           | (0/0)           | (0/0)
-Globals         | (0/0)           | (0/0)           | (0/0)
+                            | Abstract        | Curated         | Code Listing
+            Types           | (0/0)           | (0/0)           | (0/0)
+            Members         | (0/0)           | (0/0)           | (0/0)
+            Globals         | (0/0)           | (0/0)           | (0/0)
 
-"""
+            """
         XCTAssertEqual(result, expected)
     }
 
@@ -53,7 +56,8 @@ Globals         | (0/0)           | (0/0)           | (0/0)
                 isCurated: false,
                 hasCodeListing: false,
                 availability: nil,
-                kindSpecificData: .class(memberStats: [:])),
+                kindSpecificData: .class(memberStats: [:])
+            )
         ]
 
         let result = CoverageDataEntry.generateSummary(
@@ -62,12 +66,12 @@ Globals         | (0/0)           | (0/0)           | (0/0)
             shouldGenerateDetailed: false
         )
         let expected = """
-                | Abstract        | Curated         | Code Listing
-Types           | \(ratio(1, 1, length: 15)) | \(ratio(0, 1, length: 15)) | \(ratio(0, 1))
-Members         | (0/0)           | (0/0)           | (0/0)
-Globals         | (0/0)           | (0/0)           | (0/0)
+                            | Abstract        | Curated         | Code Listing
+            Types           | \(ratio(1, 1, length: 15)) | \(ratio(0, 1, length: 15)) | \(ratio(0, 1))
+            Members         | (0/0)           | (0/0)           | (0/0)
+            Globals         | (0/0)           | (0/0)           | (0/0)
 
-"""
+            """
         XCTAssertEqual(result, expected)
     }
 
@@ -83,7 +87,8 @@ Globals         | (0/0)           | (0/0)           | (0/0)
                 isCurated: false,
                 hasCodeListing: true,
                 availability: nil,
-                kindSpecificData: .class(memberStats: [:])),
+                kindSpecificData: .class(memberStats: [:])
+            ),
             CoverageDataEntry(
                 title: "MyDocumentedUncuratedClassProperty",
                 usr: "doc://org.swift.docc.example/documentation/MyLibrary/MyClass/myProperty",
@@ -94,7 +99,8 @@ Globals         | (0/0)           | (0/0)           | (0/0)
                 isCurated: true,
                 hasCodeListing: false,
                 availability: nil,
-                kindSpecificData: .instanceProperty),
+                kindSpecificData: .instanceProperty
+            ),
         ]
 
         let result = CoverageDataEntry.generateSummary(
@@ -103,12 +109,12 @@ Globals         | (0/0)           | (0/0)           | (0/0)
             shouldGenerateDetailed: false
         )
         let expected = """
-                | Abstract        | Curated         | Code Listing
-Types           | \(ratio(1, 1, length: 15)) | \(ratio(0, 1, length: 15)) | \(ratio(1, 1))
-Members         | \(ratio(0, 1, length: 15)) | \(ratio(1, 1, length: 15)) | \(ratio(0, 1))
-Globals         | (0/0)           | (0/0)           | (0/0)
+                            | Abstract        | Curated         | Code Listing
+            Types           | \(ratio(1, 1, length: 15)) | \(ratio(0, 1, length: 15)) | \(ratio(1, 1))
+            Members         | \(ratio(0, 1, length: 15)) | \(ratio(1, 1, length: 15)) | \(ratio(0, 1))
+            Globals         | (0/0)           | (0/0)           | (0/0)
 
-"""
+            """
         XCTAssertEqual(result, expected)
     }
 }

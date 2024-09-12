@@ -58,13 +58,13 @@ public struct SourceLanguage: Hashable, Codable, Comparable {
             self = knownLanguage
         } else {
             self.name = name
-            
+
             let id = name.lowercased()
             self.id = id
             self.linkDisambiguationID = id
         }
     }
-    
+
     /// Finds the programming language that matches a given display name.
     ///
     /// If the language name doesn't match any known language, this initializer returns `nil`.
@@ -77,7 +77,7 @@ public struct SourceLanguage: Hashable, Codable, Comparable {
             return nil
         }
     }
-    
+
     /// Finds the programming language that matches a given identifier.
     ///
     /// If the language identifier doesn't match any known language, this initializer returns `nil`.
@@ -94,7 +94,7 @@ public struct SourceLanguage: Hashable, Codable, Comparable {
     private static func firstKnownLanguage(withName name: String) -> SourceLanguage? {
         SourceLanguage.knownLanguages.first { $0.name.lowercased() == name.lowercased() }
     }
-    
+
     private static func firstKnownLanguage(withIdentifier id: String) -> SourceLanguage? {
         SourceLanguage.knownLanguages.first { knownLanguage in
             ([knownLanguage.id] + knownLanguage.idAliases)
@@ -102,7 +102,7 @@ public struct SourceLanguage: Hashable, Codable, Comparable {
                 .contains(id)
         }
     }
-    
+
     /// The Swift programming language.
     public static let swift = SourceLanguage(name: "Swift", id: "swift")
 
@@ -113,8 +113,8 @@ public struct SourceLanguage: Hashable, Codable, Comparable {
         idAliases: [
             "objective-c",
             "objc",
-            "c", // FIXME: DocC should display C as its own language (github.com/swiftlang/swift-docc/issues/169).
-            "c++", // FIXME: DocC should display C++ and Objective-C++ as their own languages (https://github.com/swiftlang/swift-docc/issues/767)
+            "c",  // FIXME: DocC should display C as its own language (github.com/swiftlang/swift-docc/issues/169).
+            "c++",  // FIXME: DocC should display C++ and Objective-C++ as their own languages (https://github.com/swiftlang/swift-docc/issues/767)
             "objective-c++",
             "objc++",
             "occ++",
@@ -130,37 +130,37 @@ public struct SourceLanguage: Hashable, Codable, Comparable {
     public static let data = SourceLanguage(name: "Data", id: "data")
     /// The Metal programming language.
     public static let metal = SourceLanguage(name: "Metal", id: "metal")
-    
+
     /// The list of programming languages that are known to DocC.
     public static var knownLanguages: [SourceLanguage] = [.swift, .objectiveC, .javaScript, .data, .metal]
-    
+
     enum CodingKeys: CodingKey {
         case name
         case id
         case idAliases
         case linkDisambiguationID
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: SourceLanguage.CodingKeys.self)
-        
+
         let name = try container.decode(String.self, forKey: SourceLanguage.CodingKeys.name)
         let id = try container.decode(String.self, forKey: SourceLanguage.CodingKeys.id)
         let idAliases = try container.decodeIfPresent([String].self, forKey: SourceLanguage.CodingKeys.idAliases) ?? []
         let linkDisambiguationID = try container.decodeIfPresent(String.self, forKey: SourceLanguage.CodingKeys.linkDisambiguationID)
-        
+
         self.init(name: name, id: id, idAliases: idAliases, linkDisambiguationID: linkDisambiguationID)
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: SourceLanguage.CodingKeys.self)
-        
+
         try container.encode(self.name, forKey: SourceLanguage.CodingKeys.name)
         try container.encode(self.id, forKey: SourceLanguage.CodingKeys.id)
         try container.encodeIfNotEmpty(self.idAliases, forKey: SourceLanguage.CodingKeys.idAliases)
         try container.encode(self.linkDisambiguationID, forKey: SourceLanguage.CodingKeys.linkDisambiguationID)
     }
-    
+
     public static func < (lhs: SourceLanguage, rhs: SourceLanguage) -> Bool {
         // Sort Swift before other languages.
         if lhs == .swift {

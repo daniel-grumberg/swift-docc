@@ -9,6 +9,7 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class DocumentationContext_MixedLanguageSourceLanguagesTests: XCTestCase {
@@ -18,21 +19,21 @@ class DocumentationContext_MixedLanguageSourceLanguagesTests: XCTestCase {
             expectedArticleDefaultLanguage: .swift
         )
     }
-    
+
     func testArticleAvailableSourceLanguagesIsMixedLanguageInMixedLanguageModule() throws {
         try assertArticleAvailableSourceLanguages(
             moduleAvailableLanguages: [.swift, .objectiveC],
             expectedArticleDefaultLanguage: .swift
         )
     }
-    
+
     func testArticleAvailableSourceLanguagesIsObjectiveCInObjectiveCModule() throws {
         try assertArticleAvailableSourceLanguages(
             moduleAvailableLanguages: [.objectiveC],
             expectedArticleDefaultLanguage: .objectiveC
         )
     }
-    
+
     func assertArticleAvailableSourceLanguages(
         moduleAvailableLanguages: Set<SourceLanguage>,
         expectedArticleDefaultLanguage: SourceLanguage,
@@ -43,38 +44,40 @@ class DocumentationContext_MixedLanguageSourceLanguagesTests: XCTestCase {
             moduleAvailableLanguages.allSatisfy { [.swift, .objectiveC].contains($0) },
             "moduleAvailableLanguages can only contain Swift and Objective-C as languages."
         )
-        
+
         let (_, _, context) = try testBundleAndContext(copying: "MixedLanguageFramework") { url in
             try """
             # MyArticle
-            
+
             The framework this article is documenting is available in the following languages: \
             \(moduleAvailableLanguages.map(\.name).joined(separator: ",")).
-            """.write(to: url.appendingPathComponent("myarticle.md"), atomically: true, encoding: .utf8)
-            
+            """
+            .write(to: url.appendingPathComponent("myarticle.md"), atomically: true, encoding: .utf8)
+
             func removeSymbolGraph(compiler: String) throws {
                 try FileManager.default.removeItem(
                     at: url.appendingPathComponent("symbol-graphs").appendingPathComponent(compiler)
                 )
             }
-            
+
             if !moduleAvailableLanguages.contains(.swift) {
                 try removeSymbolGraph(compiler: "swift")
             }
-            
+
             if !moduleAvailableLanguages.contains(.objectiveC) {
                 try removeSymbolGraph(compiler: "clang")
             }
         }
-        
+
         let articleNode = try XCTUnwrap(
             context.documentationCache.first {
                 $0.key.path == "/documentation/MixedLanguageFramework/myarticle"
-            }?.value,
+            }?
+            .value,
             file: file,
             line: line
         )
-        
+
         XCTAssertEqual(
             articleNode.availableSourceLanguages,
             moduleAvailableLanguages,
@@ -82,7 +85,7 @@ class DocumentationContext_MixedLanguageSourceLanguagesTests: XCTestCase {
             file: file,
             line: line
         )
-        
+
         XCTAssertEqual(
             articleNode.sourceLanguage,
             expectedArticleDefaultLanguage,

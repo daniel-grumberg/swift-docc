@@ -19,7 +19,8 @@ let package = Package(
     products: [
         .executable(
             name: "benchmark",
-            targets: ["benchmark"]),
+            targets: ["benchmark"]
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMajor(from: "1.0.3")),
@@ -31,9 +32,11 @@ let package = Package(
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "SwiftDocC", package: "swift-docc"),
-            ]),
+            ]
+        ),
         .testTarget(
             name: "benchmarkTests",
-            dependencies: ["benchmark"]),
+            dependencies: ["benchmark"]
+        ),
     ]
 )

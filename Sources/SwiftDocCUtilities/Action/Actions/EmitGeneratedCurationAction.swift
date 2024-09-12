@@ -18,9 +18,9 @@ struct EmitGeneratedCurationAction: Action {
     let outputURL: URL
     let depthLimit: Int?
     let startingPointSymbolLink: String?
-    
+
     let fileManager: FileManagerProtocol
-    
+
     init(
         documentationCatalog: URL?,
         additionalSymbolGraphDirectory: URL?,
@@ -40,7 +40,7 @@ struct EmitGeneratedCurationAction: Action {
         self.additionalSymbolGraphDirectory = additionalSymbolGraphDirectory
         self.fileManager = fileManager
     }
-    
+
     mutating func perform(logHandle: LogHandle) throws -> ActionResult {
         let workspace = DocumentationWorkspace()
         let context = try DocumentationContext(dataProvider: workspace)
@@ -66,14 +66,14 @@ struct EmitGeneratedCurationAction: Action {
             try fileManager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
             try fileManager.createFile(at: url, contents: data, options: .atomic)
         }
-        
+
         return ActionResult(didEncounterError: false, outputs: [outputURL])
     }
 }
 
 private func symbolGraphFiles(in directory: URL?) -> [URL] {
     guard let directory else { return [] }
-    
+
     let subpaths = FileManager.default.subpaths(atPath: directory.path) ?? []
     return subpaths.map { directory.appendingPathComponent($0) }
         .filter { DocumentationBundleFileTypes.isSymbolGraphFile($0) }

@@ -22,25 +22,31 @@ public struct DocumentationCoverageOptionsArgument: ParsableArguments {
 
     // The way the '--experimental-documentation-coverage' flag and the '--coverage-summary-level' option work together
     // doesn't match the possible values for `DocumentationCoverageLevel`.
-    
+
     @Flag(
-        help: ArgumentHelp("Generate documentation coverage output.", discussion: """
-        Detailed documentation coverage information will be written to 'documentation-coverage.json' in the output directory.
-        """)
+        help: ArgumentHelp(
+            "Generate documentation coverage output.",
+            discussion: """
+                Detailed documentation coverage information will be written to 'documentation-coverage.json' in the output directory.
+                """
+        )
     )
     var experimentalDocumentationCoverage: Bool = false
 
     /// The desired level of documentation coverage. Options are `none`, `brief`, and `detailed`. The default is `.brief`
     @Option(
         name: .customLong("coverage-summary-level"),
-        help: ArgumentHelp("The level of documentation coverage information to write on standard out.", discussion: """
-        The '--coverage-summary-level' level has no impact on the information in the 'documentation-coverage.json' file.
-        The supported coverage summary levels are 'brief' and 'detailed'.
-        """,
-        valueName: "symbol-kind")
+        help: ArgumentHelp(
+            "The level of documentation coverage information to write on standard out.",
+            discussion: """
+                The '--coverage-summary-level' level has no impact on the information in the 'documentation-coverage.json' file.
+                The supported coverage summary levels are 'brief' and 'detailed'.
+                """,
+            valueName: "symbol-kind"
+        )
     )
     var summaryLevel: DocumentationCoverageLevel = .brief
-    
+
     @Option(help: .hidden)
     @available(*, deprecated, renamed: "summaryLevel", message: "Use 'summaryLevel' instead. This deprecated API will be removed after 6.0 is released")
     public var level: DocumentationCoverageLevel = .none
@@ -56,28 +62,31 @@ public struct DocumentationCoverageOptionsArgument: ParsableArguments {
             return .brief
         }
     }
-    
+
     @Option(
         name: .customLong("coverage-symbol-kind-filter"),
         parsing: ArrayParsingStrategy.upToNextOption,
-        help: ArgumentHelp("Filter documentation coverage to only analyze symbols of the specified symbol kinds.", discussion: """
-        Specify a list of symbol kind values to filter the documentation coverage to only those types symbols.
-        The supported symbol kind values are: \ 
-        \(DocumentationCoverageOptions.KindFilterOptions.BitFlagRepresentation.allValueStrings.sorted().joined(separator: ", "))
-        """,
-        valueName: "symbol-kind")
+        help: ArgumentHelp(
+            "Filter documentation coverage to only analyze symbols of the specified symbol kinds.",
+            discussion: """
+                Specify a list of symbol kind values to filter the documentation coverage to only those types symbols.
+                The supported symbol kind values are: \
+                \(DocumentationCoverageOptions.KindFilterOptions.BitFlagRepresentation.allValueStrings.sorted().joined(separator: ", "))
+                """,
+            valueName: "symbol-kind"
+        )
     )
     public var symbolKindFilter: [DocumentationCoverageOptions.KindFilterOptions.BitFlagRepresentation] = []
-    
+
     @Option(parsing: ArrayParsingStrategy.upToNextOption, help: .hidden)
     @available(*, deprecated, renamed: "symbolKindFilter", message: "Use 'symbolKindFilter' instead. This deprecated API will be removed after 6.0 is released")
     public var kinds: [DocumentationCoverageOptions.KindFilterOptions.BitFlagRepresentation] = []
-    
-    @available(*, deprecated) // This deprecation silences the access of the deprecated `level` and `kind` options.
+
+    @available(*, deprecated)  // This deprecation silences the access of the deprecated `level` and `kind` options.
     public mutating func validate() throws {
         Docc.Convert.warnAboutDeprecatedOptionIfNeeded("level", message: "Use '--coverage-summary-level' instead.")
         Docc.Convert.warnAboutDeprecatedOptionIfNeeded("kinds", message: "Use '--coverage-symbol-kind-filter' instead.")
-        
+
         if !ProcessInfo.processInfo.arguments.contains("--coverage-summary-level"), level != .none {
             summaryLevel = level
         }
@@ -101,7 +110,7 @@ extension DocumentationCoverageOptions {
             self = .noCoverage
             return
         }
-        
+
         self = DocumentationCoverageOptions(
             level: arguments.effectiveSummaryLevel,
             kindFilterOptions: .init(bitFlags: arguments.symbolKindFilter)

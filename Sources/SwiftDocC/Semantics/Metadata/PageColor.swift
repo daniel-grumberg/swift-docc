@@ -30,37 +30,37 @@ import Markdown
 public final class PageColor: Semantic, AutomaticDirectiveConvertible {
     public static let introducedVersion = "5.9"
     public let originalMarkup: BlockDirective
-    
+
     /// A context-dependent, standard color.
     @DirectiveArgumentWrapped(name: .unnamed)
     public var color: Color
-    
+
     /// A context-dependent, standard color.
     public enum Color: String, CaseIterable, DirectiveArgumentValueConvertible {
         /// A context-dependent blue color.
         case blue
-        
+
         /// A context-dependent gray color.
         case gray
-        
+
         /// A context-dependent green color.
         case green
-        
+
         /// A context-dependent orange color.
         case orange
-        
+
         /// A context-dependent purple color.
         case purple
-        
+
         /// A context-dependent red color.
         case red
-        
+
         /// A context-dependent yellow color.
         case yellow
     }
-    
-    static var keyPaths: [String : AnyKeyPath] = [
-        "color": \PageColor._color,
+
+    static var keyPaths: [String: AnyKeyPath] = [
+        "color": \PageColor._color
     ]
 
     @available(*, deprecated, message: "Do not call directly. Required for 'AutomaticDirectiveConvertible'.")

@@ -9,10 +9,10 @@
 */
 
 import Foundation
-
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class TabNavigatorTests: XCTestCase {
     func testNoTabs() throws {
@@ -21,21 +21,21 @@ class TabNavigatorTests: XCTestCase {
             @TabNavigator
             """
         }
-        
+
         XCTAssertNotNil(tabNavigator)
-        
+
         XCTAssertEqual(
             problems,
             ["1: warning – org.swift.docc.HasAtLeastOne<TabNavigator, Tab>"]
         )
-        
+
         XCTAssertEqual(renderBlockContent.count, 1)
         XCTAssertEqual(
             renderBlockContent.first,
             .tabNavigator(.init(tabs: []))
         )
     }
-    
+
     func testEmptyTab() throws {
         let (renderBlockContent, problems, tabNavigator) = try parseDirective(TabNavigator.self) {
             """
@@ -46,23 +46,25 @@ class TabNavigatorTests: XCTestCase {
             }
             """
         }
-        
+
         XCTAssertNotNil(tabNavigator)
         XCTAssertEqual(
             problems,
             ["2: warning – org.swift.docc.Tab.HasContent"]
         )
-        
+
         XCTAssertEqual(renderBlockContent.count, 1)
         XCTAssertEqual(
             renderBlockContent.first,
-            .tabNavigator(RenderBlockContent.TabNavigator(
-                tabs: [RenderBlockContent.TabNavigator.Tab(title: "hiya", content: [])]
-            ))
+            .tabNavigator(
+                RenderBlockContent.TabNavigator(
+                    tabs: [RenderBlockContent.TabNavigator.Tab(title: "hiya", content: [])]
+                )
+            )
         )
-        
+
     }
-    
+
     func testInvalidParametersAndContent() throws {
         let (renderBlockContent, problems, tabNavigator) = try parseDirective(TabNavigator.self) {
             """
@@ -70,10 +72,10 @@ class TabNavigatorTests: XCTestCase {
                 @Tab("hi") {
                     Hello there.
                 }
-            
+
                 @Tab("hey") {
                     Hey there.
-            
+
                     @TabNavigator(weird: true) {
                         @Tab("bad") {
                             @Unkown {
@@ -85,9 +87,9 @@ class TabNavigatorTests: XCTestCase {
             }
             """
         }
-        
+
         XCTAssertNotNil(tabNavigator)
-        
+
         XCTAssertEqual(
             problems,
             [
@@ -97,36 +99,40 @@ class TabNavigatorTests: XCTestCase {
                 "11: warning – org.swift.docc.unknownDirective",
             ]
         )
-        
+
         XCTAssertEqual(renderBlockContent.count, 1)
         XCTAssertEqual(
             renderBlockContent.first,
-            .tabNavigator(RenderBlockContent.TabNavigator(
-                tabs: [
-                    RenderBlockContent.TabNavigator.Tab(
-                        title: "hi",
-                        content: ["Hello there."]
-                    ),
-                    
-                    RenderBlockContent.TabNavigator.Tab(
-                        title: "hey",
-                        content: [
-                            "Hey there.",
-                            .tabNavigator(RenderBlockContent.TabNavigator(
-                                tabs: [
-                                    RenderBlockContent.TabNavigator.Tab(
-                                        title: "bad",
-                                        content: []
-                                    ),
-                                ]
-                            ))
-                        ]
-                    ),
-                ]
-            ))
+            .tabNavigator(
+                RenderBlockContent.TabNavigator(
+                    tabs: [
+                        RenderBlockContent.TabNavigator.Tab(
+                            title: "hi",
+                            content: ["Hello there."]
+                        ),
+
+                        RenderBlockContent.TabNavigator.Tab(
+                            title: "hey",
+                            content: [
+                                "Hey there.",
+                                .tabNavigator(
+                                    RenderBlockContent.TabNavigator(
+                                        tabs: [
+                                            RenderBlockContent.TabNavigator.Tab(
+                                                title: "bad",
+                                                content: []
+                                            )
+                                        ]
+                                    )
+                                ),
+                            ]
+                        ),
+                    ]
+                )
+            )
         )
     }
-    
+
     func testNestedStructuredMarkup() throws {
         let (renderBlockContent, problems, tabNavigator) = try parseDirective(TabNavigator.self) {
             """
@@ -136,18 +142,18 @@ class TabNavigatorTests: XCTestCase {
                         @Column {
                             Hello!
                         }
-            
+
                         @Column {
                             Hello there!
                         }
                     }
-            
+
                     Hello there.
                 }
-            
+
                 @Tab("hey") {
                     Hey there.
-            
+
                     @Small {
                         Hey but small.
                     }
@@ -157,55 +163,57 @@ class TabNavigatorTests: XCTestCase {
             }
             """
         }
-        
+
         XCTAssertNotNil(tabNavigator)
 
-        // UnresolvedTopicReference warning expected since the reference to the snippet "Snippets/Snippets/MySnippet" 
+        // UnresolvedTopicReference warning expected since the reference to the snippet "Snippets/Snippets/MySnippet"
         // should fail to resolve here and then nothing would be added to the content.
         XCTAssertEqual(
             problems,
             ["23: warning – org.swift.docc.unresolvedTopicReference"]
         )
 
-        
-        
         XCTAssertEqual(renderBlockContent.count, 1)
         XCTAssertEqual(
             renderBlockContent.first,
-            .tabNavigator(RenderBlockContent.TabNavigator(
-                tabs: [
-                    RenderBlockContent.TabNavigator.Tab(
-                        title: "hi",
-                        content: [
-                            .row(RenderBlockContent.Row(
-                                numberOfColumns: 2,
-                                columns: [
-                                    RenderBlockContent.Row.Column(
-                                        size: 1,
-                                        content: ["Hello!"]
-                                    ),
-                                    
-                                    RenderBlockContent.Row.Column(
-                                        size: 1,
-                                        content: ["Hello there!"]
+            .tabNavigator(
+                RenderBlockContent.TabNavigator(
+                    tabs: [
+                        RenderBlockContent.TabNavigator.Tab(
+                            title: "hi",
+                            content: [
+                                .row(
+                                    RenderBlockContent.Row(
+                                        numberOfColumns: 2,
+                                        columns: [
+                                            RenderBlockContent.Row.Column(
+                                                size: 1,
+                                                content: ["Hello!"]
+                                            ),
+
+                                            RenderBlockContent.Row.Column(
+                                                size: 1,
+                                                content: ["Hello there!"]
+                                            ),
+                                        ]
                                     )
-                                ]
-                            )),
-                            
-                            "Hello there.",
-                        ]
-                    ),
-                    
-                    RenderBlockContent.TabNavigator.Tab(
-                        title: "hey",
-                        content: [
-                            "Hey there.",
-    
-                            .small(RenderBlockContent.Small(inlineContent: [.text("Hey but small.")])),
-                        ]
-                    ),
-                ]
-            ))
+                                ),
+
+                                "Hello there.",
+                            ]
+                        ),
+
+                        RenderBlockContent.TabNavigator.Tab(
+                            title: "hey",
+                            content: [
+                                "Hey there.",
+
+                                .small(RenderBlockContent.Small(inlineContent: [.text("Hey but small.")])),
+                            ]
+                        ),
+                    ]
+                )
+            )
         )
     }
 }

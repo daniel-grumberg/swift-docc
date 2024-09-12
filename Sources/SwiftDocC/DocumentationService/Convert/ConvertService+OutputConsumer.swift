@@ -17,25 +17,25 @@ extension ConvertService {
     class OutputConsumer: ConvertOutputConsumer {
         var renderNodes = Synchronized<[RenderNode]>([])
         var renderReferenceStore: RenderReferenceStore?
-        
+
         func consume(problems: [Problem]) throws {}
-        
+
         func consume(renderNode: RenderNode) throws {
             renderNodes.sync { $0.append(renderNode) }
         }
-        
+
         func consume(assetsInBundle bundle: DocumentationBundle) throws {}
-        
+
         func consume(linkableElementSummaries: [LinkDestinationSummary]) throws {}
-        
+
         func consume(indexingRecords: [IndexingRecord]) throws {}
-        
-        func consume(assets: [RenderReferenceType : [RenderReference]]) throws {}
-        
+
+        func consume(assets: [RenderReferenceType: [RenderReference]]) throws {}
+
         func consume(benchmarks: Benchmark) throws {}
 
         func consume(documentationCoverageInfo: [CoverageDataEntry]) throws {}
-        
+
         func consume(renderReferenceStore: RenderReferenceStore) throws {
             self.renderReferenceStore = renderReferenceStore
         }

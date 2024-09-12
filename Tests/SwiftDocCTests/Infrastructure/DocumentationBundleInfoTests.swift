@@ -9,18 +9,22 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class DocumentationBundleInfoTests: XCTestCase {
     // Test whether the bundle correctly loads the test bundle Info.plist file.
     func testLoadTestBundleInfoPlist() throws {
         let infoPlistURL = Bundle.module.url(
-            forResource: "TestBundle", withExtension: "docc", subdirectory: "Test Bundles")!
-            .appendingPathComponent("Info.plist")
+            forResource: "TestBundle",
+            withExtension: "docc",
+            subdirectory: "Test Bundles"
+        )!
+        .appendingPathComponent("Info.plist")
 
         let infoPlistData = try Data(contentsOf: infoPlistURL)
         let info = try DocumentationBundle.Info(from: infoPlistData)
-        
+
         XCTAssertEqual(info.displayName, "Test Bundle")
         XCTAssertEqual(info.identifier, "org.swift.docc.example")
         XCTAssertEqual(info.version, "0.1.0")
@@ -30,8 +34,11 @@ class DocumentationBundleInfoTests: XCTestCase {
     // Test whether default availability is decoded correctly
     func testLoadTestBundleInfoPlistWithAvailability() throws {
         let infoPlistURL = Bundle.module.url(
-            forResource: "Info+Availability", withExtension: "plist", subdirectory: "Test Resources")!
-        
+            forResource: "Info+Availability",
+            withExtension: "plist",
+            subdirectory: "Test Resources"
+        )!
+
         let infoPlistData = try Data(contentsOf: infoPlistURL)
         let info = try DocumentationBundle.Info(from: infoPlistData)
 
@@ -43,36 +50,36 @@ class DocumentationBundleInfoTests: XCTestCase {
             ["Mac Catalyst 13.5", "macOS 10.15.1"]
         )
     }
-    
+
     func testLoadInfoPlistWithFallbackValues() throws {
         let infoPlistWithAllFields = """
-        <plist version="1.0">
-        <dict>
-            <key>CFBundleDisplayName</key>
-            <string>Info Plist Display Name</string>
-            <key>CFBundleIdentifier</key>
-            <string>com.info.Plist</string>
-            <key>CFBundleVersion</key>
-            <string>1.0.0</string>
-        </dict>
-        </plist>
-        """
-        
+            <plist version="1.0">
+            <dict>
+                <key>CFBundleDisplayName</key>
+                <string>Info Plist Display Name</string>
+                <key>CFBundleIdentifier</key>
+                <string>com.info.Plist</string>
+                <key>CFBundleVersion</key>
+                <string>1.0.0</string>
+            </dict>
+            </plist>
+            """
+
         let infoPlistWithAllFieldsData = Data(infoPlistWithAllFields.utf8)
-        
+
         let infoPlistWithoutDisplayName = """
-        <plist version="1.0">
-        <dict>
-            <key>CFBundleIdentifier</key>
-            <string>com.info.Plist</string>
-            <key>CFBundleVersion</key>
-            <string>1.0.0</string>
-        </dict>
-        </plist>
-        """
-        
+            <plist version="1.0">
+            <dict>
+                <key>CFBundleIdentifier</key>
+                <string>com.info.Plist</string>
+                <key>CFBundleVersion</key>
+                <string>1.0.0</string>
+            </dict>
+            </plist>
+            """
+
         let infoPlistWithoutDisplayNameData = Data(infoPlistWithoutDisplayName.utf8)
-        
+
         let bundleDiscoveryOptions = BundleDiscoveryOptions(
             infoPlistFallbacks: [
                 "CFBundleDisplayName": "Fallback Display Name",
@@ -80,7 +87,7 @@ class DocumentationBundleInfoTests: XCTestCase {
                 "CFBundleVersion": "2.0.0",
             ]
         )
-        
+
         XCTAssertEqual(
             try DocumentationBundle.Info(
                 from: infoPlistWithAllFieldsData,
@@ -92,7 +99,7 @@ class DocumentationBundleInfoTests: XCTestCase {
                 version: "1.0.0"
             )
         )
-        
+
         XCTAssertEqual(
             try DocumentationBundle.Info(
                 from: nil,
@@ -104,7 +111,7 @@ class DocumentationBundleInfoTests: XCTestCase {
                 version: "2.0.0"
             )
         )
-        
+
         XCTAssertEqual(
             try DocumentationBundle.Info(
                 from: infoPlistWithoutDisplayNameData,
@@ -116,20 +123,20 @@ class DocumentationBundleInfoTests: XCTestCase {
                 version: "1.0.0"
             )
         )
-        
+
         let infoPlistWithoutVersion = """
-        <plist version="1.0">
-        <dict>
-            <key>CFBundleDisplayName</key>
-            <string>Info Plist Display Name</string>
-            <key>CFBundleIdentifier</key>
-            <string>com.info.Plist</string>
-        </dict>
-        </plist>
-        """
-        
+            <plist version="1.0">
+            <dict>
+                <key>CFBundleDisplayName</key>
+                <string>Info Plist Display Name</string>
+                <key>CFBundleIdentifier</key>
+                <string>com.info.Plist</string>
+            </dict>
+            </plist>
+            """
+
         let infoPlistWithoutVersionData = Data(infoPlistWithoutVersion.utf8)
-        
+
         XCTAssertEqual(
             try DocumentationBundle.Info(
                 from: infoPlistWithoutVersionData,
@@ -142,90 +149,92 @@ class DocumentationBundleInfoTests: XCTestCase {
             )
         )
     }
-    
+
     func testRoundTripCodingInfoPlist() throws {
         let infoPlist = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
-            <key>CDAppleDefaultAvailability</key>
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
             <dict>
-                <key>FillIntroduced</key>
-                <array>
-                    <dict>
-                        <key>name</key>
-                        <string>macOS</string>
-                        <key>version</key>
-                        <string>10.9</string>
-                    </dict>
-                    <dict>
-                        <key>name</key>
-                        <string>iOS</string>
-                        <key>version</key>
-                        <string>11.1</string>
-                    </dict>
-                    <dict>
-                        <key>name</key>
-                        <string>tvOS</string>
-                        <key>version</key>
-                        <string>12.2</string>
-                    </dict>
-                    <dict>
-                        <key>name</key>
-                        <string>watchOS</string>
-                        <key>version</key>
-                        <string>13.3</string>
-                    </dict>
-                    <dict>
-                        <key>name</key>
-                        <string>Mac Catalyst</string>
-                        <key>version</key>
-                        <string>11.1</string>
-                    </dict>
-                    <dict>
-                        <key>name</key>
-                        <string>iPadOS</string>
-                        <key>version</key>
-                        <string>11.1</string>
-                    </dict>
-                </array>
+                <key>CDAppleDefaultAvailability</key>
+                <dict>
+                    <key>FillIntroduced</key>
+                    <array>
+                        <dict>
+                            <key>name</key>
+                            <string>macOS</string>
+                            <key>version</key>
+                            <string>10.9</string>
+                        </dict>
+                        <dict>
+                            <key>name</key>
+                            <string>iOS</string>
+                            <key>version</key>
+                            <string>11.1</string>
+                        </dict>
+                        <dict>
+                            <key>name</key>
+                            <string>tvOS</string>
+                            <key>version</key>
+                            <string>12.2</string>
+                        </dict>
+                        <dict>
+                            <key>name</key>
+                            <string>watchOS</string>
+                            <key>version</key>
+                            <string>13.3</string>
+                        </dict>
+                        <dict>
+                            <key>name</key>
+                            <string>Mac Catalyst</string>
+                            <key>version</key>
+                            <string>11.1</string>
+                        </dict>
+                        <dict>
+                            <key>name</key>
+                            <string>iPadOS</string>
+                            <key>version</key>
+                            <string>11.1</string>
+                        </dict>
+                    </array>
+                </dict>
+                <key>CDDefaultCodeListingLanguage</key>
+                <string>swift</string>
+                <key>CDDefaultModuleKind</key>
+                <string>Executable</string>
+                <key>CFBundleDisplayName</key>
+                <string>ShapeKit</string>
+                <key>CFBundleIdentifier</key>
+                <string>com.shapes.ShapeKit</string>
+                <key>CFBundleVersion</key>
+                <string>0.1.0</string>
             </dict>
-            <key>CDDefaultCodeListingLanguage</key>
-            <string>swift</string>
-            <key>CDDefaultModuleKind</key>
-            <string>Executable</string>
-            <key>CFBundleDisplayName</key>
-            <string>ShapeKit</string>
-            <key>CFBundleIdentifier</key>
-            <string>com.shapes.ShapeKit</string>
-            <key>CFBundleVersion</key>
-            <string>0.1.0</string>
-        </dict>
-        </plist>
-        
-        """
-        
+            </plist>
+
+            """
+
         let decodedInfo = try DocumentationBundle.Info(from: Data(infoPlist.utf8))
-        
+
         let propertyListEncoder = PropertyListEncoder()
         propertyListEncoder.outputFormat = .xml
         let reEncodedInfo = try propertyListEncoder.encode(decodedInfo)
-        
+
         let reDecodedInfo = try DocumentationBundle.Info(from: reEncodedInfo)
         XCTAssertEqual(decodedInfo, reDecodedInfo)
-        
-        let reEncodedString = try XCTUnwrap(String(
-            data: try propertyListEncoder.encode(reDecodedInfo),
-            encoding: .utf8
-        ))
-        
+
+        let reEncodedString = try XCTUnwrap(
+            String(
+                data: try propertyListEncoder.encode(reDecodedInfo),
+                encoding: .utf8
+            )
+        )
+
         XCTAssertEqual(
             reEncodedString.replacingOccurrences(of: "\t", with: "    "),
             infoPlist
         )
     }
-    
+
     func testFallbackToBundleDiscoveryOptions() throws {
         let bundleDiscoveryOptions = BundleDiscoveryOptions(
             fallbackDisplayName: "Display Name",
@@ -244,7 +253,7 @@ class DocumentationBundleInfoTests: XCTestCase {
                 ]
             )
         )
-        
+
         let info = try DocumentationBundle.Info(bundleDiscoveryOptions: bundleDiscoveryOptions)
         XCTAssertEqual(
             info,
@@ -267,7 +276,7 @@ class DocumentationBundleInfoTests: XCTestCase {
             )
         )
     }
-    
+
     func testFallbackToInfoInBundleDiscoveryOptions() throws {
         let info = DocumentationBundle.Info(
             displayName: "Display Name",
@@ -286,43 +295,43 @@ class DocumentationBundleInfoTests: XCTestCase {
                 ]
             )
         )
-        
+
         let bundleDiscoveryOptions = try BundleDiscoveryOptions(fallbackInfo: info)
         XCTAssertEqual(
             info,
             try DocumentationBundle.Info(bundleDiscoveryOptions: bundleDiscoveryOptions)
         )
     }
-    
+
     func testDataCorruptedPlist() throws {
         let valueMissingInvalidPlist = """
-        <plist version="1.0">
-        <dict>
-          <key>CDDefaultCodeListingLanguage</key>
-          <string>swift</string>
-          <key>CFBundleName</key>
-          <string>Example</string>
-          <key>CFBundleDisplayName</key>
-          <string>Example</string>
-          <key>CFBundleIdentifier</key>
-          <string>org.swift.docc.example</string>
-          <key>CFBundleDevelopmentRegion</key>
-          <string>en</string>
-          <key>CFBundleIconName</key>
-          <string>DocumentationIcon</string>
-          <key>CFBundleIconFile</key>
-          <string>DocumentationIcon</string>
-          <key>CFBundlePackageType</key>
-          <string>DOCS</string>
-          <key>CFBundleShortVersionString</key>
-          <string>0.1.0</string>
-          <key>CFBundleVersion</key>
-          <string>0.1.0</string>
-          <key>CDAppleDefaultAvailability</key>
-        </dict>
-        </plist>
-        """
-        
+            <plist version="1.0">
+            <dict>
+              <key>CDDefaultCodeListingLanguage</key>
+              <string>swift</string>
+              <key>CFBundleName</key>
+              <string>Example</string>
+              <key>CFBundleDisplayName</key>
+              <string>Example</string>
+              <key>CFBundleIdentifier</key>
+              <string>org.swift.docc.example</string>
+              <key>CFBundleDevelopmentRegion</key>
+              <string>en</string>
+              <key>CFBundleIconName</key>
+              <string>DocumentationIcon</string>
+              <key>CFBundleIconFile</key>
+              <string>DocumentationIcon</string>
+              <key>CFBundlePackageType</key>
+              <string>DOCS</string>
+              <key>CFBundleShortVersionString</key>
+              <string>0.1.0</string>
+              <key>CFBundleVersion</key>
+              <string>0.1.0</string>
+              <key>CDAppleDefaultAvailability</key>
+            </dict>
+            </plist>
+            """
+
         let valueMissingInvalidPlistData = Data(valueMissingInvalidPlist.utf8)
         XCTAssertThrowsError(
             try DocumentationBundle.Info(from: valueMissingInvalidPlistData),
@@ -339,17 +348,17 @@ class DocumentationBundleInfoTests: XCTestCase {
             XCTAssert(error.localizedDescription.starts(with: "Unable to decode Info.plist file. Verify that it is correctly formed. Value missing for key inside <dict> at line"))
         }
     }
-    
+
     func testDerivedDisplayNameAsFallback() {
         let infoPlistWithoutRequiredKeys = """
-        <plist version="1.0">
-        <dict>
-        </dict>
-        </plist>
-        """
-        
+            <plist version="1.0">
+            <dict>
+            </dict>
+            </plist>
+            """
+
         let infoPlistWithoutRequiredKeysData = Data(infoPlistWithoutRequiredKeys.utf8)
-        
+
         XCTAssertEqual(
             try DocumentationBundle.Info(
                 from: infoPlistWithoutRequiredKeysData,
@@ -363,19 +372,19 @@ class DocumentationBundleInfoTests: XCTestCase {
             )
         )
     }
-    
+
     func testDerivedDisplayNameAsFallbackWithIdentifier() {
         let infoPlistWithoutRequiredKeys = """
-        <plist version="1.0">
-        <dict>
-        <key>CFBundleIdentifier</key>
-        <string>org.swift.docc.example</string>
-        </dict>
-        </plist>
-        """
-        
+            <plist version="1.0">
+            <dict>
+            <key>CFBundleIdentifier</key>
+            <string>org.swift.docc.example</string>
+            </dict>
+            </plist>
+            """
+
         let infoPlistWithoutRequiredKeysData = Data(infoPlistWithoutRequiredKeys.utf8)
-        
+
         XCTAssertEqual(
             try DocumentationBundle.Info(
                 from: infoPlistWithoutRequiredKeysData,
@@ -389,19 +398,19 @@ class DocumentationBundleInfoTests: XCTestCase {
             )
         )
     }
-    
+
     func testDisplayNameAsIdentifierFallback() {
         let infoPlistWithoutRequiredKeys = """
-        <plist version="1.0">
-        <dict>
-        <key>CFBundleDisplayName</key>
-        <string>Example</string>
-        </dict>
-        </plist>
-        """
-        
+            <plist version="1.0">
+            <dict>
+            <key>CFBundleDisplayName</key>
+            <string>Example</string>
+            </dict>
+            </plist>
+            """
+
         let infoPlistWithoutRequiredKeysData = Data(infoPlistWithoutRequiredKeys.utf8)
-        
+
         XCTAssertEqual(
             try DocumentationBundle.Info(
                 from: infoPlistWithoutRequiredKeysData,
@@ -417,27 +426,28 @@ class DocumentationBundleInfoTests: XCTestCase {
 
     func testFeatureFlags() throws {
         let infoPlistWithFeatureFlags = """
-        <plist version="1.0">
-        <dict>
-            <key>CFBundleDisplayName</key>
-            <string>Info Plist Display Name</string>
-            <key>CFBundleIdentifier</key>
-            <string>com.info.Plist</string>
-            <key>CFBundleVersion</key>
-            <string>1.0.0</string>
-            <key>CDExperimentalFeatureFlags</key>
+            <plist version="1.0">
             <dict>
-                <key>ExperimentalOverloadedSymbolPresentation</key>
-                <true/>
+                <key>CFBundleDisplayName</key>
+                <string>Info Plist Display Name</string>
+                <key>CFBundleIdentifier</key>
+                <string>com.info.Plist</string>
+                <key>CFBundleVersion</key>
+                <string>1.0.0</string>
+                <key>CDExperimentalFeatureFlags</key>
+                <dict>
+                    <key>ExperimentalOverloadedSymbolPresentation</key>
+                    <true/>
+                </dict>
             </dict>
-        </dict>
-        </plist>
-        """
+            </plist>
+            """
 
         let infoPlistWithFeatureFlagsData = Data(infoPlistWithFeatureFlags.utf8)
         let info = try DocumentationBundle.Info(
             from: infoPlistWithFeatureFlagsData,
-            bundleDiscoveryOptions: nil)
+            bundleDiscoveryOptions: nil
+        )
 
         let featureFlags = try XCTUnwrap(info.featureFlags)
         XCTAssertTrue(try XCTUnwrap(featureFlags.experimentalOverloadedSymbolPresentation))

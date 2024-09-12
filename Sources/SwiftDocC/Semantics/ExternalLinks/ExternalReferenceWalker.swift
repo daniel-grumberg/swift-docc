@@ -20,55 +20,53 @@ fileprivate extension Optional {
     }
 }
 
-/**
- Walks a `Semantic` tree and collects any and all links external to the given bundle.
- 
- Visits semantic nodes and descends into all their children that do have (indirectly or directly) content.
- When visiting a node that directly contains markup content visits the markup with an instance of ``ExternalMarkupReferenceWalker``
- which in turn walks the markup tree and collects external links.
- 
- Once the visitor has finished visiting the semantic node and the relevant children all
- encountered external links are collected in ``collectedExternalReferences``.
- 
- > Warning: This type needs to keep up to date with the semantic objects it walks. When changing the API design
-   for types like ``Symbol`` or ``Article``, if the changes include new pieces of content that might contain external links,
-   this type needs to be updated to walk those new pieces of content as well.
- */
+/// Walks a `Semantic` tree and collects any and all links external to the given bundle.
+///
+/// Visits semantic nodes and descends into all their children that do have (indirectly or directly) content.
+/// When visiting a node that directly contains markup content visits the markup with an instance of ``ExternalMarkupReferenceWalker``
+/// which in turn walks the markup tree and collects external links.
+///
+/// Once the visitor has finished visiting the semantic node and the relevant children all
+/// encountered external links are collected in ``collectedExternalReferences``.
+///
+/// > Warning: This type needs to keep up to date with the semantic objects it walks. When changing the API design
+///   for types like ``Symbol`` or ``Article``, if the changes include new pieces of content that might contain external links,
+///   this type needs to be updated to walk those new pieces of content as well.
 struct ExternalReferenceWalker: SemanticVisitor {
     typealias Result = Void
 
     /// A markup walker to use for collecting links from markup elements.
     private var markupResolver: ExternalMarkupReferenceWalker
-    
+
     /// Collected unresolved external references, grouped by the bundle ID.
     var collectedExternalReferences: [BundleIdentifier: [UnresolvedTopicReference]] {
         return markupResolver.collectedExternalLinks.mapValues { links in
             links.map(UnresolvedTopicReference.init(topicURL:))
         }
     }
-    
+
     /// Creates a new semantic walker that collects links to other documentation sources.
     /// - Parameter localBundleID: The local bundle ID, used to identify and skip absolute fully qualified local links.
     init(localBundleID: BundleIdentifier) {
         self.markupResolver = ExternalMarkupReferenceWalker(localBundleID: localBundleID)
     }
-    
-    mutating func visitCode(_ code: Code) { }
-    
+
+    mutating func visitCode(_ code: Code) {}
+
     mutating func visitSteps(_ steps: Steps) {
         steps.content.forEach { visit($0) }
     }
-    
+
     mutating func visitStep(_ step: Step) {
         visit(step.content)
         visit(step.caption)
     }
-        
+
     mutating func visitTutorialSection(_ tutorialSection: TutorialSection) {
         visitMarkupLayouts(tutorialSection.introduction)
         tutorialSection.stepsContent.unwrap { visitSteps($0) }
     }
-    
+
     mutating func visitTutorial(_ tutorial: Tutorial) {
         visit(tutorial.intro)
         tutorial.sections.forEach { visit($0) }
@@ -76,86 +74,86 @@ struct ExternalReferenceWalker: SemanticVisitor {
             visit(assessments)
         }
     }
-    
+
     mutating func visitIntro(_ intro: Intro) {
         visit(intro.content)
     }
-    
-    mutating func visitXcodeRequirement(_ xcodeRequirement: XcodeRequirement) { }
-    
+
+    mutating func visitXcodeRequirement(_ xcodeRequirement: XcodeRequirement) {}
+
     mutating func visitAssessments(_ assessments: Assessments) {
         assessments.questions.forEach { visit($0) }
     }
-    
+
     mutating func visitMultipleChoice(_ multipleChoice: MultipleChoice) {
         visit(multipleChoice.questionPhrasing)
         visit(multipleChoice.content)
         multipleChoice.choices.forEach { visit($0) }
     }
-    
+
     mutating func visitJustification(_ justification: Justification) {
         visit(justification.content)
     }
-    
+
     mutating func visitChoice(_ choice: Choice) {
         visit(choice.content)
         visit(choice.justification)
     }
-    
+
     mutating func visitMarkupContainer(_ markupContainer: MarkupContainer) {
         markupContainer.elements.forEach { markupResolver.visit($0) }
     }
-    
+
     mutating func visitMarkup(_ markup: Markup) {
         visitMarkupContainer(MarkupContainer(markup))
     }
-    
+
     mutating func visitTechnology(_ technology: Technology) {
         visit(technology.intro)
         technology.volumes.forEach { visit($0) }
         technology.resources.unwrap { visit($0) }
     }
-    
-    mutating func visitImageMedia(_ imageMedia: ImageMedia) { }
-    
-    mutating func visitVideoMedia(_ videoMedia: VideoMedia) { }
-    
+
+    mutating func visitImageMedia(_ imageMedia: ImageMedia) {}
+
+    mutating func visitVideoMedia(_ videoMedia: VideoMedia) {}
+
     mutating func visitContentAndMedia(_ contentAndMedia: ContentAndMedia) {
         visit(contentAndMedia.content)
     }
-    
+
     mutating func visitVolume(_ volume: Volume) {
         volume.content.unwrap { visit($0) }
         volume.chapters.forEach { visit($0) }
     }
-    
+
     mutating func visitChapter(_ chapter: Chapter) {
         visit(chapter.content)
         chapter.topicReferences.forEach { visit($0) }
     }
-    
-    mutating func visitTutorialReference(_ tutorialReference: TutorialReference) { }
+
+    mutating func visitTutorialReference(_ tutorialReference: TutorialReference) {}
 
     mutating func visitResources(_ resources: Resources) {
         visitMarkupContainer(resources.content)
         resources.tiles.forEach { visitTile($0) }
     }
-    
+
     mutating func visitTile(_ tile: Tile) {
         visitMarkupContainer(tile.content)
     }
-    
+
     mutating func visitTutorialArticle(_ article: TutorialArticle) {
         article.intro.unwrap { visitIntro($0) }
         visitMarkupLayouts(article.content)
         article.assessments.unwrap { visit($0) }
     }
-    
+
     mutating func visitArticle(_ article: Article) {
         article.abstractSection.unwrap { visitMarkup($0.paragraph) }
-        article.discussion.unwrap { $0.content.forEach { visitMarkup($0) }}
-        article.topics.unwrap { $0.content.forEach { visitMarkup($0) }}
-        article.seeAlso.unwrap { $0.content.forEach { visitMarkup($0) }}
+        article.discussion.unwrap { $0.content.forEach { visitMarkup($0) } }
+        article.topics.unwrap { $0.content.forEach { visitMarkup($0) } }
+        article.seeAlso.unwrap { $0.content.forEach { visitMarkup($0) } }
         article.deprecationSummary.unwrap { visitMarkupContainer($0) }
     }
 
@@ -168,12 +166,12 @@ struct ExternalReferenceWalker: SemanticVisitor {
             }
         }
     }
-    
+
     mutating func visitStack(_ stack: Stack) {
         stack.contentAndMedia.forEach { visitContentAndMedia($0) }
     }
 
-    mutating func visitComment(_ comment: Comment) { }
+    mutating func visitComment(_ comment: Comment) {}
 
     mutating func visitSection(_ section: Section) {
         for markup in section.content { visitMarkup(markup) }

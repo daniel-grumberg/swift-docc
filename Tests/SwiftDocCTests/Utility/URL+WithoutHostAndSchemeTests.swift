@@ -9,6 +9,7 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class URL_withoutHostAndPortAndSchemeTests: XCTestCase {
@@ -18,7 +19,7 @@ class URL_withoutHostAndPortAndSchemeTests: XCTestCase {
 
         let withoutHostAndPortAndScheme = url.withoutHostAndPortAndScheme()
         XCTAssertEqual(withoutHostAndPortAndScheme.absoluteString, "/path/to/something#fragment")
-        
+
         // Removing the host and scheme from a URL without those shouldn't change anything.
         XCTAssertEqual(withoutHostAndPortAndScheme.withoutHostAndPortAndScheme().absoluteString, "/path/to/something#fragment")
     }

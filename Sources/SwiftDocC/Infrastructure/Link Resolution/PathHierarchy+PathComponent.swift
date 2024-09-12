@@ -15,14 +15,15 @@ import SymbolKit
 /// This is used to identify parsed path components as kind information.
 private let knownSymbolKinds: Set<String> = {
     // We don't want to register these extended symbol kinds because that makes them available for decoding from symbol graphs which is unexpected.
-    let knownKinds = SymbolGraph.Symbol.KindIdentifier.allCases + [
-        .extendedProtocol,
-        .extendedStructure,
-        .extendedClass,
-        .extendedEnumeration,
-        .unknownExtendedType,
-        .extendedModule
-    ]
+    let knownKinds =
+        SymbolGraph.Symbol.KindIdentifier.allCases + [
+            .extendedProtocol,
+            .extendedStructure,
+            .extendedClass,
+            .extendedEnumeration,
+            .unknownExtendedType,
+            .extendedModule,
+        ]
     return Set(knownKinds.map(\.identifier))
 }()
 
@@ -40,13 +41,13 @@ extension PathHierarchy {
         let name: Substring
         /// The parsed disambiguation information, if any.
         var disambiguation: Disambiguation?
-        
+
         enum Disambiguation {
             /// This path component uses a combination of kind and hash disambiguation
             case kindAndHash(kind: Substring?, hash: Substring?)
         }
     }
-    
+
     enum PathParser {
         typealias PathComponent = PathHierarchy.PathComponent
     }
@@ -78,11 +79,11 @@ extension PathHierarchy.PathParser {
     /// - Returns: A pair of the parsed path components and a flag that indicate if the documentation link is absolute or not.
     static func parse(path: String) -> (components: [PathComponent], isAbsolute: Bool) {
         guard !path.isEmpty else { return ([], true) }
-        
+
         let (components, isAbsolute) = self.split(path)
         return (components.map(Self.parse(pathComponent:)), isAbsolute)
     }
-    
+
     /// Parses a single path component string into a structured format.
     ///
     /// For example, a path component like `"SymbolName-class"` will be split into `(name: "SymbolName", kind: "class")`
@@ -92,10 +93,10 @@ extension PathHierarchy.PathParser {
         guard let dashIndex = original.lastIndex(of: "-") else {
             return PathComponent(full: full, name: full[...], disambiguation: nil)
         }
-        
+
         let hash = original[dashIndex...].dropFirst()
         let name = original[..<dashIndex]
-        
+
         func isValidHash(_ hash: Substring) -> Bool {
             // Checks if a string looks like a truncated, lowercase FNV-1 hash string.
             var index: UInt8 = 0
@@ -105,7 +106,7 @@ extension PathHierarchy.PathParser {
             }
             return index > 0
         }
-        
+
         if knownSymbolKinds.contains(String(hash)) {
             // The parsed hash value is a symbol kind
             return PathComponent(full: full, name: name, disambiguation: .kindAndHash(kind: hash, hash: nil))
@@ -118,7 +119,7 @@ extension PathHierarchy.PathParser {
             // The parsed hash is neither a symbol not a valid hash. It's probably a hyphen-separated name.
             return PathComponent(full: full, name: full[...], disambiguation: nil)
         }
-        
+
         if let dashIndex = name.lastIndex(of: "-") {
             let kind = name[dashIndex...].dropFirst()
             let name = name[..<dashIndex]
@@ -131,7 +132,7 @@ extension PathHierarchy.PathParser {
         }
         return PathComponent(full: full, name: name, disambiguation: .kindAndHash(kind: nil, hash: hash))
     }
-    
+
     /// Splits the link string into its component substrings and identifies the the link string is an absolute link.
     ///
     /// For example, a link string like `"/ModuleName/SymbolName-class//=(_:_:)-abc123#HeaderName"` will be split into:
@@ -148,7 +149,7 @@ extension PathHierarchy.PathParser {
     /// ```
     static func split(_ path: String) -> (componentSubstrings: [Substring], isAbsolute: Bool) {
         var components: [Substring] = self.split(path)
-        
+
         // As an implementation detail, the way that the path parser identifies that "/ModuleName/SymbolName" is an absolute link, but that "/=(_:_:)" _isn't_
         // an absolute link is by inspecting the first component substring. In both these cases, that substring starts with a "/".
         // However, because the first component of an absolute link needs to be a module name (or "documentation" or "tutorials" for backwards compatibility),
@@ -168,27 +169,28 @@ extension PathHierarchy.PathParser {
             }
         } else {
             let name = components.first.map(String.init)
-            isAbsolute = name == NodeURLGenerator.Path.documentationFolderName
-                      || name == NodeURLGenerator.Path.tutorialsFolderName
+            isAbsolute =
+                name == NodeURLGenerator.Path.documentationFolderName
+                || name == NodeURLGenerator.Path.tutorialsFolderName
         }
-        
+
         return (components, isAbsolute)
     }
-    
+
     private static func split(_ path: String) -> [Substring] {
-        var result = [Substring]()
+        var result: [Substring] = []
         var scanner = PathComponentScanner(path[...])
-        
+
         let anchorResult = scanner.scanAnchorComponentAtEnd()
-        
+
         while !scanner.isEmpty {
             let component = scanner.scanPathComponent()
             if !component.isEmpty {
                 result.append(component)
             }
         }
-        
-        if let anchorResult{
+
+        if let anchorResult {
             result.append(anchorResult)
         }
 
@@ -198,83 +200,83 @@ extension PathHierarchy.PathParser {
 
 private struct PathComponentScanner {
     private var remaining: Substring
-    
+
     static let separator: Character = "/"
     private static let anchorSeparator: Character = "#"
-    
+
     private static let swiftOperatorEnd: Character = ")"
-    
+
     private static let cxxOperatorPrefix = "operator"
     private static let cxxOperatorPrefixLength = cxxOperatorPrefix.count
-    
+
     init(_ original: Substring) {
         remaining = original
     }
-    
+
     var isEmpty: Bool {
         remaining.isEmpty
     }
-    
+
     mutating func scanPathComponent() -> Substring {
         // If the next component is a Swift operator, parse the full operator before splitting on "/" ("/" may appear in the operator name)
         if remaining.unicodeScalars.prefix(3).allSatisfy(\.isValidSwiftOperatorHead) {
             return scanUntil(index: remaining.firstIndex(of: Self.swiftOperatorEnd))
-                 + scanUntilSeparatorAndThenSkipIt()
+                + scanUntilSeparatorAndThenSkipIt()
         }
-        
+
         // If the next component is a C++ operator, parse the full operator before splitting on "/" ("/" may appear in the operator name)
         if remaining.starts(with: Self.cxxOperatorPrefix),
-           remaining.unicodeScalars.dropFirst(Self.cxxOperatorPrefixLength).first?.isValidCxxOperatorSymbol == true
+            remaining.unicodeScalars.dropFirst(Self.cxxOperatorPrefixLength).first?.isValidCxxOperatorSymbol == true
         {
             return scan(length: Self.cxxOperatorPrefixLength)
-                 + scanUntil(index: remaining.unicodeScalars.firstIndex(where: { !$0.isValidCxxOperatorSymbol }))
-                 + scanUntilSeparatorAndThenSkipIt()
+                + scanUntil(index: remaining.unicodeScalars.firstIndex(where: { !$0.isValidCxxOperatorSymbol }))
+                + scanUntilSeparatorAndThenSkipIt()
         }
-        
+
         // To enable the path parser to identify absolute links, include any leading "/" in the scanned component substring.
         // As an implementation detail, the `PathParser`  is responsible for identifying absolute links so that the scanner doesn't need to
         // track the current location in the original link string and so that `scanPathComponent()` can return only the scanned substring.
         if remaining.first == Self.separator {
             return scanUntil(index: remaining.firstIndex(where: { $0 != Self.separator }))
-                 + scanPathComponent()
+                + scanPathComponent()
         }
-        
+
         // If the string doesn't contain a slash then the rest of the string is the component
         return scanUntilSeparatorAndThenSkipIt()
     }
-    
+
     mutating func scanAnchorComponentAtEnd() -> Substring? {
         guard let index = remaining.firstIndex(of: Self.anchorSeparator) else {
             return nil
         }
-        
+
         defer { remaining = remaining[..<index] }
-        return remaining[index...].dropFirst() // drop the anchor separator
+        return remaining[index...].dropFirst()  // drop the anchor separator
     }
-    
+
     private mutating func scan(length: Int) -> Substring {
         defer { remaining = remaining.dropFirst(length) }
         return remaining.prefix(length)
     }
-    
+
     private mutating func scanUntil(index: Substring.Index?) -> Substring {
         guard let index = index else {
             defer { remaining.removeAll() }
             return remaining
         }
-        
+
         defer { remaining = remaining[index...] }
         return remaining[..<index]
     }
-    
+
     private mutating func scanUntilSeparatorAndThenSkipIt() -> Substring {
         guard let index = remaining.firstIndex(of: Self.separator) else {
             defer { remaining.removeAll() }
             return remaining
         }
-        
+
         defer {
-            remaining = remaining[index...].dropFirst() // drop the slash
+            remaining = remaining[index...].dropFirst()  // drop the slash
         }
         return remaining[..<index]
     }
@@ -298,9 +300,8 @@ private extension Unicode.Scalar {
         // These is based on "swift-tools-support-core/Sources/TSCUtility/StringMangling.swift"
         // but that repo is deprecated and not recommended as a dependency.
         switch value {
-        case
-            // A-Z
-            0x0041...0x005A,
+        case // A-Z
+        0x0041...0x005A,
             // a-z
             0x0061...0x007A,
             // 0-9
@@ -474,7 +475,7 @@ private extension Unicode.Scalar {
             return false
         }
     }
-       
+
     var isValidCxxOperatorSymbol: Bool {
         switch value {
         // ! % & ( ) * + , - / < = > [ ] ^ | ~
@@ -484,63 +485,62 @@ private extension Unicode.Scalar {
             return false
         }
     }
-    
+
     var isValidSwiftOperatorHead: Bool {
         // See https://docs.swift.org/swift-book/documentation/the-swift-programming-language/lexicalstructure#Operators
         switch value {
-        case 
-            // ! % & * + - . / < = > ? ^| ~
-            0x21, 0x25, 0x26, 0x2A, 0x2B, 0x2D...0x2F, 0x3C, 0x3D...0x3F, 0x5E, 0x7C, 0x7E,
+        case // ! % & * + - . / < = > ? ^| ~
+        0x21, 0x25, 0x26, 0x2A, 0x2B, 0x2D...0x2F, 0x3C, 0x3D...0x3F, 0x5E, 0x7C, 0x7E,
             // ¡ ¢ £ ¤ ¥ ¦ §
-            0xA1 ... 0xA7,
+            0xA1...0xA7,
             // © «
-            0xA9, 0xAB ,
+            0xA9, 0xAB,
             // ¬ ®
-            0xAC, 0xAE ,
+            0xAC, 0xAE,
             // ° ±
-            0xB0 ... 0xB1,
+            0xB0...0xB1,
             // ¶ » ¿ × ÷
-            0xB6, 0xBB, 0xBF, 0xD7, 0xF7 ,
+            0xB6, 0xBB, 0xBF, 0xD7, 0xF7,
             // ‖ ‗
-            0x2016 ... 0x2017,
+            0x2016...0x2017,
             // † ‡ • ‣ ․ ‥ … ‧
-            0x2020 ... 0x2027,
+            0x2020...0x2027,
             // ‰ ‱ ′ ″ ‴ ‵ ‶ ‷ ‸ ‹ › ※ ‼ ‽ ‾
-            0x2030 ... 0x203E,
+            0x2030...0x203E,
             // ⁁ ⁂ ⁃ ⁄ ⁅ ⁆ ⁇ ⁈ ⁉ ⁊ ⁋ ⁌ ⁍ ⁎ ⁏ ⁐ ⁑ ⁒ ⁓
-            0x2041 ... 0x2053,
+            0x2041...0x2053,
             // ⁕ ⁖ ⁗ ⁘ ⁙ ⁚ ⁛ ⁜ ⁝ ⁞
-            0x2055 ... 0x205E,
+            0x2055...0x205E,
             // Box Drawing
-            0x2500 ... 0x257F,
+            0x2500...0x257F,
             // Block Elements
-            0x2580 ... 0x259F,
+            0x2580...0x259F,
             // Geometric Shapes,
-            0x25A0 ... 0x25FF,
+            0x25A0...0x25FF,
             // Miscellaneous Symbols
-            0x2600 ... 0x26FF,
+            0x2600...0x26FF,
             // Dingbats
-            0x2700 ... 0x27BF,
+            0x2700...0x27BF,
             // Miscellaneous Mathematical Symbols-A
-            0x27C0 ... 0x27EF,
+            0x27C0...0x27EF,
             // Supplemental Arrows-A
-            0x27F0 ... 0x27FF,
+            0x27F0...0x27FF,
             // Braille Patterns
-            0x2800 ... 0x28FF,
+            0x2800...0x28FF,
             // Supplemental Arrows-B
-            0x2900 ... 0x297F,
+            0x2900...0x297F,
             // Miscellaneous Mathematical Symbols-B
-            0x2980 ... 0x29FF,
+            0x2980...0x29FF,
             // Supplemental Mathematical Operators
-            0x2A00 ... 0x2AFF,
+            0x2A00...0x2AFF,
             // Miscellaneous Symbols and Arrows
-            0x2B00 ... 0x2BFF,
+            0x2B00...0x2BFF,
             // Supplemental Punctuation
-            0x2E00 ... 0x2E7F,
+            0x2E00...0x2E7F,
             // 、 。 〃
-            0x3001 ... 0x3003,
+            0x3001...0x3003,
             //〈 〉 《 》 「 」 『 』 【 】 〒 〓 〔 〕 〖 〗 〘 〙 〚 〛 〜 〝 〞 〟 〠
-            0x3008 ... 0x3020,
+            0x3008...0x3020,
             // 〰
             0x3030:
             return true

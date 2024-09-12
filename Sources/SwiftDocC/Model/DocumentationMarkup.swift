@@ -64,7 +64,7 @@ struct DocumentationMarkup {
         static func < (lhs: DocumentationMarkup.ParserSection, rhs: DocumentationMarkup.ParserSection) -> Bool {
             return lhs.rawValue < rhs.rawValue
         }
-        
+
         case title
         case abstract
         case discussion
@@ -72,35 +72,35 @@ struct DocumentationMarkup {
         case seeAlso
         case end
     }
-    
+
     private static let allowedSectionsForDeprecationSummary = [
         ParserSection.abstract,
         ParserSection.discussion,
     ]
 
     // MARK: - Parsed Data
-    
+
     /// The documentation title, if found.
     private(set) var titleHeading: Heading?
-    
+
     /// The documentation abstract, if found.
     private(set) var abstractSection: AbstractSection?
 
     /// The documentation Discussion section, if found.
     private(set) var discussionSection: DiscussionSection?
-    
+
     /// The documentation tags, if found.
     private(set) var discussionTags: TaggedListItemExtractor?
-    
+
     /// The documentation Topics section, if found.
     private(set) var topicsSection: TopicsSection?
 
     /// The documentation See Also, if found.
     private(set) var seeAlsoSection: SeeAlsoSection?
-    
+
     /// The symbol deprecation information, if found.
     private(set) var deprecation: MarkupContainer?
-    
+
     // MARK: - Initialize and parse the markup
 
     /// Initialize a documentation model with the given markup.
@@ -109,188 +109,190 @@ struct DocumentationMarkup {
     ///   - parseUpToSection: Documentation past this section will be ignored.
     init(markup: Markup, parseUpToSection: ParserSection = .end) {
         self.markup = markup
-        
+
         // The current documentation section being parsed.
         var currentSection = ParserSection.title
-        
+
         // Tracking the start indexes of various sections.
         var discussionIndex: Int?
         var topicsIndex: Int?
         var topicsFirstTaskGroupIndex: Int?
         var seeAlsoIndex: Int?
-        
+
         // Index all headings as a lookup during parsing the content
-        markup.children.enumerated().forEach({ pair in
-            // If we've parsed the last section we're interested in, skip through the rest
-            guard currentSection <= parseUpToSection || currentSection == .end else { return }
-            
-            let (index, child) = pair
-            let isLastChild = index == (markup.childCount - 1)
-            
-            // Already parsed all expected content, return.
-            guard currentSection != .end else { return }
-            
-            // Parse an H1 title, if found.
-            if currentSection == .title {
-                currentSection = .abstract
-                
-                // Index the title child node.
-                if let heading = child as? Heading, heading.level == 1 {
-                    titleHeading = heading
+        markup.children.enumerated()
+            .forEach({ pair in
+                // If we've parsed the last section we're interested in, skip through the rest
+                guard currentSection <= parseUpToSection || currentSection == .end else { return }
+
+                let (index, child) = pair
+                let isLastChild = index == (markup.childCount - 1)
+
+                // Already parsed all expected content, return.
+                guard currentSection != .end else { return }
+
+                // Parse an H1 title, if found.
+                if currentSection == .title {
+                    currentSection = .abstract
+
+                    // Index the title child node.
+                    if let heading = child as? Heading, heading.level == 1 {
+                        titleHeading = heading
+                        return
+                    }
+                }
+
+                // The deprecation summary directive is allowed to have an effect in multiple sections of the content.
+                if let directive = child as? BlockDirective,
+                    directive.name == DeprecationSummary.directiveName,
+                    Self.allowedSectionsForDeprecationSummary.contains(currentSection)
+                {
+                    deprecation = MarkupContainer(directive.children)
                     return
                 }
-            }
-            
-            // The deprecation summary directive is allowed to have an effect in multiple sections of the content.
-            if let directive = child as? BlockDirective,
-               directive.name == DeprecationSummary.directiveName,
-               Self.allowedSectionsForDeprecationSummary.contains(currentSection) {
-                deprecation = MarkupContainer(directive.children)
-                return
-            }
-            
-            // Parse an abstract, if found
-            if currentSection == .abstract {
-                if abstractSection == nil, let firstParagraph = child as? Paragraph {
-                    abstractSection = AbstractSection(paragraph: firstParagraph)
-                    return
-                } else if let directive = child as? BlockDirective {
-                    if BlockDirective.directivesRemovedFromContent.contains(directive.name) {
-                        // These directives don't affect content so they shouldn't break us out of
-                        // the automatic abstract section.
+
+                // Parse an abstract, if found
+                if currentSection == .abstract {
+                    if abstractSection == nil, let firstParagraph = child as? Paragraph {
+                        abstractSection = AbstractSection(paragraph: firstParagraph)
+                        return
+                    } else if let directive = child as? BlockDirective {
+                        if BlockDirective.directivesRemovedFromContent.contains(directive.name) {
+                            // These directives don't affect content so they shouldn't break us out of
+                            // the automatic abstract section.
+                            return
+                        } else {
+                            currentSection = .discussion
+                        }
+                    } else if let _ = child as? HTMLBlock {
+                        // Skip HTMLBlock comment.
                         return
                     } else {
+                        // Only directives and a single paragraph allowed in an abstract,
+                        // advance to a discussion section.
                         currentSection = .discussion
                     }
-                } else if let _ = child as? HTMLBlock {
-                    // Skip HTMLBlock comment.
-                    return
-                } else {
-                    // Only directives and a single paragraph allowed in an abstract,
-                    // advance to a discussion section.
-                    currentSection = .discussion
                 }
-            }
-            
-            // Parse content into a discussion section and assorted tags
-            let parseDiscussion: ([Markup])-> (discussion: DiscussionSection, tags: TaggedListItemExtractor) = { children in
-                // Extract tags
-                var extractor = TaggedListItemExtractor()
-                let content: [Markup]
-                
-                if let remainder = extractor.visit(markup.withUncheckedChildren(children)) {
-                    content = Array(remainder.children)
-                } else {
-                    content = []
+
+                // Parse content into a discussion section and assorted tags
+                let parseDiscussion: ([Markup]) -> (discussion: DiscussionSection, tags: TaggedListItemExtractor) = { children in
+                    // Extract tags
+                    var extractor = TaggedListItemExtractor()
+                    let content: [Markup]
+
+                    if let remainder = extractor.visit(markup.withUncheckedChildren(children)) {
+                        content = Array(remainder.children)
+                    } else {
+                        content = []
+                    }
+
+                    return (discussion: DiscussionSection(content: content), tags: extractor)
                 }
-                
-                return (discussion: DiscussionSection(content: content), tags: extractor)
-            }
-            
-            // Parse a discussion, if found
-            if currentSection == .discussion {
-                // Scanning for the first discussion content child
-                if discussionIndex == nil {
-                    // Level 2 heading found at start of discussion
+
+                // Parse a discussion, if found
+                if currentSection == .discussion {
+                    // Scanning for the first discussion content child
+                    if discussionIndex == nil {
+                        // Level 2 heading found at start of discussion
+                        if let heading = child as? Heading, heading.level == 2 {
+                            switch heading.plainText {
+                            case TopicsSection.title:
+                                currentSection = .topics
+                                return
+                            case SeeAlsoSection.title:
+                                currentSection = .seeAlso
+                                return
+                            default: break
+                            }
+                        }
+
+                        // Discussion content starts at this index
+                        discussionIndex = index
+                    }
+
+                    guard let discussionIndex else { return }
+
+                    // Level 2 heading found inside discussion
                     if let heading = child as? Heading, heading.level == 2 {
                         switch heading.plainText {
                         case TopicsSection.title:
+                            let (discussion, tags) = parseDiscussion(markup.children(at: discussionIndex..<index))
+                            discussionSection = discussion
+                            discussionTags = tags
                             currentSection = .topics
                             return
+
                         case SeeAlsoSection.title:
+                            let (discussion, tags) = parseDiscussion(markup.children(at: discussionIndex..<index))
+                            discussionSection = discussion
+                            discussionTags = tags
                             currentSection = .seeAlso
                             return
                         default: break
                         }
                     }
-                    
-                    // Discussion content starts at this index
-                    discussionIndex = index
-                }
-                
-                guard let discussionIndex else { return }
-                
-                // Level 2 heading found inside discussion
-                if let heading = child as? Heading, heading.level == 2 {
-                    switch heading.plainText {
-                    case TopicsSection.title:
-                        let (discussion, tags) = parseDiscussion(markup.children(at: discussionIndex ..< index))
+
+                    // If at end of content, parse discussion
+                    if isLastChild {
+                        let (discussion, tags) = parseDiscussion(markup.children(at: discussionIndex...index))
                         discussionSection = discussion
                         discussionTags = tags
-                        currentSection = .topics
-                        return
-                        
-                    case SeeAlsoSection.title:
-                        let (discussion, tags) = parseDiscussion(markup.children(at: discussionIndex ..< index))
-                        discussionSection = discussion
-                        discussionTags = tags
-                        currentSection = .seeAlso
-                        return
-                    default: break
                     }
                 }
-                
-                // If at end of content, parse discussion
-                if isLastChild {
-                    let (discussion, tags) = parseDiscussion(markup.children(at: discussionIndex ... index))
-                    discussionSection = discussion
-                    discussionTags = tags
-                }
-            }
-            
-            if currentSection == .topics {
-                if let heading = child as? Heading {
-                    // Level 2 heading found inside Topics
-                    if heading.level == 2 {
-                        switch heading.plainText {
-                        case SeeAlsoSection.title:
-                            if let topicsIndex, topicsFirstTaskGroupIndex != nil {
-                                topicsSection = TopicsSection(content: markup.children(at: topicsIndex ..< index))
+
+                if currentSection == .topics {
+                    if let heading = child as? Heading {
+                        // Level 2 heading found inside Topics
+                        if heading.level == 2 {
+                            switch heading.plainText {
+                            case SeeAlsoSection.title:
+                                if let topicsIndex, topicsFirstTaskGroupIndex != nil {
+                                    topicsSection = TopicsSection(content: markup.children(at: topicsIndex..<index))
+                                }
+                                currentSection = .seeAlso
+                                return
+                            default: break
                             }
-                            currentSection = .seeAlso
-                            return
-                        default: break
+                        }
+                        if heading.level == 3 {
+                            topicsFirstTaskGroupIndex = index
                         }
                     }
-                    if heading.level == 3 {
+                    // The first topic group in a topic section is allowed to be "anonymous", or without
+                    // an H3 heading. We account for this by treating both UnorderedLists and Paragraphs as
+                    // valid children indicating the start of a task group.
+                    else if child is UnorderedList {
+                        topicsFirstTaskGroupIndex = index
+                    } else if child is Paragraph {
                         topicsFirstTaskGroupIndex = index
                     }
-                }
-                // The first topic group in a topic section is allowed to be "anonymous", or without
-                // an H3 heading. We account for this by treating both UnorderedLists and Paragraphs as
-                // valid children indicating the start of a task group.
-                else if child is UnorderedList {
-                    topicsFirstTaskGroupIndex = index
-                } else if child is Paragraph {
-                    topicsFirstTaskGroupIndex = index
-                }
-                
-                if topicsIndex == nil { topicsIndex = index }
-                
-                // If at end of content, parse topics
-                if isLastChild && topicsFirstTaskGroupIndex != nil {
-                    topicsSection = TopicsSection(content: markup.children(at: topicsIndex! ... index))
-                }
-            }
 
-            if currentSection == .seeAlso {
-                // Level 2 heading found inside See Also
-                if child is Heading {
-                    if let seeAlsoIndex {
-                        seeAlsoSection = SeeAlsoSection(content: markup.children(at: seeAlsoIndex ..< index))
+                    if topicsIndex == nil { topicsIndex = index }
+
+                    // If at end of content, parse topics
+                    if isLastChild && topicsFirstTaskGroupIndex != nil {
+                        topicsSection = TopicsSection(content: markup.children(at: topicsIndex!...index))
                     }
-                    currentSection = .end
-                    return
                 }
-                
-                if seeAlsoIndex == nil { seeAlsoIndex = index }
-                
-                // If at end of content, parse topics
-                if isLastChild {
-                    seeAlsoSection = SeeAlsoSection(content: markup.children(at: seeAlsoIndex! ... index))
+
+                if currentSection == .seeAlso {
+                    // Level 2 heading found inside See Also
+                    if child is Heading {
+                        if let seeAlsoIndex {
+                            seeAlsoSection = SeeAlsoSection(content: markup.children(at: seeAlsoIndex..<index))
+                        }
+                        currentSection = .end
+                        return
+                    }
+
+                    if seeAlsoIndex == nil { seeAlsoIndex = index }
+
+                    // If at end of content, parse topics
+                    if isLastChild {
+                        seeAlsoSection = SeeAlsoSection(content: markup.children(at: seeAlsoIndex!...index))
+                    }
                 }
-            }
-        })
+            })
     }
 }
 
@@ -303,8 +305,8 @@ extension Markup {
     func children(at range: ClosedRange<Int>) -> [Markup] {
         var iterator = children.makeIterator()
         var counter = 0
-        var result = [Markup]()
-        
+        var result: [Markup] = []
+
         while let next = iterator.next() {
             defer { counter += 1 }
             guard counter <= range.upperBound else { break }
@@ -320,8 +322,8 @@ extension Markup {
     func children(at range: Range<Int>) -> [Markup] {
         var iterator = children.makeIterator()
         var counter = 0
-        var result = [Markup]()
-        
+        var result: [Markup] = []
+
         while let next = iterator.next() {
             defer { counter += 1 }
             guard counter < range.upperBound else { break }

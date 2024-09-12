@@ -31,8 +31,8 @@ public protocol DynamicallyIdentifiableMetric: BenchmarkMetric {
 
 /// A metric that runs over a period of time and needs to be started and stopped to produce its result.
 public protocol BenchmarkBlockMetric: BenchmarkMetric {
-    func begin() -> Void
-    func end() -> Void
+    func begin()
+    func end()
 }
 
 /// A metric result which can be encoded.

@@ -20,7 +20,7 @@ extension Semantic.Analyses {
         public init(severityIfNotFound: DiagnosticSeverity?) {
             self.severityIfNotFound = severityIfNotFound
         }
-        
+
         public func analyze(
             _ directive: BlockDirective,
             children: some Sequence<Markup>,
@@ -41,7 +41,7 @@ extension Semantic.Analyses {
             ) as! ([Child], MarkupContainer)
         }
     }
-    
+
     static func extractAtLeastOne(
         childType: DirectiveConvertible.Type,
         parentDirective: BlockDirective,
@@ -56,11 +56,11 @@ extension Semantic.Analyses {
             guard let childDirective = child as? BlockDirective,
                 childType.canConvertDirective(childDirective)
             else {
-                    return nil
+                return nil
             }
             return childDirective
         }
-        
+
         if matches.isEmpty, let severityIfNotFound {
             let diagnostic = Diagnostic(
                 source: source,
@@ -74,10 +74,10 @@ extension Semantic.Analyses {
                     \(childType.directiveName.singleQuoted) child directive
                     """
             )
-                
+
             problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
         }
-        
+
         let converted = matches.compactMap { childDirective -> DirectiveConvertible? in
             return childType.init(
                 from: childDirective,
@@ -87,8 +87,7 @@ extension Semantic.Analyses {
                 problems: &problems
             )
         }
-        
+
         return (converted, remainder: MarkupContainer(remainder))
     }
 }
-

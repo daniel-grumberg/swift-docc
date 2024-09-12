@@ -20,8 +20,15 @@ extension Semantic.Analyses {
         public init(severityIfNotFound: DiagnosticSeverity?) {
             self.severityIfNotFound = severityIfNotFound
         }
-        
-        public func analyze(_ directive: BlockDirective, children: some Sequence<Markup>, source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) -> (Child?, remainder: MarkupContainer) {
+
+        public func analyze(
+            _ directive: BlockDirective,
+            children: some Sequence<Markup>,
+            source: URL?,
+            for bundle: DocumentationBundle,
+            in context: DocumentationContext,
+            problems: inout [Problem]
+        ) -> (Child?, remainder: MarkupContainer) {
             return Semantic.Analyses.extractExactlyOne(
                 childType: Child.self,
                 parentDirective: directive,
@@ -34,7 +41,7 @@ extension Semantic.Analyses {
             ) as! (Child?, MarkupContainer)
         }
     }
-    
+
     static func extractExactlyOne(
         childType: DirectiveConvertible.Type,
         parentDirective: BlockDirective,
@@ -47,12 +54,13 @@ extension Semantic.Analyses {
     ) -> (DirectiveConvertible?, remainder: MarkupContainer) {
         let (candidates, remainder) = children.categorize { child -> BlockDirective? in
             guard let childDirective = child as? BlockDirective,
-                childType.canConvertDirective(childDirective) else {
-                    return nil
+                childType.canConvertDirective(childDirective)
+            else {
+                return nil
             }
             return childDirective
         }
-        
+
         guard let candidate = candidates.first else {
             if let severityIfNotFound {
                 let diagnostic = Diagnostic(
@@ -62,18 +70,18 @@ extension Semantic.Analyses {
                     identifier: "org.swift.docc.HasExactlyOne<\(parentDirective.name), \(childType)>.Missing",
                     summary: "Missing \(childType.directiveName.singleQuoted) child directive",
                     explanation: """
-                    The \(parentDirective.name.singleQuoted) directive must have exactly \
-                    one \(childType.directiveName.singleQuoted) child directive
-                    """
+                        The \(parentDirective.name.singleQuoted) directive must have exactly \
+                        one \(childType.directiveName.singleQuoted) child directive
+                        """
                 )
                 problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
             }
             return (nil, MarkupContainer(remainder))
         }
-        
+
         // Even if a single child is optional, having duplicates is thus far always a warning
         // because it would become ambiguous which child to choose as the one.
-        
+
         if let severityIfNotFound {
             for candidate in candidates.suffix(from: 1) {
                 let diagnostic = Diagnostic(
@@ -83,25 +91,32 @@ extension Semantic.Analyses {
                     identifier: "org.swift.docc.HasExactlyOne<\(parentDirective.name), \(childType)>.DuplicateChildren",
                     summary: "Duplicate \(childType.directiveName.singleQuoted) child directive",
                     explanation: """
-                    The \(parentDirective.name.singleQuoted) directive must have exactly \
-                    one \(childType.directiveName.singleQuoted) child directive
-                    """
+                        The \(parentDirective.name.singleQuoted) directive must have exactly \
+                        one \(childType.directiveName.singleQuoted) child directive
+                        """
                 )
                 problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
             }
         }
-        
+
         return (childType.init(from: candidate, source: source, for: bundle, in: context, problems: &problems), MarkupContainer(remainder))
     }
-    
+
     /// Checks a parent directive for the presence of exactly one of two child directives---but not both---to be converted to a type ``SemanticAnalysis/Result``. If so, return that child and the remainder.
     public struct HasExactlyOneOf<Parent: Semantic & DirectiveConvertible, Child1: Semantic & DirectiveConvertible, Child2: Semantic & DirectiveConvertible>: SemanticAnalysis {
         let severityIfNotFound: DiagnosticSeverity?
         public init(severityIfNotFound: DiagnosticSeverity?) {
             self.severityIfNotFound = severityIfNotFound
         }
-        
-        public func analyze(_ directive: BlockDirective, children: some Sequence<Markup>, source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) -> (Child1?, Child2?, remainder: MarkupContainer) {
+
+        public func analyze(
+            _ directive: BlockDirective,
+            children: some Sequence<Markup>,
+            source: URL?,
+            for bundle: DocumentationBundle,
+            in context: DocumentationContext,
+            problems: inout [Problem]
+        ) -> (Child1?, Child2?, remainder: MarkupContainer) {
             let (candidates, remainder) = children.categorize { child -> BlockDirective? in
                 guard let childDirective = child as? BlockDirective else {
                     return nil
@@ -113,20 +128,34 @@ extension Semantic.Analyses {
                     return nil
                 }
             }
-            
+
             guard let candidate = candidates.first else {
                 if let severity = severityIfNotFound {
-                    let diagnostic = Diagnostic(source: source, severity: severity, range: directive.range, identifier: "org.swift.docc.HasExactlyOneOf<\(Parent.self), \(Child1.self), \(Child2.self)>.Missing", summary: "The \(Parent.directiveName.singleQuoted) directive requires a child directive of type \(Child1.directiveName.singleQuoted) or \(Child2.directiveName.singleQuoted)")
+                    let diagnostic = Diagnostic(
+                        source: source,
+                        severity: severity,
+                        range: directive.range,
+                        identifier: "org.swift.docc.HasExactlyOneOf<\(Parent.self), \(Child1.self), \(Child2.self)>.Missing",
+                        summary:
+                            "The \(Parent.directiveName.singleQuoted) directive requires a child directive of type \(Child1.directiveName.singleQuoted) or \(Child2.directiveName.singleQuoted)"
+                    )
                     problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
                 }
                 return (nil, nil, MarkupContainer(remainder))
             }
-            
+
             for candidate in candidates.suffix(from: 1) {
-                let diagnostic = Diagnostic(source: source, severity: .warning, range: candidate.range, identifier: "org.swift.docc.HasExactlyOneOf<\(Parent.self), \(Child1.self), \(Child2.self)>.Duplicate", summary: "The \(Parent.directiveName.singleQuoted) directive must have exactly one \(Child1.directiveName.singleQuoted) or \(Child2.directiveName.singleQuoted) child directive but not both")
+                let diagnostic = Diagnostic(
+                    source: source,
+                    severity: .warning,
+                    range: candidate.range,
+                    identifier: "org.swift.docc.HasExactlyOneOf<\(Parent.self), \(Child1.self), \(Child2.self)>.Duplicate",
+                    summary:
+                        "The \(Parent.directiveName.singleQuoted) directive must have exactly one \(Child1.directiveName.singleQuoted) or \(Child2.directiveName.singleQuoted) child directive but not both"
+                )
                 problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
             }
-            
+
             switch candidate.name {
             case Child1.directiveName:
                 guard let first = Child1(from: candidate, source: source, for: bundle, in: context, problems: &problems) else {
@@ -138,33 +167,48 @@ extension Semantic.Analyses {
                     return (nil, nil, remainder: MarkupContainer(remainder))
                 }
                 return (nil, second, remainder: MarkupContainer(remainder))
-                
+
             default:
                 return (nil, nil, remainder: MarkupContainer(remainder))
             }
         }
     }
-    
+
     public struct HasExactlyOneImageOrVideoMedia<Parent: Semantic & DirectiveConvertible>: SemanticAnalysis {
         let severityIfNotFound: DiagnosticSeverity?
         public init(severityIfNotFound: DiagnosticSeverity?) {
             self.severityIfNotFound = severityIfNotFound
         }
 
-        public func analyze(_ directive: BlockDirective, children: some Sequence<Markup>, source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) -> (Media?, remainder: MarkupContainer) {
-            let (foundImage, foundVideo, remainder) = HasExactlyOneOf<Parent, ImageMedia, VideoMedia>(severityIfNotFound: severityIfNotFound).analyze(directive, children: children, source: source, for: bundle, in: context, problems: &problems)
+        public func analyze(
+            _ directive: BlockDirective,
+            children: some Sequence<Markup>,
+            source: URL?,
+            for bundle: DocumentationBundle,
+            in context: DocumentationContext,
+            problems: inout [Problem]
+        ) -> (Media?, remainder: MarkupContainer) {
+            let (foundImage, foundVideo, remainder) = HasExactlyOneOf<Parent, ImageMedia, VideoMedia>(severityIfNotFound: severityIfNotFound)
+                .analyze(directive, children: children, source: source, for: bundle, in: context, problems: &problems)
             return (foundImage ?? foundVideo, remainder)
         }
     }
-        
+
     public struct HasExactlyOneMedia<Parent: Semantic & DirectiveConvertible>: SemanticAnalysis {
         let severityIfNotFound: DiagnosticSeverity?
-        
+
         init(severityIfNotFound: DiagnosticSeverity?) {
             self.severityIfNotFound = severityIfNotFound
         }
-        
-        public func analyze(_ directive: BlockDirective, children: some Sequence<Markup>, source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) -> (Media?, remainder: MarkupContainer) {
+
+        public func analyze(
+            _ directive: BlockDirective,
+            children: some Sequence<Markup>,
+            source: URL?,
+            for bundle: DocumentationBundle,
+            in context: DocumentationContext,
+            problems: inout [Problem]
+        ) -> (Media?, remainder: MarkupContainer) {
             let (mediaDirectives, remainder) = children.categorize { child -> BlockDirective? in
                 guard let childDirective = child as? BlockDirective else {
                     return nil
@@ -176,11 +220,17 @@ extension Semantic.Analyses {
                     return nil
                 }
             }
-            
+
             if mediaDirectives.count > 1 {
                 for duplicate in mediaDirectives.suffix(from: 1) {
-                    let diagnostic = Diagnostic(source: source, severity: .warning, range: duplicate.range, identifier: "org.swift.docc.HasExactlyOneMedia<\(Parent.self)>.Duplicate", summary: "The \(Parent.directiveName.singleQuoted) directive can only have one Media element")
-                    
+                    let diagnostic = Diagnostic(
+                        source: source,
+                        severity: .warning,
+                        range: duplicate.range,
+                        identifier: "org.swift.docc.HasExactlyOneMedia<\(Parent.self)>.Duplicate",
+                        summary: "The \(Parent.directiveName.singleQuoted) directive can only have one Media element"
+                    )
+
                     if let range = duplicate.range {
                         let replacement = Replacement(range: range, replacement: "")
                         let solution = Solution(summary: "Remove duplicate media element", replacements: [replacement])
@@ -190,15 +240,21 @@ extension Semantic.Analyses {
                     }
                 }
             }
-            
+
             guard let firstMedia = mediaDirectives.first else {
                 if let severity = severityIfNotFound {
-                    let diagnostic = Diagnostic(source: source, severity: severity, range: directive.range, identifier: "org.swift.docc.HasExactlyOneMedia<\(Parent.self)>.Missing", summary: "The \(Parent.directiveName.singleQuoted) directive requires one Media element")
+                    let diagnostic = Diagnostic(
+                        source: source,
+                        severity: severity,
+                        range: directive.range,
+                        identifier: "org.swift.docc.HasExactlyOneMedia<\(Parent.self)>.Missing",
+                        summary: "The \(Parent.directiveName.singleQuoted) directive requires one Media element"
+                    )
                     problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
                 }
                 return (nil, remainder: MarkupContainer(remainder))
             }
-            
+
             switch firstMedia.name {
             case ImageMedia.directiveName:
                 guard let image = ImageMedia(from: firstMedia, source: source, for: bundle, in: context, problems: &problems) else {
@@ -224,7 +280,14 @@ extension Semantic.Analyses {
             self.severityIfNotFound = severityIfNotFound
         }
 
-        public func analyze(_ directive: BlockDirective, children: some Sequence<Markup>, source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) -> [ListElement]? {
+        public func analyze(
+            _ directive: BlockDirective,
+            children: some Sequence<Markup>,
+            source: URL?,
+            for bundle: DocumentationBundle,
+            in context: DocumentationContext,
+            problems: inout [Problem]
+        ) -> [ListElement]? {
             var validElements: [ListElement] = []
 
             var (lists, notLists) = directive.children.categorize { $0 as? UnorderedList }
@@ -236,17 +299,19 @@ extension Semantic.Analyses {
                 (validElements, invalidElements) = list.children.categorize { firstChildElement(in: $0) }
 
                 // Diagnose invalid list content.
-                problems.append(contentsOf:
-                    invalidElements.map { invalidElement in
-                        Problem(diagnostic: listElementIsInvalidDiagnostic(source: source, range: invalidElement.range), possibleSolutions: [])
-                    }
+                problems.append(
+                    contentsOf:
+                        invalidElements.map { invalidElement in
+                            Problem(diagnostic: listElementIsInvalidDiagnostic(source: source, range: invalidElement.range), possibleSolutions: [])
+                        }
                 )
 
                 // Diagnose extra lists.
-                problems.append(contentsOf:
-                    lists.map { extraList in
-                        Problem(diagnostic: extraneousContentDiagnostic(source: source, range: extraList.range), possibleSolutions: [])
-                    }
+                problems.append(
+                    contentsOf:
+                        lists.map { extraList in
+                            Problem(diagnostic: extraneousContentDiagnostic(source: source, range: extraList.range), possibleSolutions: [])
+                        }
                 )
             } else {
                 // Diagnose missing list.
@@ -254,16 +319,18 @@ extension Semantic.Analyses {
             }
 
             // Diagnose extraneous children.
-            problems.append(contentsOf:
-                notLists.map { notList in Problem(diagnostic: extraneousContentDiagnostic(source: source, range: notList.range), possibleSolutions: []) }
+            problems.append(
+                contentsOf:
+                    notLists.map { notList in Problem(diagnostic: extraneousContentDiagnostic(source: source, range: notList.range), possibleSolutions: []) }
             )
 
             return validElements
         }
 
         func firstChildElement(in markup: Markup) -> ListElement? {
-            return markup // ListItem
-                .child(at: 0)? // Paragraph
+            return
+                markup  // ListItem
+                .child(at: 0)?  // Paragraph
                 .child(at: 0) as? ListElement
         }
 

@@ -26,9 +26,19 @@ public enum PropertyListTitleStyle: String, Codable, Equatable {
 
 @available(*, deprecated, renamed: "PropertyListTitleStyle", message: "Use 'PropertyListTitleStyle' instead. This deprecated API will be removed after 6.1 is released")
 public enum TitleStyle: String, Codable, Equatable {
-    @available(*, deprecated, renamed: "PropertyListTitleStyle.useRawKey", message: "Use 'PropertyListTitleStyle.useRawKey' instead. This deprecated API will be removed after 6.1 is released")
+    @available(
+        *,
+        deprecated,
+        renamed: "PropertyListTitleStyle.useRawKey",
+        message: "Use 'PropertyListTitleStyle.useRawKey' instead. This deprecated API will be removed after 6.1 is released"
+    )
     case symbol
-    @available(*, deprecated, renamed: "PropertyListTitleStyle.useDisplayName", message: "Use 'PropertyListTitleStyle.useDisplayName' instead. This deprecated API will be removed after 6.1 is released")
+    @available(
+        *,
+        deprecated,
+        renamed: "PropertyListTitleStyle.useDisplayName",
+        message: "Use 'PropertyListTitleStyle.useDisplayName' instead. This deprecated API will be removed after 6.1 is released"
+    )
     case title
 }
 
@@ -37,7 +47,7 @@ struct PlistDetailsRenderSection: RenderSection, Equatable {
     var kind: RenderSectionKind = .plistDetails
     /// A title for the section.
     var title = "Details"
-    
+
     /// Details for a property list key.
     struct Details: Codable, Equatable {
         /// The name of the key.
@@ -50,7 +60,7 @@ struct PlistDetailsRenderSection: RenderSection, Equatable {
         let displayName: String?
         /// A title rendering style.
         let titleStyle: PropertyListTitleStyle
-        
+
         enum CodingKeys: String, CodingKey {
             case rawKey = "name"
             case value
@@ -59,7 +69,7 @@ struct PlistDetailsRenderSection: RenderSection, Equatable {
             case titleStyle
         }
     }
-    
+
     /// The details of the property key.
     let details: Details
 }
@@ -75,7 +85,7 @@ extension PlistDetailsRenderSection: RenderJSONDiffable {
 
         return diffBuilder.differences
     }
-    
+
     /// Returns if this PlistDetailsRenderSection is similar enough to the given one.
     func isSimilar(to other: PlistDetailsRenderSection) -> Bool {
         return self.title == other.title

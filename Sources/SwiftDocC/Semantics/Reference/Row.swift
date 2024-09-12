@@ -50,20 +50,20 @@ import Markdown
 public final class Row: Semantic, AutomaticDirectiveConvertible, MarkupContaining {
     public static let introducedVersion = "5.8"
     public let originalMarkup: BlockDirective
-    
+
     /// The number of columns available in this row.
     @DirectiveArgumentWrapped(name: .custom("numberOfColumns"))
     public private(set) var _numberOfColumns: Int? = nil
-    
+
     /// The columns that make up this row.
     @ChildDirective(requirements: .oneOrMore)
     public private(set) var columns: [Column]
-    
-    static var keyPaths: [String : AnyKeyPath] = [
-        "_numberOfColumns"   : \Row.__numberOfColumns,
-        "columns"           : \Row._columns,
+
+    static var keyPaths: [String: AnyKeyPath] = [
+        "_numberOfColumns": \Row.__numberOfColumns,
+        "columns": \Row._columns,
     ]
-    
+
     /// The number of columns in this row.
     public var numberOfColumns: Int {
         // This may be different then the count of `columns` array. For example, there may be
@@ -71,16 +71,18 @@ public final class Row: Semantic, AutomaticDirectiveConvertible, MarkupContainin
         // `size` argument) or the row could be not fully filled with columns.
         return _numberOfColumns ?? columns.map(\.size).reduce(0, +)
     }
-    
+
     override var children: [Semantic] {
         return columns
     }
-    
+
     var childMarkup: [Markup] {
         return columns.flatMap(\.childMarkup)
     }
-    
-    @available(*, deprecated,
+
+    @available(
+        *,
+        deprecated,
         message: "Do not call directly. Required for 'AutomaticDirectiveConvertible'."
     )
     init(originalMarkup: BlockDirective) {
@@ -96,32 +98,34 @@ extension Row {
     public final class Column: Semantic, AutomaticDirectiveConvertible, MarkupContaining {
         public static let introducedVersion = "5.8"
         public let originalMarkup: BlockDirective
-        
+
         /// The size of this column.
         ///
         /// Specify a value greater than `1` to make this column span multiple columns
         /// in the parent ``Row``.
         @DirectiveArgumentWrapped
         public private(set) var size: Int = 1
-        
+
         /// The markup content in this column.
         @ChildMarkup(numberOfParagraphs: .zeroOrMore, supportsStructure: true)
         public private(set) var content: MarkupContainer
-        
-        static var keyPaths: [String : AnyKeyPath] = [
-            "size"      : \Column._size,
-            "content"   : \Column._content,
+
+        static var keyPaths: [String: AnyKeyPath] = [
+            "size": \Column._size,
+            "content": \Column._content,
         ]
-        
+
         override var children: [Semantic] {
             return [content]
         }
-        
+
         var childMarkup: [Markup] {
             return content.elements
         }
-        
-        @available(*, deprecated,
+
+        @available(
+            *,
+            deprecated,
             message: "Do not call directly. Required for 'AutomaticDirectiveConvertible'."
         )
         init(originalMarkup: BlockDirective) {
@@ -140,12 +144,12 @@ extension Row: RenderableDirectiveConvertible {
                 }
             )
         }
-        
+
         let renderedRow = RenderBlockContent.Row(
             numberOfColumns: numberOfColumns,
             columns: renderedColumns
         )
-        
+
         return [RenderBlockContent.row(renderedRow)]
     }
 }

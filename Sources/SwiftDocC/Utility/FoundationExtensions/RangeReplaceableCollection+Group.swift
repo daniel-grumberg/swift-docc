@@ -16,8 +16,8 @@ extension RangeReplaceableCollection {
     /// - Parameter belongsInGroupWithPrevious: A check whether the given element belongs in the same group as the previous element
     /// - Returns: An array of subsequences of elements that belong together.
     func group(asLongAs belongsInGroupWithPrevious: (_ previous: Element, _ current: Element) throws -> Bool) rethrows -> [SubSequence] {
-        var result = [SubSequence]()
-        
+        var result: [SubSequence] = []
+
         let indexPairs = zip(indices, indices.dropFirst())
         var splitStart = startIndex
         for (previous, current) in indexPairs where try !belongsInGroupWithPrevious(self[previous], self[current]) {
@@ -27,5 +27,5 @@ extension RangeReplaceableCollection {
         result.append(self[splitStart...])
         return result
     }
-    
+
 }

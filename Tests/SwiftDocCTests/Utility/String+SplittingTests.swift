@@ -9,18 +9,19 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class String_SplittingTests: XCTestCase {
-    
+
     func testSplitsAStringWithNoTrailingNewlines() {
         XCTAssertEqual("hello\nworld".splitByNewlines, ["hello", "world"])
     }
-    
+
     func testSplitsAStringWithOneTrailingNewline() {
         XCTAssertEqual("hello\nworld\n".splitByNewlines, ["hello", "world"])
     }
-    
+
     func testSplitsAStringWithTwoTrailingNewlines() {
         XCTAssertEqual("hello\nworld\n\n".splitByNewlines, ["hello", "world", ""])
     }

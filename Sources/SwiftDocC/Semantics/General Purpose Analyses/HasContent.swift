@@ -19,20 +19,33 @@ extension Semantic.Analyses {
         let additionalContext: String
         public init(additionalContext: String? = nil) {
             if let additionalContext,
-                !additionalContext.isEmpty {
+                !additionalContext.isEmpty
+            {
                 self.additionalContext = "; \(additionalContext)"
             } else {
                 self.additionalContext = ""
             }
         }
-        
-        public func analyze(_ directive: BlockDirective, children: some Sequence<Markup>, source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) -> MarkupContainer {
+
+        public func analyze(
+            _ directive: BlockDirective,
+            children: some Sequence<Markup>,
+            source: URL?,
+            for bundle: DocumentationBundle,
+            in context: DocumentationContext,
+            problems: inout [Problem]
+        ) -> MarkupContainer {
             let children = Array(children)
             guard children.isEmpty else {
                 return MarkupContainer(children)
             }
-            let diagnostic = Diagnostic(source: source, severity: .warning, range: directive.range, identifier: "org.swift.docc.\(Parent.self).HasContent"
-                , summary: "\(Parent.directiveName.singleQuoted) directive has no content\(additionalContext)")
+            let diagnostic = Diagnostic(
+                source: source,
+                severity: .warning,
+                range: directive.range,
+                identifier: "org.swift.docc.\(Parent.self).HasContent",
+                summary: "\(Parent.directiveName.singleQuoted) directive has no content\(additionalContext)"
+            )
             problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
             return MarkupContainer()
         }

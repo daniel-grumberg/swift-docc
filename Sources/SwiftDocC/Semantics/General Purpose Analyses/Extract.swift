@@ -17,8 +17,15 @@ extension Semantic.Analyses {
      */
     public struct ExtractAll<Child: Semantic & DirectiveConvertible>: SemanticAnalysis {
         public init() {}
-        
-        public func analyze(_ directive: BlockDirective, children: some Sequence<Markup>, source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) -> ([Child], remainder: MarkupContainer) {
+
+        public func analyze(
+            _ directive: BlockDirective,
+            children: some Sequence<Markup>,
+            source: URL?,
+            for bundle: DocumentationBundle,
+            in context: DocumentationContext,
+            problems: inout [Problem]
+        ) -> ([Child], remainder: MarkupContainer) {
             return Semantic.Analyses.extractAll(
                 childType: Child.self,
                 children: children,
@@ -29,7 +36,7 @@ extension Semantic.Analyses {
             ) as! ([Child], MarkupContainer)
         }
     }
-    
+
     static func extractAll(
         childType: DirectiveConvertible.Type,
         children: some Sequence<Markup>,
@@ -40,8 +47,9 @@ extension Semantic.Analyses {
     ) -> ([DirectiveConvertible], remainder: MarkupContainer) {
         let (candidates, remainder) = children.categorize { child -> BlockDirective? in
             guard let childDirective = child as? BlockDirective,
-                childType.canConvertDirective(childDirective) else {
-                    return nil
+                childType.canConvertDirective(childDirective)
+            else {
+                return nil
             }
             return childDirective
         }
@@ -50,14 +58,21 @@ extension Semantic.Analyses {
         }
         return (converted, remainder: MarkupContainer(remainder))
     }
-    
+
     /**
      Separates `children` into markup elements that are of a specific type without performing any further analysis.
      */
     public struct ExtractAllMarkup<Child: Markup>: SemanticAnalysis {
         public init() {}
-        
-        public func analyze(_ directive: BlockDirective, children: some Sequence<Markup>, source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) -> ([Child], remainder: MarkupContainer) {
+
+        public func analyze(
+            _ directive: BlockDirective,
+            children: some Sequence<Markup>,
+            source: URL?,
+            for bundle: DocumentationBundle,
+            in context: DocumentationContext,
+            problems: inout [Problem]
+        ) -> ([Child], remainder: MarkupContainer) {
             let (matches, remainder) = children.categorize {
                 $0 as? Child
             }
@@ -65,4 +80,3 @@ extension Semantic.Analyses {
         }
     }
 }
-

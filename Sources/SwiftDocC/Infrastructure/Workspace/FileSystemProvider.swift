@@ -22,26 +22,26 @@ public enum FSNode {
     case file(File)
     /// A directory in a filesystem.
     case directory(Directory)
-    
+
     /// A file in a virtual file system
     public struct File {
         /// The URL to this file.
         public var url: URL
-        
+
         /// Creates a new virtual file with a given URL
         /// - Parameter url: The URL to this file.
         public init(url: URL) {
             self.url = url
         }
     }
-    
+
     /// A directory in a virtual file system.
     public struct Directory {
         /// The URL to this directory.
         public var url: URL
         /// The contents of this directory.
         public var children: [FSNode]
-        
+
         /// Creates a new virtual directory with a given URL and contents.
         /// - Parameters:
         ///   - url: The URL to this directory.
@@ -51,7 +51,7 @@ public enum FSNode {
             self.children = children
         }
     }
-    
+
     /// The URL for the node in the filesystem.
     public var url: URL {
         switch self {

@@ -25,7 +25,7 @@ extension LocalFileSystemDataProvider {
 
         return bundles
     }
-    
+
     /// Recursively traverses the file system, searching for documentation bundles.
     ///
     /// - Parameters:
@@ -35,11 +35,11 @@ extension LocalFileSystemDataProvider {
     /// - Returns: A list of all the bundles that the provider discovered in the file system.
     private func bundlesInTree(_ root: FSNode, options: BundleDiscoveryOptions) throws -> [DocumentationBundle] {
         var bundles: [DocumentationBundle] = []
-        
+
         guard case .directory(let rootDirectory) = root else {
             preconditionFailure("Expected directory object at path '\(root.url.absoluteString)'.")
         }
-        
+
         if DocumentationBundleFileTypes.isDocumentationBundle(rootDirectory.url) {
             bundles.append(try createBundle(rootDirectory, rootDirectory.children, options: options))
         } else {
@@ -53,7 +53,7 @@ extension LocalFileSystemDataProvider {
 
         return bundles
     }
-    
+
     /// Creates a documentation bundle from the content in a given documentation bundle directory.
     /// - Parameters:
     ///   - directory: The documentation bundle directory.
@@ -74,7 +74,7 @@ extension LocalFileSystemDataProvider {
             bundleDiscoveryOptions: options,
             derivedDisplayName: directory.url.deletingPathExtension().lastPathComponent
         )
-        
+
         let markupFiles = findMarkupFiles(bundleChildren, recursive: true).map { $0.url }
         let miscResources = findNonMarkupFiles(bundleChildren, recursive: true).map { $0.url }
         let symbolGraphFiles = findSymbolGraphFiles(bundleChildren, recursive: true).map { $0.url } + options.additionalSymbolGraphFiles
@@ -82,7 +82,7 @@ extension LocalFileSystemDataProvider {
         let customHeader = findCustomHeader(bundleChildren)?.url
         let customFooter = findCustomFooter(bundleChildren)?.url
         let themeSettings = findThemeSettings(bundleChildren)?.url
-        
+
         return DocumentationBundle(
             info: info,
             symbolGraphURLs: symbolGraphFiles,
@@ -93,14 +93,14 @@ extension LocalFileSystemDataProvider {
             themeSettings: themeSettings
         )
     }
-    
+
     /// Performs a shallow search for the first Info.plist file in the given list of files and directories.
     /// - Parameter bundleChildren: The list of files and directories to check.
     /// - Returns: The first Info.plist file, or `nil` if none of the files is an Info.plist file.
     private func findInfoPlist(_ bundleChildren: [FSNode]) -> FSNode.File? {
         return bundleChildren.firstFile { DocumentationBundleFileTypes.isInfoPlistFile($0.url) }
     }
-    
+
     /// Finds all the symbol-graph files in the given list of files and directories.
     /// - Parameters:
     ///   - bundleChildren: The list of files and directories to check.
@@ -109,7 +109,7 @@ extension LocalFileSystemDataProvider {
     private func findSymbolGraphFiles(_ bundleChildren: [FSNode], recursive: Bool) -> [FSNode.File] {
         return bundleChildren.files(recursive: recursive) { DocumentationBundleFileTypes.isSymbolGraphFile($0.url) }
     }
-    
+
     /// Finds all the markup files in the given list of files and directories.
     /// - Parameters:
     ///   - bundleChildren: The list of files and directories to check.
@@ -118,7 +118,7 @@ extension LocalFileSystemDataProvider {
     private func findMarkupFiles(_ bundleChildren: [FSNode], recursive: Bool) -> [FSNode.File] {
         return bundleChildren.files(recursive: recursive) { DocumentationBundleFileTypes.isMarkupFile($0.url) }
     }
-    
+
     /// Finds all the non-markup files in the given list of files and directories.
     /// - Parameters:
     ///   - bundleChildren: The list of files and directories to check.
@@ -152,7 +152,7 @@ fileprivate extension [FSNode] {
         }
         return nil
     }
-    
+
     /// Returns all the files that match s given predicate.
     /// - Parameters:
     ///   - recursive: If `true`, this function will recursively check the files of all directories in the array. If `false`, it will ignore all directories in the array.
@@ -172,7 +172,7 @@ fileprivate extension [FSNode] {
                 break
             }
         }
-        
+
         return matches
     }
 }

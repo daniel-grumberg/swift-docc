@@ -31,24 +31,24 @@ import Markdown
 public final class DocumentationExtension: Semantic, AutomaticDirectiveConvertible {
     public static let introducedVersion = "5.5"
     public let originalMarkup: BlockDirective
-    
+
     /// A value of `append` or `override`, denoting whether an extension file's content amends or replaces the in-source documentation.
     @DirectiveArgumentWrapped(name: .custom("mergeBehavior"))
     public var behavior: Behavior
-    
-    static var keyPaths: [String : AnyKeyPath] = [
-        "behavior" : \DocumentationExtension._behavior,
+
+    static var keyPaths: [String: AnyKeyPath] = [
+        "behavior": \DocumentationExtension._behavior
     ]
-    
+
     /// The merge behavior in a documentation extension.
     public enum Behavior: String, CaseIterable, DirectiveArgumentValueConvertible {
         /// Append the documentation-extension content to the in-source content and process them together.
         case append
-        
+
         /// Completely override any in-source content with the content from the documentation-extension.
         case override
     }
-    
+
     func validate(source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) -> Bool {
         if behavior == .append {
             let diagnostic = Diagnostic(
@@ -58,16 +58,17 @@ public final class DocumentationExtension: Semantic, AutomaticDirectiveConvertib
                 identifier: "org.swift.docc.\(Self.directiveName).NoConfiguration",
                 summary: "\(Self.directiveName.singleQuoted) doesn't change default configuration and has no effect"
             )
-            
-            let solutions = originalMarkup.range.map {
-                [Solution(summary: "Remove this \(Self.directiveName.singleQuoted) directive.", replacements: [Replacement(range: $0, replacement: "")])]
-            } ?? []
+
+            let solutions =
+                originalMarkup.range.map {
+                    [Solution(summary: "Remove this \(Self.directiveName.singleQuoted) directive.", replacements: [Replacement(range: $0, replacement: "")])]
+                } ?? []
             problems.append(Problem(diagnostic: diagnostic, possibleSolutions: solutions))
         }
-        
+
         return true
     }
-    
+
     @available(*, deprecated, message: "Do not call directly. Required for 'AutomaticDirectiveConvertible'.")
     init(originalMarkup: BlockDirective) {
         self.originalMarkup = originalMarkup

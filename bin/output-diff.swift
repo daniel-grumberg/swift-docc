@@ -12,7 +12,7 @@
 
 import Foundation
 
-fileprivate var flagIgnoreArrayOrderForPaths = [String]()
+private var flagIgnoreArrayOrderForPaths: [String] = []
 
 /// A struct to decode any kind of JSON element.
 indirect enum JSON: Decodable {
@@ -22,7 +22,7 @@ indirect enum JSON: Decodable {
     case number(Double)
     case boolean(Bool)
     case null
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if container.decodeNil() {
@@ -39,7 +39,7 @@ indirect enum JSON: Decodable {
             self = .dictionary(try container.decode([String: JSON].self))
         }
     }
-    
+
     /// Compares two `JSON` values recursively and produces detailed summary.
     public static func compare(lhs: JSON, rhs: JSON, diff: inout [String], path: [String] = [""]) -> Bool {
         switch (lhs, rhs) {
@@ -48,12 +48,12 @@ indirect enum JSON: Decodable {
                 diff.append("Error at path \(path.joined(separator: "/")): \(lhs.count) != \(rhs.count) array elements")
                 return false
             }
-            
+
             // Ignore the order of elements in arrays where it doesn't matter
             if flagIgnoreArrayOrderForPaths.first(where: { path.joined(separator: "/").contains($0) }) != nil {
                 var result = true
                 for (offset, value) in lhs.enumerated() {
-                    var valueDiff = [String]()
+                    var valueDiff: [String] = []
                     let valueFound = rhs.contains(where: {
                         return JSON.compare(lhs: value, rhs: $0, diff: &valueDiff, path: [])
                     })
@@ -66,25 +66,26 @@ indirect enum JSON: Decodable {
                 }
                 return result
             } else {
-                return lhs.enumerated().reduce(into: true) { (result, pair) in
-                    var valueDiff = [String]()
-                    let valueResult = JSON.compare(lhs: lhs[pair.offset], rhs: rhs[pair.offset], diff: &valueDiff, path: path + [String(pair.offset)])
-                    diff.append(contentsOf: valueDiff)
-                    result = result && valueResult
-                }
+                return lhs.enumerated()
+                    .reduce(into: true) { (result, pair) in
+                        var valueDiff: [String] = []
+                        let valueResult = JSON.compare(lhs: lhs[pair.offset], rhs: rhs[pair.offset], diff: &valueDiff, path: path + [String(pair.offset)])
+                        diff.append(contentsOf: valueDiff)
+                        result = result && valueResult
+                    }
             }
         case let (.dictionary(lhs), .dictionary(rhs)):
             guard lhs.keys == rhs.keys else {
                 for change in Array(lhs.keys.sorted()).difference(from: rhs.keys.sorted()) {
                     switch change {
-                        case .insert(_, let element, _): diff.append("Error at path \(path.joined(separator: "/")): Removed key '\(element)'")
-                        case .remove(_, let element, _): diff.append("Error at path \(path.joined(separator: "/")): Added key '\(element)'")
+                    case .insert(_, let element, _): diff.append("Error at path \(path.joined(separator: "/")): Removed key '\(element)'")
+                    case .remove(_, let element, _): diff.append("Error at path \(path.joined(separator: "/")): Added key '\(element)'")
                     }
                 }
                 return false
             }
             return lhs.keys.reduce(into: true) { (result, key) in
-                var keyDiff = [String]()
+                var keyDiff: [String] = []
                 let keyResult = JSON.compare(lhs: lhs[key]!, rhs: rhs[key]!, diff: &keyDiff, path: path + [key])
                 diff.append(contentsOf: keyDiff)
                 result = result && keyResult
@@ -116,11 +117,14 @@ indirect enum JSON: Decodable {
 enum OutputDiff {
     /// Loads the recursive file listing of a given directory.
     static func loadDirectoryContents(_ directoryURL: URL, ignoreFiles: [String]? = nil) throws -> [URL] {
-        var files = [URL]()
-        
-        if let enumerator = FileManager.default.enumerator(at: directoryURL, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles, .skipsPackageDescendants]) {
-            for case let url as URL in enumerator {
-                guard try url.resourceValues(forKeys:[.isRegularFileKey]).isRegularFile == true else { continue }
+        var files: [URL] = []
+
+        if let enumerator = FileManager.default.enumerator(
+            at: directoryURL,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
+        ) {
+            for case let url as URL in enumerator where try url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true {
                 guard url.pathExtension == "json" else {
                     continue
                 }
@@ -144,11 +148,11 @@ enum OutputDiff {
             print(" --file-filter: comma separated list of filename patterns to use to filter files in the target directories")
             exit(0)
         }
-        
+
         if let argumentIndex = arguments.firstIndex(of: "--ignore-array-order-for-paths") {
             flagIgnoreArrayOrderForPaths = arguments[argumentIndex.advanced(by: 1)].components(separatedBy: ",")
         }
-        
+
         var fileFilters: [String]? = nil
         if let argumentIndex = arguments.firstIndex(of: "--file-filter") {
             fileFilters = arguments[argumentIndex.advanced(by: 1)].components(separatedBy: ",")
@@ -158,51 +162,53 @@ enum OutputDiff {
         if let argumentIndex = arguments.firstIndex(of: "--log-path") {
             logPath = URL(fileURLWithPath: arguments[argumentIndex.advanced(by: 1)])
         }
-        
+
         // Load deep-listings of the two folders
         let before = try loadDirectoryContents(URL(fileURLWithPath: arguments[0]), ignoreFiles: fileFilters)
         let after = try loadDirectoryContents(URL(fileURLWithPath: arguments[1]), ignoreFiles: fileFilters)
-        
+
         // Bail out if the listings don't match exactly
         let difference = before.map({ $0.relativePath })
             .difference(from: after.map({ $0.relativePath }))
-        
+
         guard difference.count == 0 else {
             print("Error: File listing not equal.")
             difference.forEach({
                 switch $0 {
-                    case .insert(let index, _, _): print("Removed '\(before[index].path)'")
-                    case .remove(let index, _, _): print("Added '\(after[index].path)'")
+                case .insert(let index, _, _): print("Removed '\(before[index].path)'")
+                case .remove(let index, _, _): print("Added '\(after[index].path)'")
                 }
             })
             return
         }
-        
+
         // Compare file contents; at this point we are sure the two listings match
         let decoder = JSONDecoder()
-        var problems = [String]()
+        var problems: [String] = []
         var success = true
         #if os(macOS)
         var lock = os_unfair_lock_s()
         #endif
-        
+
         var processed = 0 {
             didSet {
                 if processed % 10 == 0 {
-                    print("\u{1B}[1A\u{1B}[KDiffing \(String(format: "%.2f", 100 * Double(processed)/Double(before.count)))% of \(before.count) files. \(problems.count) problem(s).")
+                    print(
+                        "\u{1B}[1A\u{1B}[KDiffing \(String(format: "%.2f", 100 * Double(processed)/Double(before.count)))% of \(before.count) files. \(problems.count) problem(s)."
+                    )
                     #if os(macOS)
                     fflush(__stdoutp)
                     #endif
                 }
             }
         }
-        
+
         let block: (Int) -> Void = { index in
             let beforeContent: JSON
             let afterContent: JSON
             var fileDiff = [String]()
             var fileSuccess: Bool = true
-            
+
             do {
                 beforeContent = try decoder.decode(JSON.self, from: try Data(contentsOf: before[index].absoluteURL))
                 afterContent = try decoder.decode(JSON.self, from: try Data(contentsOf: after[index].absoluteURL))
@@ -211,17 +217,19 @@ enum OutputDiff {
                 fileDiff.append(error.localizedDescription)
                 fileSuccess = false
             }
-            
+
             #if os(macOS)
             os_unfair_lock_lock(&lock)
             defer { os_unfair_lock_unlock(&lock) }
             #endif
-            
+
             success = success && fileSuccess
             processed += 1
-            problems.append(contentsOf: fileDiff.map {
-                "\($0)\nBefore: \(before[index].absoluteURL.path)\nAfter: \(after[index].absoluteURL.path)\n"
-            })
+            problems.append(
+                contentsOf: fileDiff.map {
+                    "\($0)\nBefore: \(before[index].absoluteURL.path)\nAfter: \(after[index].absoluteURL.path)\n"
+                }
+            )
         }
 
         // For larger bundles comparing might be very CPU intensive so we spread over more cores
@@ -230,7 +238,7 @@ enum OutputDiff {
         #else
         (0..<before.count).forEach(block)
         #endif
-        
+
         guard success else {
             // Print any problems to a log file or the console
             let output = problems.joined(separator: "\n").appending("Total of \(problems.count) problem(s) found.")
@@ -241,7 +249,7 @@ enum OutputDiff {
             }
             return
         }
-        
+
         print("\(before.count) files found in each folder.")
         print("Output folders' content is identical.")
     }

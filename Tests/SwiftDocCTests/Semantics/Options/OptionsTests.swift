@@ -9,76 +9,76 @@
 */
 
 import Foundation
-
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class OptionsTests: XCTestCase {
     func testDefaultOptions() throws {
         let (problems, options) = try parseDirective(Options.self) {
             """
             @Options {
-            
+
             }
             """
         }
-        
+
         XCTAssertTrue(problems.isEmpty)
         let unwrappedOptions = try XCTUnwrap(options)
-        
+
         XCTAssertNil(unwrappedOptions.automaticTitleHeadingEnabled)
         XCTAssertNil(unwrappedOptions.automaticSeeAlsoEnabled)
         XCTAssertNil(unwrappedOptions.topicsVisualStyle)
         XCTAssertEqual(unwrappedOptions.scope, .local)
     }
-    
+
     func testOptionsParameters() throws {
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
                 @Options(scope: global) {
-                
+
                 }
                 """
             }
-            
+
             XCTAssertTrue(problems.isEmpty)
             XCTAssertEqual(options?.scope, .global)
         }
-        
+
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
                 @Options(scope: local) {
-                
+
                 }
                 """
             }
-            
+
             XCTAssertTrue(problems.isEmpty)
             XCTAssertEqual(options?.scope, .local)
         }
-        
+
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
                 @Options(scope: global, random: foo) {
-                
+
                 }
                 """
             }
-            
+
             XCTAssertEqual(options?.scope, .global)
             XCTAssertEqual(
                 problems,
                 [
-                    "1: warning – org.swift.docc.UnknownArgument",
+                    "1: warning – org.swift.docc.UnknownArgument"
                 ]
             )
         }
     }
-    
+
     func testAutomaticSeeAlso() throws {
         do {
             let (problems, options) = try parseDirective(Options.self) {
@@ -88,11 +88,11 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertTrue(problems.isEmpty)
             XCTAssertEqual(options?.automaticSeeAlsoEnabled, false)
         }
-        
+
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
@@ -101,11 +101,11 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertTrue(problems.isEmpty)
             XCTAssertEqual(options?.automaticSeeAlsoEnabled, true)
         }
-        
+
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
@@ -114,20 +114,19 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
-            
+
             XCTAssertNotNil(options)
             XCTAssertNil(options?.automaticSeeAlsoEnabled)
-            
+
             XCTAssertEqual(
                 problems,
                 [
-                    "2: warning – org.swift.docc.HasArgument.unlabeled.ConversionFailed",
+                    "2: warning – org.swift.docc.HasArgument.unlabeled.ConversionFailed"
                 ]
             )
         }
     }
-    
+
     func testTopicsVisualStyle() throws {
         do {
             let (problems, options) = try parseDirective(Options.self) {
@@ -137,11 +136,11 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertTrue(problems.isEmpty)
             XCTAssertEqual(options?.topicsVisualStyle, .detailedGrid)
         }
-        
+
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
@@ -150,11 +149,11 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertTrue(problems.isEmpty)
             XCTAssertEqual(options?.topicsVisualStyle, .compactGrid)
         }
-        
+
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
@@ -163,11 +162,11 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertTrue(problems.isEmpty)
             XCTAssertEqual(options?.topicsVisualStyle, .list)
         }
-        
+
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
@@ -176,11 +175,11 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertTrue(problems.isEmpty)
             XCTAssertEqual(options?.topicsVisualStyle, .hidden)
         }
-        
+
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
@@ -189,20 +188,19 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
-            
+
             XCTAssertNotNil(options)
             XCTAssertNil(options?.topicsVisualStyle)
-            
+
             XCTAssertEqual(
                 problems,
                 [
-                    "2: warning – org.swift.docc.HasArgument.unlabeled.ConversionFailed",
+                    "2: warning – org.swift.docc.HasArgument.unlabeled.ConversionFailed"
                 ]
             )
         }
     }
-    
+
     func testAutomaticTitleHeading() throws {
         do {
             let (problems, options) = try parseDirective(Options.self) {
@@ -212,11 +210,11 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertTrue(problems.isEmpty)
             XCTAssertEqual(options?.automaticTitleHeadingEnabled, false)
         }
-        
+
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
@@ -225,11 +223,11 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertTrue(problems.isEmpty)
             XCTAssertEqual(options?.automaticTitleHeadingEnabled, true)
         }
-        
+
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
@@ -238,20 +236,19 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
-            
+
             XCTAssertNotNil(options)
             XCTAssertNil(options?.automaticTitleHeadingEnabled)
-            
+
             XCTAssertEqual(
                 problems,
                 [
-                    "2: warning – org.swift.docc.HasArgument.unlabeled.ConversionFailed",
+                    "2: warning – org.swift.docc.HasArgument.unlabeled.ConversionFailed"
                 ]
             )
         }
     }
-    
+
     func testMixOfOptions() throws {
         let (problems, options) = try parseDirective(Options.self) {
             """
@@ -263,14 +260,14 @@ class OptionsTests: XCTestCase {
             }
             """
         }
-        
+
         XCTAssertTrue(problems.isEmpty)
         XCTAssertEqual(options?.automaticTitleHeadingEnabled, true)
         XCTAssertEqual(options?.automaticSeeAlsoEnabled, false)
         XCTAssertEqual(options?.topicsVisualStyle, .detailedGrid)
         XCTAssertEqual(options?.automaticArticleSubheadingEnabled, true)
     }
-    
+
     func testUnsupportedChild() throws {
         let (problems, options) = try parseDirective(Options.self) {
             """
@@ -284,7 +281,7 @@ class OptionsTests: XCTestCase {
             }
             """
         }
-        
+
         XCTAssertEqual(options?.automaticTitleHeadingEnabled, true)
         XCTAssertEqual(
             problems,
@@ -294,7 +291,7 @@ class OptionsTests: XCTestCase {
             ]
         )
     }
-    
+
     func testAutomaticArticleSubheading() throws {
         do {
             let (problems, options) = try parseDirective(Options.self) {
@@ -303,12 +300,12 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertTrue(problems.isEmpty)
             let unwrappedOptions = try XCTUnwrap(options)
             XCTAssertNil(unwrappedOptions.automaticArticleSubheadingEnabled)
         }
-        
+
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
@@ -317,12 +314,12 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertEqual(problems, ["2: warning – org.swift.docc.HasArgument.unlabeled.ConversionFailed"])
             let unwrappedOptions = try XCTUnwrap(options)
             XCTAssertNil(unwrappedOptions.automaticArticleSubheadingEnabled)
         }
-        
+
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
@@ -331,12 +328,12 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertTrue(problems.isEmpty)
             let unwrappedOptions = try XCTUnwrap(options)
             XCTAssertEqual(unwrappedOptions.automaticArticleSubheadingEnabled, false)
         }
-        
+
         do {
             let (problems, options) = try parseDirective(Options.self) {
                 """
@@ -345,7 +342,7 @@ class OptionsTests: XCTestCase {
                 }
                 """
             }
-            
+
             XCTAssertTrue(problems.isEmpty)
             let unwrappedOptions = try XCTUnwrap(options)
             XCTAssertEqual(unwrappedOptions.automaticArticleSubheadingEnabled, true)

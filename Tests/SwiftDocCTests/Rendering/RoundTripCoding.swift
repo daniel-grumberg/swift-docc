@@ -27,7 +27,7 @@ func assertRoundTripCoding<Value: Equatable>(
     let encoded = try encoder.encode(value)
     let decoded = try decoder.decode(Value.self, from: encoded)
     XCTAssertEqual(value, decoded, file: (file), line: line)
-    
+
     // Decode a second time to ensure no data is lost during the round-trip
     let reEncoded = try encoder.encode(decoded)
     let reDecoded = try decoder.decode(Value.self, from: reEncoded)
@@ -48,7 +48,7 @@ func assertJSONRepresentation<Value: Decodable & Equatable>(
     let decoder = JSONDecoder()
 
     var decoded: Value? = nil
-    
+
     let encoding: String.Encoding
     #if os(Linux) || os(Android) || os(Windows)
     // Work around a JSON decoding issue on Linux (github.com/apple/swift/issues/57362).

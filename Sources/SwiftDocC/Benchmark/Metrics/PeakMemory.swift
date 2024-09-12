@@ -9,6 +9,7 @@
 */
 
 import Foundation
+
 #if os(Windows)
 import WinSDK
 #endif
@@ -18,14 +19,14 @@ extension Benchmark {
     public class PeakMemory: BenchmarkMetric {
         public static let identifier = "peak-memory"
         public static let displayName = "Peak memory footprint"
-        
+
         private var memoryPeak: Int64?
-        
+
         /// Creates a new instance and fetches the peak memory usage.
         public init() {
             memoryPeak = Self.peakMemory()
         }
-        
+
         #if os(macOS) || os(iOS)
         private static func peakMemory() -> Int64? {
             // On macOS we use the Kernel framework to read a pretty accurate
@@ -41,7 +42,7 @@ extension Benchmark {
             guard vmResult == KERN_SUCCESS else { return nil }
             return vmInfo.ledger_phys_footprint_peak
         }
-        
+
         #elseif os(Linux) || os(Android)
         private static func peakMemory() -> Int64? {
             // On Linux we cannot use the Kernel framework, so we tap into the
@@ -54,22 +55,25 @@ extension Benchmark {
                     .components(separatedBy: CharacterSet.decimalDigits.inverted)
                     .filter({ !$0.isEmpty })
                     .first,
-                let peakMemory = Double(peakMemoryString) else { return nil }
+                let peakMemory = Double(peakMemoryString)
+            else { return nil }
 
-            return Int64(peakMemory * 1024) // convert from KBytes to bytes
+            return Int64(peakMemory * 1024)  // convert from KBytes to bytes
         }
         #elseif os(Windows)
         private static func peakMemory() -> Int64? {
             var pmcStats = PROCESS_MEMORY_COUNTERS()
-            guard K32GetProcessMemoryInfo(
-                GetCurrentProcess(),
-                &pmcStats,
-                DWORD(MemoryLayout<PROCESS_MEMORY_COUNTERS>.size)
-            ) else { return nil }
+            guard
+                K32GetProcessMemoryInfo(
+                    GetCurrentProcess(),
+                    &pmcStats,
+                    DWORD(MemoryLayout<PROCESS_MEMORY_COUNTERS>.size)
+                )
+            else { return nil }
             return Int64(pmcStats.PeakWorkingSetSize)
         }
         #endif
-        
+
         public var result: MetricValue? {
             return memoryPeak.map(MetricValue.bytesInMemory)
         }

@@ -10,11 +10,12 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftDocC
 
 class VariantCollectionTests: XCTestCase {
     let testCollection = VariantCollection(defaultValue: "default value", objectiveCValue: "Objective-C value")
-    
+
     let testCollectionWithMultipleVariants = VariantCollection(
         defaultValue: "default value",
         variants: [
@@ -28,7 +29,7 @@ class VariantCollectionTests: XCTestCase {
             ),
         ]
     )
-    
+
     func testCreatesObjectiveCVariant() {
         XCTAssertEqual(testCollection.defaultValue, "default value")
         guard case .replace(let value) = testCollection.variants[0].patch[0] else {
@@ -37,22 +38,22 @@ class VariantCollectionTests: XCTestCase {
         }
         XCTAssertEqual(value, "Objective-C value")
     }
-    
+
     func testEncodesDefaultValueAndAddsVariantsInEncoder() throws {
         let encoder = RenderJSONEncoder.makeEncoder()
         let encodedAndDecodedValue = try JSONDecoder()
             .decode(VariantCollection<String>.self, from: encoder.encode(testCollectionWithMultipleVariants))
-        
+
         XCTAssertEqual(encodedAndDecodedValue.defaultValue, "default value")
         XCTAssert(encodedAndDecodedValue.variants.isEmpty)
-        
+
         let variants = try XCTUnwrap((encoder.userInfo[.variantOverrides] as? VariantOverrides)?.values)
         XCTAssertEqual(variants.count, 2)
-        
+
         for (index, variant) in variants.enumerated() {
             let expectedLanguage: String
             let expectedValue: String
-            
+
             switch index {
             case 0:
                 expectedLanguage = "language A"
@@ -62,35 +63,34 @@ class VariantCollectionTests: XCTestCase {
                 expectedValue = "language B value"
             default: continue
             }
-            
+
             XCTAssertEqual(variant.traits, [.interfaceLanguage(expectedLanguage)])
-            
-            
+
             guard case .replace(_, let value) = variant.patch[0] else {
                 XCTFail("Unexpected patch operation")
                 return
             }
-                
+
             XCTAssertEqual(value.value as! String, expectedValue)
         }
     }
-    
+
     func testMapValues() {
         let testCollection = testCollection.mapValues { value -> String? in
             if value == "default value" {
-               return "default value transformed"
+                return "default value transformed"
             }
-            
+
             return nil
         }
-        
+
         XCTAssertEqual(testCollection.defaultValue, "default value transformed")
-        
+
         guard case .replace(let value)? = testCollection.variants.first?.patch.first else {
             XCTFail()
             return
         }
-        
+
         XCTAssertNil(value)
     }
 }

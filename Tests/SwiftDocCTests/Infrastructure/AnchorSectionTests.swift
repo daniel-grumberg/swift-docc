@@ -9,16 +9,17 @@
 */
 
 import Foundation
-import XCTest
 import Markdown
-@testable import SymbolKit
+import XCTest
+
 @testable import SwiftDocC
+@testable import SymbolKit
 
 class AnchorSectionTests: XCTestCase {
-        
+
     func testResolvingArticleSubsections() throws {
         let (bundle, context) = try testBundleAndContext(named: "BundleWithLonelyDeprecationDirective")
-        
+
         // Verify the sub-sections of the article have been collected in the context
         [
             ResolvedTopicReference(bundleIdentifier: bundle.identifier, path: "/documentation/TechnologyX/Article", fragment: "Article-Sub-Section", sourceLanguage: .swift),
@@ -27,16 +28,18 @@ class AnchorSectionTests: XCTestCase {
         .forEach { sectionReference in
             XCTAssertTrue(context.nodeAnchorSections.keys.contains(sectionReference))
         }
-        
+
         // Load the module page
         let reference = ResolvedTopicReference(bundleIdentifier: bundle.identifier, path: "/documentation/CoolFramework", sourceLanguage: .swift)
         let entity = try context.entity(with: reference)
-        
+
         // Extract the links from the discussion
         let discussion = try XCTUnwrap((entity.semantic as? Symbol)?.discussion)
-        let linkList = try XCTUnwrap(discussion.content.mapFirst { markup -> UnorderedList? in
-            return markup as? UnorderedList
-        })
+        let linkList = try XCTUnwrap(
+            discussion.content.mapFirst { markup -> UnorderedList? in
+                return markup as? UnorderedList
+            }
+        )
         let listItems = linkList.children.compactMap { markup -> ListItem? in
             return markup as? ListItem
         }
@@ -51,19 +54,21 @@ class AnchorSectionTests: XCTestCase {
                     }
                 }
         }
-        
+
         guard links.count == 12 else {
             XCTFail("Did not resolve all links")
             return
         }
-        
+
         // Verify the links have been resolved
-        links[0...2].forEach { link in
-            XCTAssertEqual(link.destination, "doc://org.swift.docc.example/documentation/TechnologyX/Article#Article-Sub-Section")
-        }
-        links[3...5].forEach { link in
-            XCTAssertEqual(link.destination, "doc://org.swift.docc.example/documentation/TechnologyX/Article#Article-Sub-Sub-Section")
-        }
+        links[0...2]
+            .forEach { link in
+                XCTAssertEqual(link.destination, "doc://org.swift.docc.example/documentation/TechnologyX/Article#Article-Sub-Section")
+            }
+        links[3...5]
+            .forEach { link in
+                XCTAssertEqual(link.destination, "doc://org.swift.docc.example/documentation/TechnologyX/Article#Article-Sub-Sub-Section")
+            }
 
         // Verify collecting section render references
         let converter = DocumentationNodeConverter(bundle: bundle, context: context)
@@ -76,7 +81,7 @@ class AnchorSectionTests: XCTestCase {
 
     func testResolvingSymbolSubsections() throws {
         let (bundle, context) = try testBundleAndContext(named: "BundleWithLonelyDeprecationDirective")
-        
+
         // Verify the sub-sections of the article have been collected in the context
         [
             ResolvedTopicReference(bundleIdentifier: bundle.identifier, path: "/documentation/CoolFramework/CoolClass", fragment: "Symbol-Sub-Section", sourceLanguage: .swift),
@@ -85,16 +90,18 @@ class AnchorSectionTests: XCTestCase {
         .forEach { sectionReference in
             XCTAssertTrue(context.nodeAnchorSections.keys.contains(sectionReference))
         }
-        
+
         // Load the module page
         let reference = ResolvedTopicReference(bundleIdentifier: bundle.identifier, path: "/documentation/CoolFramework", sourceLanguage: .swift)
         let entity = try context.entity(with: reference)
-        
+
         // Extract the links from the discussion
         let discussion = try XCTUnwrap((entity.semantic as? Symbol)?.discussion)
-        let linkList = try XCTUnwrap(discussion.content.mapFirst { markup -> UnorderedList? in
-            return markup as? UnorderedList
-        })
+        let linkList = try XCTUnwrap(
+            discussion.content.mapFirst { markup -> UnorderedList? in
+                return markup as? UnorderedList
+            }
+        )
         let listItems = linkList.children.compactMap { markup -> ListItem? in
             return markup as? ListItem
         }
@@ -109,32 +116,36 @@ class AnchorSectionTests: XCTestCase {
                     }
                 }
         }
-        
+
         guard links.count == 12 else {
             XCTFail("Did not resolve all links")
             return
         }
-        
+
         // Verify the links have been resolved
-        links[6...8].forEach { link in
-            XCTAssertEqual(link.destination, "doc://org.swift.docc.example/documentation/CoolFramework/CoolClass#Symbol-Sub-Section")
-        }
-        links[9...11].forEach { link in
-            XCTAssertEqual(link.destination, "doc://org.swift.docc.example/documentation/CoolFramework/CoolClass#Symbol-Sub-Sub-Section")
-        }
+        links[6...8]
+            .forEach { link in
+                XCTAssertEqual(link.destination, "doc://org.swift.docc.example/documentation/CoolFramework/CoolClass#Symbol-Sub-Section")
+            }
+        links[9...11]
+            .forEach { link in
+                XCTAssertEqual(link.destination, "doc://org.swift.docc.example/documentation/CoolFramework/CoolClass#Symbol-Sub-Sub-Section")
+            }
 
         // Verify collecting section render references
         let converter = DocumentationNodeConverter(bundle: bundle, context: context)
         let renderNode = try converter.convert(entity)
 
-        let sectionReference = try XCTUnwrap(renderNode.references["doc://org.swift.docc.example/documentation/CoolFramework/CoolClass#Symbol-Sub-Section"] as? TopicRenderReference)
+        let sectionReference = try XCTUnwrap(
+            renderNode.references["doc://org.swift.docc.example/documentation/CoolFramework/CoolClass#Symbol-Sub-Section"] as? TopicRenderReference
+        )
         XCTAssertEqual(sectionReference.title, "Symbol Sub-Section")
         XCTAssertEqual(sectionReference.url, "/documentation/coolframework/coolclass#Symbol-Sub-Section")
     }
 
     func testResolvingRootPageSubsections() throws {
         let (bundle, context) = try testBundleAndContext(named: "BundleWithLonelyDeprecationDirective")
-        
+
         // Verify the sub-sections of the article have been collected in the context
         [
             ResolvedTopicReference(bundleIdentifier: bundle.identifier, path: "/documentation/CoolFramework", fragment: "Module-Sub-Section", sourceLanguage: .swift),
@@ -143,16 +154,18 @@ class AnchorSectionTests: XCTestCase {
         .forEach { sectionReference in
             XCTAssertTrue(context.nodeAnchorSections.keys.contains(sectionReference))
         }
-        
+
         // Load the article page
         let reference = ResolvedTopicReference(bundleIdentifier: bundle.identifier, path: "/documentation/TechnologyX/Article", sourceLanguage: .swift)
         let entity = try context.entity(with: reference)
-        
+
         // Extract the links from the discussion
         let discussion = try XCTUnwrap((entity.semantic as? Article)?.discussion)
-        let linkList = try XCTUnwrap(discussion.content.mapFirst { markup -> UnorderedList? in
-            return markup as? UnorderedList
-        })
+        let linkList = try XCTUnwrap(
+            discussion.content.mapFirst { markup -> UnorderedList? in
+                return markup as? UnorderedList
+            }
+        )
         let listItems = linkList.children.compactMap { markup -> ListItem? in
             return markup as? ListItem
         }
@@ -167,19 +180,21 @@ class AnchorSectionTests: XCTestCase {
                     }
                 }
         }
-        
+
         guard links.count == 6 else {
             XCTFail("Did not resolve all links")
             return
         }
-        
+
         // Verify the links have been resolved
-        links[0...2].forEach { link in
-            XCTAssertEqual(link.destination, "doc://org.swift.docc.example/documentation/CoolFramework#Module-Sub-Section")
-        }
-        links[3...5].forEach { link in
-            XCTAssertEqual(link.destination, "doc://org.swift.docc.example/documentation/CoolFramework#Module-Sub-Sub-Section")
-        }
+        links[0...2]
+            .forEach { link in
+                XCTAssertEqual(link.destination, "doc://org.swift.docc.example/documentation/CoolFramework#Module-Sub-Section")
+            }
+        links[3...5]
+            .forEach { link in
+                XCTAssertEqual(link.destination, "doc://org.swift.docc.example/documentation/CoolFramework#Module-Sub-Sub-Section")
+            }
 
         // Verify collecting section render references
         let converter = DocumentationNodeConverter(bundle: bundle, context: context)
@@ -189,16 +204,19 @@ class AnchorSectionTests: XCTestCase {
         XCTAssertEqual(sectionReference.title, "Module Sub-Section")
         XCTAssertEqual(sectionReference.url, "/documentation/coolframework#Module-Sub-Section")
     }
-    
+
     func testWarnsWhenCuratingSections() throws {
         let (_, context) = try testBundleAndContext(named: "BundleWithLonelyDeprecationDirective")
-        
+
         // The module page has 3 section links in a Topics group,
         // the context should contain the three warnings about those links
-        XCTAssertEqual(3,
-            context.problems.filter({
-                $0.diagnostic.identifier == "org.swift.docc.SectionCuration"
-            }).count
+        XCTAssertEqual(
+            3,
+            context.problems
+                .filter({
+                    $0.diagnostic.identifier == "org.swift.docc.SectionCuration"
+                })
+                .count
         )
     }
 }

@@ -13,13 +13,13 @@ import Foundation
 /// A language specific representation of a render node value for building a navigator index.
 protocol NavigatorIndexableRenderNodeRepresentation<Metadata> {
     associatedtype Metadata: NavigatorIndexableRenderMetadataRepresentation
-    
+
     // Information that's the same for all language variants
     var identifier: ResolvedTopicReference { get }
     var references: [String: RenderReference] { get }
     var kind: RenderNode.Kind { get }
     var sections: [RenderSection] { get }
-    
+
     // Information that's different for each language variant
     var metadata: Metadata { get }
     var topicSections: [TaskGroupRenderSection] { get }
@@ -31,7 +31,7 @@ protocol NavigatorIndexableRenderMetadataRepresentation {
     // Information that's the same for all language variants
     var role: String? { get }
     var images: [TopicImage] { get }
-    
+
     // Information that's different for each language variant
     var title: String? { get }
     var navigatorTitle: [DeclarationRenderSection.Token]? { get }
@@ -54,7 +54,7 @@ extension RenderMetadata: NavigatorIndexableRenderMetadataRepresentation {}
 struct RenderMetadataVariantView: NavigatorIndexableRenderMetadataRepresentation {
     var wrapped: RenderMetadata
     var traits: [RenderNode.Variant.Trait]
-    
+
     // The same for all language variants
     var role: String? {
         wrapped.role
@@ -62,7 +62,7 @@ struct RenderMetadataVariantView: NavigatorIndexableRenderMetadataRepresentation
     var images: [TopicImage] {
         wrapped.images
     }
-    
+
     // Different for each language variant
     var title: String? {
         wrapped.titleVariants.value(for: traits)
@@ -90,7 +90,7 @@ struct RenderMetadataVariantView: NavigatorIndexableRenderMetadataRepresentation
 struct RenderNodeVariantView: NavigatorIndexableRenderNodeRepresentation {
     var wrapped: RenderNode
     var traits: [RenderNode.Variant.Trait]
-    
+
     init(wrapped: RenderNode, traits: [RenderNode.Variant.Trait]) {
         self.wrapped = wrapped
         self.traits = traits
@@ -103,16 +103,16 @@ struct RenderNodeVariantView: NavigatorIndexableRenderNodeRepresentation {
         self.identifier = wrapped.identifier.withSourceLanguages(Set(traitLanguages))
         self.metadata = RenderMetadataVariantView(wrapped: wrapped.metadata, traits: traits)
     }
-    
+
     // Computed during initialization
     var identifier: ResolvedTopicReference
     var metadata: RenderMetadataVariantView
-    
+
     // The same for all language variants
     var references: [String: any RenderReference] { wrapped.references }
     var kind: RenderNode.Kind { wrapped.kind }
     var sections: [any RenderSection] { wrapped.sections }
-    
+
     // Different for each language variant
     var topicSections: [TaskGroupRenderSection] {
         wrapped.topicSectionsVariants.value(for: traits)
@@ -123,14 +123,14 @@ struct RenderNodeVariantView: NavigatorIndexableRenderNodeRepresentation {
 }
 
 private let typesThatShouldNotUseNavigatorTitle: Set<NavigatorIndex.PageType> = [
-    .framework, .class, .structure, .enumeration, .protocol, .typeAlias, .associatedType, .extension
+    .framework, .class, .structure, .enumeration, .protocol, .typeAlias, .associatedType, .extension,
 ]
 
 extension NavigatorIndexableRenderNodeRepresentation {
     /// Returns a navigator title preferring the fragments inside the metadata, if applicable.
     func navigatorTitle() -> String? {
         let tokens: [DeclarationRenderSection.Token]?
-        
+
         // FIXME: Use `metadata.navigatorTitle` for all Swift symbols (github.com/swiftlang/swift-docc/issues/176).
         if identifier.sourceLanguage == .swift || (metadata.navigatorTitle ?? []).isEmpty {
             let pageType = navigatorPageType()
@@ -141,28 +141,30 @@ extension NavigatorIndexableRenderNodeRepresentation {
         } else {
             tokens = metadata.navigatorTitle
         }
-        
+
         return tokens?.map(\.text).joined() ?? metadata.title
     }
-    
+
     /// Returns the type of page for the render node.
     func navigatorPageType() -> NavigatorIndex.PageType {
         // This is a workaround to support plist keys.
         switch metadata.roleHeading?.lowercased() {
-            case "property list key":           return .propertyListKey
-            case "property list key reference": return .propertyListKeyReference
-            default: break
+        case "property list key": return .propertyListKey
+        case "property list key reference": return .propertyListKeyReference
+        default: break
         }
-        
+
         switch kind {
-            case .article:  return metadata.role.map { .init(role: $0) }
-                                ?? .article
-            case .tutorial: return .tutorial
-            case .section:  return .section
-            case .overview: return .overview
-            case .symbol:   return metadata.symbolKind.map { .init(symbolKind: $0) }
-                                ?? metadata.role.map { .init(role: $0) }
-                                ?? .symbol
+        case .article:
+            return metadata.role.map { .init(role: $0) }
+                ?? .article
+        case .tutorial: return .tutorial
+        case .section: return .section
+        case .overview: return .overview
+        case .symbol:
+            return metadata.symbolKind.map { .init(symbolKind: $0) }
+                ?? metadata.role.map { .init(role: $0) }
+                ?? .symbol
         }
     }
 }
@@ -171,15 +173,17 @@ extension NavigatorIndexableRenderNodeRepresentation {
     func navigatorChildren(for traits: [RenderNode.Variant.Trait]?) -> [RenderRelationshipsGroup] {
         switch kind {
         case .overview:
-            var groups = [RenderRelationshipsGroup]()
+            var groups: [RenderRelationshipsGroup] = []
             for case let section as VolumeRenderSection in sections {
-                groups.append(contentsOf: section.chapters.map { chapter in
-                    RenderRelationshipsGroup(
-                        name: chapter.name,
-                        abstract: nil,
-                        references: chapter.tutorials.compactMap { self.references[$0.identifier] as? TopicRenderReference }
-                    )
-                })
+                groups.append(
+                    contentsOf: section.chapters.map { chapter in
+                        RenderRelationshipsGroup(
+                            name: chapter.name,
+                            abstract: nil,
+                            references: chapter.tutorials.compactMap { self.references[$0.identifier] as? TopicRenderReference }
+                        )
+                    }
+                )
             }
             return groups
         default:
@@ -192,21 +196,22 @@ extension NavigatorIndexableRenderNodeRepresentation {
                 }
                 acc[renderReference.identifier.identifier] = renderReference
             }
-            
+
             func makeGroup(topicSection: TaskGroupRenderSection, isNestingReferences: Bool) -> RenderRelationshipsGroup {
                 RenderRelationshipsGroup(
                     name: topicSection.title,
-                    abstract: nil, // The navigator index only needs the title and the references.
+                    abstract: nil,  // The navigator index only needs the title and the references.
                     references: topicSection.identifiers.map { references[$0]! },
                     referencesAreNested: isNestingReferences
                 )
             }
-            
+
             return topicSections.map {
                 makeGroup(topicSection: $0, isNestingReferences: false)
-            } + defaultImplementationsSections.map {
-                makeGroup(topicSection: $0, isNestingReferences: true)
             }
+                + defaultImplementationsSections.map {
+                    makeGroup(topicSection: $0, isNestingReferences: true)
+                }
         }
     }
 }

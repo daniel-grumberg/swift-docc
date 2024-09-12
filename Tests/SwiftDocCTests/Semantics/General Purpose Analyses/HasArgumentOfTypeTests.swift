@@ -8,9 +8,10 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class HasArgumentOfTypeTests: XCTestCase {
     func testString() throws {
@@ -22,9 +23,9 @@ class HasArgumentOfTypeTests: XCTestCase {
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             let arguments = directive.arguments(problems: &problems)
             let x = Semantic.Analyses.HasArgument<Intro, StringArgument>(severityIfNotFound: .error).analyze(directive, arguments: arguments, problems: &problems)
             XCTAssertNotNil(x)
@@ -33,21 +34,21 @@ class HasArgumentOfTypeTests: XCTestCase {
             }
         }
     }
-    
+
     func testInt() throws {
         enum IntArgument: SwiftDocC.DirectiveArgument {
             typealias ArgumentValue = Int
             static let argumentName = "x"
         }
 
-        do { // Valid
+        do {  // Valid
             let source = "@dir(x: 1)"
             let document = Document(parsing: source, options: .parseBlockDirectives)
             let directive = document.child(at: 0) as? BlockDirective
             XCTAssertNotNil(directive)
-            
+
             directive.map { directive in
-                var problems = [Problem]()
+                var problems: [Problem] = []
                 let arguments = directive.arguments(problems: &problems)
                 let x = Semantic.Analyses.HasArgument<Intro, IntArgument>(severityIfNotFound: .error).analyze(directive, arguments: arguments, problems: &problems)
                 XCTAssertNotNil(x)
@@ -56,15 +57,15 @@ class HasArgumentOfTypeTests: XCTestCase {
                 }
             }
         }
-        
-        do { // Invalid
+
+        do {  // Invalid
             let source = "@dir(x: blah)"
             let document = Document(parsing: source, options: .parseBlockDirectives)
             let directive = document.child(at: 0) as? BlockDirective
             XCTAssertNotNil(directive)
-            
+
             directive.map { directive in
-                var problems = [Problem]()
+                var problems: [Problem] = []
                 let arguments = directive.arguments(problems: &problems)
                 let x = Semantic.Analyses.HasArgument<Intro, IntArgument>(severityIfNotFound: .error).analyze(directive, arguments: arguments, problems: &problems)
                 XCTAssertNil(x)
@@ -75,21 +76,21 @@ class HasArgumentOfTypeTests: XCTestCase {
             }
         }
     }
-    
+
     func testBool() throws {
         enum BoolArgument: SwiftDocC.DirectiveArgument {
             typealias ArgumentValue = Bool
             static let argumentName = "x"
         }
 
-        do { // Valid: true
+        do {  // Valid: true
             let source = "@dir(x: true)"
             let document = Document(parsing: source, options: .parseBlockDirectives)
             let directive = document.child(at: 0) as? BlockDirective
             XCTAssertNotNil(directive)
-            
+
             directive.map { directive in
-                var problems = [Problem]()
+                var problems: [Problem] = []
                 let arguments = directive.arguments(problems: &problems)
                 let x = Semantic.Analyses.HasArgument<Intro, BoolArgument>(severityIfNotFound: .error).analyze(directive, arguments: arguments, problems: &problems)
                 XCTAssertNotNil(x)
@@ -98,15 +99,15 @@ class HasArgumentOfTypeTests: XCTestCase {
                 }
             }
         }
-        
+
         do {
             let source = "@dir(x: false)"
             let document = Document(parsing: source, options: .parseBlockDirectives)
             let directive = document.child(at: 0) as? BlockDirective
             XCTAssertNotNil(directive)
-            
+
             directive.map { directive in
-                var problems = [Problem]()
+                var problems: [Problem] = []
                 let arguments = directive.arguments(problems: &problems)
                 let x = Semantic.Analyses.HasArgument<Intro, BoolArgument>(severityIfNotFound: .error).analyze(directive, arguments: arguments, problems: &problems)
                 XCTAssertTrue(problems.isEmpty)
@@ -116,15 +117,15 @@ class HasArgumentOfTypeTests: XCTestCase {
                 }
             }
         }
-        
+
         do {
             let source = "@dir(x: blah)"
             let document = Document(parsing: source, options: .parseBlockDirectives)
             let directive = document.child(at: 0) as? BlockDirective
             XCTAssertNotNil(directive)
-            
+
             directive.map { directive in
-                var problems = [Problem]()
+                var problems: [Problem] = []
                 let arguments = directive.arguments(problems: &problems)
                 let x = Semantic.Analyses.HasArgument<Intro, BoolArgument>(severityIfNotFound: .error).analyze(directive, arguments: arguments, problems: &problems)
                 XCTAssertEqual(1, problems.count)
@@ -136,7 +137,7 @@ class HasArgumentOfTypeTests: XCTestCase {
             }
         }
     }
-    
+
     func testOptionalArgument() throws {
         enum StringArgument: SwiftDocC.DirectiveArgument {
             typealias ArgumentValue = String
@@ -147,29 +148,29 @@ class HasArgumentOfTypeTests: XCTestCase {
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             let arguments = directive.arguments(problems: &problems)
             let x = Semantic.Analyses.HasArgument<Intro, StringArgument>(severityIfNotFound: nil).analyze(directive, arguments: arguments, problems: &problems)
             XCTAssertTrue(problems.isEmpty)
             XCTAssertNil(x)
         }
     }
-    
+
     func testParameterizedSeverity() throws {
         enum StringArgument: SwiftDocC.DirectiveArgument {
             typealias ArgumentValue = String
             static let argumentName = "x"
         }
-        
+
         let source = "@dir"
         let document = Document(parsing: source, options: .parseBlockDirectives)
         let directive = document.child(at: 0) as? BlockDirective
         XCTAssertNotNil(directive)
-        
+
         directive.map { directive in
-            var problems = [Problem]()
+            var problems: [Problem] = []
             let arguments = directive.arguments(problems: &problems)
             _ = Semantic.Analyses.HasArgument<Intro, StringArgument>(severityIfNotFound: .error).analyze(directive, arguments: arguments, problems: &problems)
             _ = Semantic.Analyses.HasArgument<Intro, StringArgument>(severityIfNotFound: .warning).analyze(directive, arguments: arguments, problems: &problems)

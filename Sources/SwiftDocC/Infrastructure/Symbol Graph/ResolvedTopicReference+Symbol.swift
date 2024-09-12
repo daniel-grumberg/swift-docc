@@ -18,7 +18,7 @@ extension ResolvedTopicReference {
     ///   - bundle: A documentation bundle, to which the symbol belongs.
     init(symbolReference: SymbolReference, moduleName: String, bundle: DocumentationBundle) {
         let path = symbolReference.path.isEmpty ? "" : "/" + symbolReference.path
-        
+
         self.init(
             bundleIdentifier: bundle.documentationRootReference.bundleIdentifier,
             path: bundle.documentationRootReference.appendingPath(moduleName + path).path,

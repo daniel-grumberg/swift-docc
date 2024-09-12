@@ -20,8 +20,8 @@ extension PreviewAction {
     public convenience init(
         fromPreviewOptions previewOptions: PreviewOptions,
         withFallbackTemplate fallbackTemplateURL: URL? = nil,
-        printTemplatePath: Bool = true) throws
-    {
+        printTemplatePath: Bool = true
+    ) throws {
         // Initialize the `PreviewAction` from the options provided by the `Preview` command
         try self.init(
             port: previewOptions.port,
@@ -31,7 +31,8 @@ extension PreviewAction {
                     withFallbackTemplate: fallbackTemplateURL
                 )
             },
-            printTemplatePath: printTemplatePath)
+            printTemplatePath: printTemplatePath
+        )
     }
 }
 #endif

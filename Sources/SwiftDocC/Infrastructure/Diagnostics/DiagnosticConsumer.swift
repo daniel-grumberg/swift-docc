@@ -15,11 +15,11 @@ public protocol DiagnosticConsumer: AnyObject {
     /// Receive diagnostics encountered by a ``DiagnosticEngine``.
     /// - Parameter problems: The encountered diagnostics.
     func receive(_ problems: [Problem])
-    
+
     /// Inform the consumer that the engine has sent all diagnostics for this build.
     @available(*, deprecated, renamed: "flush()", message: "Use 'flush()' instead. This deprecated API will be removed after 6.0 is released")
     func finalize() throws
-    
+
     /// Inform the consumer that the engine has sent all diagnostics in a given context.
     func flush() throws
 }

@@ -14,9 +14,9 @@ import Markdown
 extension Semantic.Analyses {
     /**
       Checks for any direct heading children that do not meet the minimum heading level (`startingFromLevel`) or that exceed the level of a previous _valid_ heading by more than one.
-         
+
       For example, when `startingFromLevel` is `2`:
-      
+
       ```markdown
       # H1 <- invalid, too low
       ## H2 <- valid, meets minimum
@@ -34,11 +34,18 @@ extension Semantic.Analyses {
             self.severityIfFound = severityIfFound
             self.startingFromLevel = startingFromLevel
         }
-        
+
         /**
          - returns: All valid headings.
          */
-        @discardableResult public func analyze(_ directive: BlockDirective, children: some Sequence<Markup>, source: URL?, for bundle: DocumentationBundle, in context: DocumentationContext, problems: inout [Problem]) -> [Heading] {
+        @discardableResult public func analyze(
+            _ directive: BlockDirective,
+            children: some Sequence<Markup>,
+            source: URL?,
+            for bundle: DocumentationBundle,
+            in context: DocumentationContext,
+            problems: inout [Problem]
+        ) -> [Heading] {
             var currentHeadingLevel = startingFromLevel
             var headings: [Heading] = []
             for case let child as Heading in children {
@@ -55,13 +62,19 @@ extension Semantic.Analyses {
                     } else {
                         diagnosticMessageDetail = "sequentially follow the previous heading"
                     }
-                    let diagnostic = Diagnostic(source: source, severity: severity, range: child.range, identifier: "org.swift.docc.HasOnlySequentialHeadings<\(Parent.self)>", summary: "This heading doesn't \(diagnosticMessageDetail)", explanation: "Make the heading level greater than or equal to \(startingFromLevel) and less than or equal to \(maximumAllowedHeadingLevel)")
+                    let diagnostic = Diagnostic(
+                        source: source,
+                        severity: severity,
+                        range: child.range,
+                        identifier: "org.swift.docc.HasOnlySequentialHeadings<\(Parent.self)>",
+                        summary: "This heading doesn't \(diagnosticMessageDetail)",
+                        explanation: "Make the heading level greater than or equal to \(startingFromLevel) and less than or equal to \(maximumAllowedHeadingLevel)"
+                    )
                     problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
                 }
             }
-            
+
             return headings
         }
     }
 }
-

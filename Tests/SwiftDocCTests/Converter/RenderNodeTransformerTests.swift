@@ -9,13 +9,18 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class RenderNodeTransformerTests: XCTestCase {
     func testRemovesAutomaticallyCuratedSeeAlsoSections() throws {
-        let symbolJSON = try String(contentsOf: Bundle.module.url(
-            forResource: "symbol-with-automatic-see-also-section", withExtension: "json",
-            subdirectory: "Converter Fixtures")!)
+        let symbolJSON = try String(
+            contentsOf: Bundle.module.url(
+                forResource: "symbol-with-automatic-see-also-section",
+                withExtension: "json",
+                subdirectory: "Converter Fixtures"
+            )!
+        )
 
         let renderNode = try RenderNodeTransformer(renderNodeData: symbolJSON.data(using: .utf8)!)
             .apply(transformation: RemoveAutomaticallyCuratedSeeAlsoSectionsTransformation())
@@ -27,16 +32,22 @@ class RenderNodeTransformerTests: XCTestCase {
         XCTAssertNil(renderNode.references["doc://org.swift.docc.example/documentation/Reference-From-Automatic-SeeAlso-Section-Only"])
         XCTAssertEqual(renderNode.references.count, 11)
     }
-    
+
     func testRemovesAutomaticallyCuratedSeeAlsoSectionsPreservingReferences() throws {
-        let symbolJSON = try String(contentsOf: Bundle.module.url(
-            forResource: "symbol-auto-see-also-fragments-and-relationships", withExtension: "json",
-            subdirectory: "Converter Fixtures")!)
-        
+        let symbolJSON = try String(
+            contentsOf: Bundle.module.url(
+                forResource: "symbol-auto-see-also-fragments-and-relationships",
+                withExtension: "json",
+                subdirectory: "Converter Fixtures"
+            )!
+        )
+
         let originalRenderNode = try RenderNode.decode(fromJSON: Data(symbolJSON.utf8))
-        XCTAssertEqual(originalRenderNode.primaryContentSections.mapFirst { $0 as? DeclarationsRenderSection }?.declarations.first?.tokens.last?.identifier,
-                       "doc://org.swift.docc.example/documentation/backgroundtasks/bgtaskrequest")
-        
+        XCTAssertEqual(
+            originalRenderNode.primaryContentSections.mapFirst { $0 as? DeclarationsRenderSection }?.declarations.first?.tokens.last?.identifier,
+            "doc://org.swift.docc.example/documentation/backgroundtasks/bgtaskrequest"
+        )
+
         let renderNode = try RenderNodeTransformer(renderNodeData: symbolJSON.data(using: .utf8)!)
             .apply(transformation: RemoveAutomaticallyCuratedSeeAlsoSectionsTransformation())
 
@@ -45,34 +56,43 @@ class RenderNodeTransformerTests: XCTestCase {
         XCTAssertNotNil(renderNode.references["doc://org.swift.docc.example/documentation/backgroundtasks/bgtaskrequest"])
         XCTAssertNil(renderNode.references["doc://org.swift.docc.example/documentation/backgroundtasks/bgprocessingtaskrequest"])
         XCTAssertEqual(renderNode.references.count, 7)
-        XCTAssertEqual(renderNode.primaryContentSections.mapFirst { $0 as? DeclarationsRenderSection }?.declarations.first?.tokens.last?.identifier,
-                       "doc://org.swift.docc.example/documentation/backgroundtasks/bgtaskrequest")
-        
+        XCTAssertEqual(
+            renderNode.primaryContentSections.mapFirst { $0 as? DeclarationsRenderSection }?.declarations.first?.tokens.last?.identifier,
+            "doc://org.swift.docc.example/documentation/backgroundtasks/bgtaskrequest"
+        )
+
         let encoder = JSONEncoder()
         let output = try encoder.encode(renderNode)
         let roundTripped = try RenderNode.decode(fromJSON: output)
-        
+
         XCTAssertEqual(output.count, try encoder.encode(roundTripped).count)
         XCTAssertEqual(roundTripped.references.count, 7)
-        XCTAssertEqual(roundTripped.primaryContentSections.mapFirst { $0 as? DeclarationsRenderSection }?.declarations.first?.tokens.last?.identifier,
-                       "doc://org.swift.docc.example/documentation/backgroundtasks/bgtaskrequest")
+        XCTAssertEqual(
+            roundTripped.primaryContentSections.mapFirst { $0 as? DeclarationsRenderSection }?.declarations.first?.tokens.last?.identifier,
+            "doc://org.swift.docc.example/documentation/backgroundtasks/bgtaskrequest"
+        )
     }
 
     func testCombinationTransformation() throws {
-        let symbolJSON = try String(contentsOf: Bundle.module.url(
-            forResource: "symbol-with-automatic-see-also-section", withExtension: "json",
-            subdirectory: "Converter Fixtures")!)
+        let symbolJSON = try String(
+            contentsOf: Bundle.module.url(
+                forResource: "symbol-with-automatic-see-also-section",
+                withExtension: "json",
+                subdirectory: "Converter Fixtures"
+            )!
+        )
 
         let renderNode = try RenderNodeTransformer(renderNodeData: symbolJSON.data(using: .utf8)!)
-            .apply(transformation:
-                SetMetadataTransformation(transform: { $0.title = "test title" })
+            .apply(
+                transformation:
+                    SetMetadataTransformation(transform: { $0.title = "test title" })
                     .then(SetMetadataTransformation(transform: { $0.roleHeading = "test heading" }))
                     .then(RemoveHierarchyTransformation())
             )
 
         XCTAssertEqual(renderNode.metadata.title, "test title")
         XCTAssertEqual(renderNode.metadata.roleHeading, "test heading")
-        
+
         XCTAssertNil(renderNode.hierarchy)
         XCTAssertNil(renderNode.references["doc://org.swift.docc.example/documentation/MyKit"])
 
@@ -81,8 +101,12 @@ class RenderNodeTransformerTests: XCTestCase {
     struct SetMetadataTransformation: RenderNodeTransforming {
         var transform: (inout RenderMetadata) -> Void
 
-        func transform(renderNode: RenderNode, context: RenderNodeTransformationContext)
-            -> RenderNodeTransformationResult {
+        func transform(
+            renderNode: RenderNode,
+            context: RenderNodeTransformationContext
+        )
+            -> RenderNodeTransformationResult
+        {
             var renderNode = renderNode
             transform(&renderNode.metadata)
             return (renderNode, context)

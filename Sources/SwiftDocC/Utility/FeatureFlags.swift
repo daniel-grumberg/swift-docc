@@ -13,29 +13,34 @@ public struct FeatureFlags: Codable {
     /// The current feature flags that Swift-DocC uses to conditionally enable
     /// (usually experimental) behavior in Swift-DocC.
     public static var current = FeatureFlags()
-    
+
     /// Whether or not experimental support for device frames on images and video is enabled.
     public var isExperimentalDeviceFrameSupportEnabled = false
 
     /// Whether or not experimental support for emitting a serialized version of the local link resolution information is enabled.
     public var isExperimentalLinkHierarchySerializationEnabled = false
-    
+
     /// Whether or not experimental support for combining overloaded symbol pages is enabled.
     public var isExperimentalOverloadedSymbolPresentationEnabled = false
-    
+
     /// Whether experimental support for automatically rendering links on symbol documentation to articles
     /// that mention that symbol.
     public var isExperimentalMentionedInEnabled = false
-    
+
     /// Whether or not support for validating parameters and return value documentation is enabled.
     public var isParametersAndReturnsValidationEnabled = true
-    
-    @available(*, deprecated, renamed: "isParametersAndReturnsValidationEnabled", message: "Use 'isParametersAndReturnsValidationEnabled' instead. This deprecated API will be removed after 6.1 is released")
+
+    @available(
+        *,
+        deprecated,
+        renamed: "isParametersAndReturnsValidationEnabled",
+        message: "Use 'isParametersAndReturnsValidationEnabled' instead. This deprecated API will be removed after 6.1 is released"
+    )
     public var isExperimentalParametersAndReturnsValidationEnabled: Bool {
         get { isParametersAndReturnsValidationEnabled }
         set { isParametersAndReturnsValidationEnabled = newValue }
     }
-    
+
     /// Creates a set of feature flags with the given values.
     ///
     /// - Parameters:
@@ -43,7 +48,7 @@ public struct FeatureFlags: Codable {
     ///
     ///     This field allows clients to set feature flags without adding new API.
     public init(
-        additionalFlags: [String : Bool] = [:]
+        additionalFlags: [String: Bool] = [:]
     ) {
     }
 

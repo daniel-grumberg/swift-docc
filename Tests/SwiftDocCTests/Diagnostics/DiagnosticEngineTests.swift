@@ -9,6 +9,7 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class DiagnosticEngineTests: XCTestCase {
@@ -21,7 +22,7 @@ class DiagnosticEngineTests: XCTestCase {
         func receive(_ problems: [Problem]) {
             expectation.fulfill()
         }
-        func finalize() { }
+        func finalize() {}
     }
 
     func testEmitDiagnostic() {
@@ -104,8 +105,14 @@ class DiagnosticEngineTests: XCTestCase {
 
     func testProblemFiltering() {
         let error = Problem(diagnostic: Diagnostic(source: nil, severity: .error, range: nil, identifier: "org.swift.docc.tests", summary: "Test error"), possibleSolutions: [])
-        let warning = Problem(diagnostic: Diagnostic(source: nil, severity: .warning, range: nil, identifier: "org.swift.docc.tests", summary: "Test warning"), possibleSolutions: [])
-        let information = Problem(diagnostic: Diagnostic(source: nil, severity: .information, range: nil, identifier: "org.swift.docc.tests", summary: "Test information"), possibleSolutions: [])
+        let warning = Problem(
+            diagnostic: Diagnostic(source: nil, severity: .warning, range: nil, identifier: "org.swift.docc.tests", summary: "Test warning"),
+            possibleSolutions: []
+        )
+        let information = Problem(
+            diagnostic: Diagnostic(source: nil, severity: .information, range: nil, identifier: "org.swift.docc.tests", summary: "Test information"),
+            possibleSolutions: []
+        )
         let hint = Problem(diagnostic: Diagnostic(source: nil, severity: .hint, range: nil, identifier: "org.swift.docc.tests", summary: "Test hint"), possibleSolutions: [])
 
         let defaultEngine = DiagnosticEngine()
@@ -114,54 +121,75 @@ class DiagnosticEngineTests: XCTestCase {
         defaultEngine.emit(warning)
         defaultEngine.emit(information)
         defaultEngine.emit(hint)
-        XCTAssertEqual(DiagnosticConsoleWriter.formattedDescription(for: defaultEngine.problems, options: .formatConsoleOutputForTools), """
+        XCTAssertEqual(
+            DiagnosticConsoleWriter.formattedDescription(for: defaultEngine.problems, options: .formatConsoleOutputForTools),
+            """
             error: Test error
             warning: Test warning
-            """)
+            """
+        )
 
         let engine = DiagnosticEngine(filterLevel: .information)
         engine.emit(error)
         engine.emit(warning)
         engine.emit(information)
         engine.emit(hint)
-        XCTAssertEqual(DiagnosticConsoleWriter.formattedDescription(for: engine.problems, options: .formatConsoleOutputForTools), """
+        XCTAssertEqual(
+            DiagnosticConsoleWriter.formattedDescription(for: engine.problems, options: .formatConsoleOutputForTools),
+            """
             error: Test error
             warning: Test warning
             note: Test information
-            """)
+            """
+        )
     }
-    
+
     func testTreatWarningsAsErrors() {
         let error = Problem(diagnostic: Diagnostic(source: nil, severity: .error, range: nil, identifier: "org.swift.docc.tests", summary: "Test error"), possibleSolutions: [])
-        let warning = Problem(diagnostic: Diagnostic(source: nil, severity: .warning, range: nil, identifier: "org.swift.docc.tests", summary: "Test warning"), possibleSolutions: [])
-        let information = Problem(diagnostic: Diagnostic(source: nil, severity: .information, range: nil, identifier: "org.swift.docc.tests", summary: "Test information"), possibleSolutions: [])
+        let warning = Problem(
+            diagnostic: Diagnostic(source: nil, severity: .warning, range: nil, identifier: "org.swift.docc.tests", summary: "Test warning"),
+            possibleSolutions: []
+        )
+        let information = Problem(
+            diagnostic: Diagnostic(source: nil, severity: .information, range: nil, identifier: "org.swift.docc.tests", summary: "Test information"),
+            possibleSolutions: []
+        )
 
         let defaultEngine = DiagnosticEngine()
         defaultEngine.emit(error)
         defaultEngine.emit(warning)
         defaultEngine.emit(information)
-        XCTAssertEqual(DiagnosticConsoleWriter.formattedDescription(for: defaultEngine.problems, options: .formatConsoleOutputForTools), """
+        XCTAssertEqual(
+            DiagnosticConsoleWriter.formattedDescription(for: defaultEngine.problems, options: .formatConsoleOutputForTools),
+            """
             error: Test error
             warning: Test warning
-            """)
+            """
+        )
 
         let engine = DiagnosticEngine(filterLevel: .information, treatWarningsAsErrors: true)
         engine.emit(error)
         engine.emit(warning)
         engine.emit(information)
-        XCTAssertEqual(DiagnosticConsoleWriter.formattedDescription(for: engine.problems, options: .formatConsoleOutputForTools), """
+        XCTAssertEqual(
+            DiagnosticConsoleWriter.formattedDescription(for: engine.problems, options: .formatConsoleOutputForTools),
+            """
             error: Test error
             error: Test warning
             note: Test information
-            """)
-        
+            """
+        )
+
         let errorFilterLevelEngine = DiagnosticEngine(filterLevel: .error, treatWarningsAsErrors: true)
         errorFilterLevelEngine.emit(error)
         errorFilterLevelEngine.emit(warning)
         errorFilterLevelEngine.emit(information)
-        XCTAssertEqual(DiagnosticConsoleWriter.formattedDescription(for: errorFilterLevelEngine.problems, options: .formatConsoleOutputForTools), """
+        XCTAssertEqual(
+            DiagnosticConsoleWriter.formattedDescription(for: errorFilterLevelEngine.problems, options: .formatConsoleOutputForTools),
+            """
             error: Test error
             error: Test warning
-            """)
+            """
+        )
     }
 }

@@ -10,17 +10,22 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftDocC
 
 class RenderContextTests: XCTestCase {
     func testCreatesRenderReferences() throws {
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
-        
+
         let renderContext = RenderContext(documentationContext: context, bundle: bundle)
-        
+
         // Verify render references are created for all topics
-        XCTAssertEqual(Array(renderContext.store.topics.keys.sorted(by: { $0.absoluteString < $1.absoluteString })), context.knownIdentifiers.sorted(by: { $0.absoluteString < $1.absoluteString }), "Didn't create render references for all context topics.")
-        
+        XCTAssertEqual(
+            Array(renderContext.store.topics.keys.sorted(by: { $0.absoluteString < $1.absoluteString })),
+            context.knownIdentifiers.sorted(by: { $0.absoluteString < $1.absoluteString }),
+            "Didn't create render references for all context topics."
+        )
+
         // Verify render references are created for all assets
         XCTAssertEqual(
             renderContext.store.assets.keys.map(\.assetName).sorted(),

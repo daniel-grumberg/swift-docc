@@ -11,28 +11,26 @@
 import Foundation
 import Markdown
 
-/**
- A document should have a single title, i.e. a single first-level heading.
- */
+/// A document should have a single title, i.e. a single first-level heading.
 public struct InvalidAdditionalTitle: Checker {
-    public var problems = [Problem]()
-    
+    public var problems: [Problem] = []
+
     /// The first level-one heading we encounter.
     private var documentTitle: Heading? = nil
-    
+
     private var sourceFile: URL?
-    
+
     /// Creates a new checker that detects documents with multiple titles.
     ///
     /// - Parameter sourceFile: The URL to the documentation file that the checker checks.
     public init(sourceFile: URL?) {
         self.sourceFile = sourceFile
     }
-    
+
     public mutating func visitHeading(_ heading: Heading) {
         // Only care about level-one headings.
         guard heading.level == 1 else { return }
-        
+
         if documentTitle == nil {
             // This is the first level-one heading we encounter.
             documentTitle = heading
@@ -41,8 +39,15 @@ public struct InvalidAdditionalTitle: Checker {
             let explanation = """
                 Level-1 headings are reserved for specifying the title of the document.
                 """
-            
-            let diagnostic = Diagnostic(source: sourceFile, severity: .warning, range: heading.range, identifier: "org.swift.docc.InvalidAdditionalTitle", summary: "Invalid use of level-1 heading.", explanation: explanation)
+
+            let diagnostic = Diagnostic(
+                source: sourceFile,
+                severity: .warning,
+                range: heading.range,
+                identifier: "org.swift.docc.InvalidAdditionalTitle",
+                summary: "Invalid use of level-1 heading.",
+                explanation: explanation
+            )
             problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
         }
     }

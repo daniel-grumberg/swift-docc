@@ -8,25 +8,26 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
 import Foundation
-@testable import SwiftDocC
-@testable import SwiftDocCUtilities
 import Markdown
 import SwiftDocCTestUtilities
+import XCTest
+
+@testable import SwiftDocC
+@testable import SwiftDocCUtilities
 
 class IndexActionTests: XCTestCase {
     #if !os(iOS)
     func testIndexActionOutputIsDeterministic() throws {
         // Convert a test bundle as input for the IndexAction
         let bundleURL = Bundle.module.url(forResource: "TestBundle", withExtension: "docc", subdirectory: "Test Bundles")!
-        
+
         let targetURL = try createTemporaryDirectory()
         let templateURL = try createTemporaryDirectory().appendingPathComponent("template")
         try Folder.emptyHTMLTemplateDirectory.write(to: templateURL)
-        
+
         let targetBundleURL = targetURL.appendingPathComponent("Result.builtdocs")
-        
+
         var action = try ConvertAction(
             documentationBundleURL: bundleURL,
             outOfProcessResolver: nil,
@@ -38,18 +39,18 @@ class IndexActionTests: XCTestCase {
             temporaryDirectory: createTemporaryDirectory()
         )
         _ = try action.perform(logHandle: .none)
-        
+
         let bundleIdentifier = "org.swift.docc.example"
-        
+
         // Repeatedly index the same bundle and verify that the result is the same every time.
-        
+
         var resultIndexDumps = Set<String>()
-        
+
         for iteration in 1...10 {
             let indexURL = targetURL.appendingPathComponent("index_\(iteration)")
-            
+
             let engine = DiagnosticEngine(filterLevel: .warning)
-            
+
             var indexAction = try IndexAction(
                 documentationBundleURL: targetBundleURL,
                 outputURL: indexURL,
@@ -57,22 +58,25 @@ class IndexActionTests: XCTestCase {
                 diagnosticEngine: engine
             )
             _ = try indexAction.perform(logHandle: .none)
-            
+
             let index = try NavigatorIndex.readNavigatorIndex(url: indexURL)
-            
+
             resultIndexDumps.insert(index.navigatorTree.root.dumpTree())
             XCTAssertTrue(engine.problems.isEmpty, "Indexing bundle at \(targetURL) resulted in unexpected issues")
         }
-        
+
         // All dumps should be the same, so there should only be one unique index dump
         XCTAssertEqual(resultIndexDumps.count, 1)
     }
     #endif
-    
+
     func testIndexActionOutputContainsInterfaceLanguageContent() throws {
         // Convert a test bundle as input for the IndexAction
         let bundleURL = Bundle.module.url(
-            forResource: "SingleArticleTestBundle", withExtension: "docc", subdirectory: "Test Bundles")!
+            forResource: "SingleArticleTestBundle",
+            withExtension: "docc",
+            subdirectory: "Test Bundles"
+        )!
         let targetURL = try createTemporaryDirectory()
         let templateURL = try createTemporaryDirectory().appendingPathComponent("template")
         try Folder.emptyHTMLTemplateDirectory.write(to: templateURL)

@@ -9,9 +9,10 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
-fileprivate func isEven(_ x: Int) -> Int? {
+private func isEven(_ x: Int) -> Int? {
     guard x % 2 == 0 else {
         return nil
     }
@@ -20,12 +21,12 @@ fileprivate func isEven(_ x: Int) -> Int? {
 
 class Sequence_CategorizeTests: XCTestCase {
     func testEmpty() {
-        let orig = [Int]()
+        let orig: [Int] = []
         let (matches, remainder) = orig.categorize(where: isEven)
         XCTAssertTrue(matches.isEmpty)
         XCTAssertTrue(remainder.isEmpty)
     }
-    
+
     func testOneMatch() {
         let orig = [2]
         let (matches, remainder) = orig.categorize(where: isEven)
@@ -35,7 +36,7 @@ class Sequence_CategorizeTests: XCTestCase {
             XCTAssertEqual(2, x)
         }
     }
-    
+
     func testOneNonMatch() {
         let orig = [1]
         let (matches, remainder) = orig.categorize(where: isEven)
@@ -45,7 +46,7 @@ class Sequence_CategorizeTests: XCTestCase {
             XCTAssertEqual(1, x)
         }
     }
-    
+
     func testMany() {
         let orig = [1, 2, 3, 4]
         let (matches, remainder) = orig.categorize(where: isEven)

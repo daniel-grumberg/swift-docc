@@ -14,10 +14,10 @@ import Foundation
 public struct DocumentationNodeConverter {
     /// The context the converter uses to resolve references it finds in the documentation node's content.
     let context: DocumentationContext
-    
+
     /// The bundle that contains the content from which the documentation node originated.
     let bundle: DocumentationBundle
-    
+
     /// Creates a new node converter for the given bundle and context.
     ///
     /// The converter uses bundle and context to resolve references to other documentation and describe the documentation hierarchy.
@@ -29,7 +29,7 @@ public struct DocumentationNodeConverter {
         self.bundle = bundle
         self.context = context
     }
-    
+
     /// Converts a documentation node to a render node.
     ///
     /// Convert a documentation node into a render node to get a self-contained, persistable representation of a given topic's data, so you can write it to disk, send it over a network, or otherwise process it.
@@ -40,7 +40,7 @@ public struct DocumentationNodeConverter {
         var translator = RenderNodeTranslator(context: context, bundle: bundle, identifier: node.reference)
         return translator.visit(node.semantic) as! RenderNode
     }
-    
+
     @available(*, deprecated, renamed: "convert(_:)", message: "Use 'convert(_:)' instead. This deprecated API will be removed after 6.1 is released")
     public func convert(_ node: DocumentationNode, at source: URL?) throws -> RenderNode {
         return try convert(node)

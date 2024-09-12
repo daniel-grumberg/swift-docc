@@ -9,10 +9,11 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class String_SlashTests: XCTestCase {
-    
+
     func testPrependingSlash() {
         XCTAssertEqual("/", "".prependingLeadingSlash)
         XCTAssertEqual("/path", "path".prependingLeadingSlash)

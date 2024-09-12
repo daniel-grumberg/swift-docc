@@ -23,7 +23,7 @@ import Foundation
 /// protocol implementations to manage files in memory,
 /// on a network, in a database, or elsewhere.
 package protocol FileManagerProtocol {
-    
+
     /// Returns the data content of a file at the given path, if it exists.
     func contents(atPath: String) -> Data?
     /// Compares the contents of two files at the given paths.
@@ -31,7 +31,7 @@ package protocol FileManagerProtocol {
 
     /// The *current* directory path.
     var currentDirectoryPath: String { get }
-    
+
     /// Returns `true` if a file or a directory exists at the given path.
     func fileExists(atPath: String, isDirectory: UnsafeMutablePointer<ObjCBool>?) -> Bool
     /// Returns `true` if a directory exists at the given path.
@@ -43,18 +43,18 @@ package protocol FileManagerProtocol {
     /// Moves a file from one location on the file-system to another.
     func moveItem(at: URL, to: URL) throws
     /// Creates a new file folder at the given location.
-    func createDirectory(at: URL, withIntermediateDirectories: Bool, attributes: [FileAttributeKey : Any]?) throws
+    func createDirectory(at: URL, withIntermediateDirectories: Bool, attributes: [FileAttributeKey: Any]?) throws
     /// Removes a file from the given location.
     func removeItem(at: URL) throws
     /// Returns a list of items in a directory
     func contentsOfDirectory(atPath path: String) throws -> [String]
     func contentsOfDirectory(at url: URL, includingPropertiesForKeys keys: [URLResourceKey]?, options mask: FileManager.DirectoryEnumerationOptions) throws -> [URL]
-    
+
     /// Returns a unique temporary directory.
     ///
     /// Each call to this function will return a new temporary directory.
-    func uniqueTemporaryDirectory() -> URL // Because we shadow 'FileManager.temporaryDirectory' in our tests, we can't also use 'temporaryDirectory' in FileManagerProtocol
-    
+    func uniqueTemporaryDirectory() -> URL  // Because we shadow 'FileManager.temporaryDirectory' in our tests, we can't also use 'temporaryDirectory' in FileManagerProtocol
+
     /// Creates a file with the specified `contents` at the specified location.
     ///
     /// - Parameters:
@@ -66,7 +66,7 @@ package protocol FileManagerProtocol {
     ///
     /// - Throws: If the file couldn't be created with the specified contents.
     func createFile(at: URL, contents: Data) throws
-    
+
     /// Returns the data content of a file at the given URL.
     ///
     /// - Parameters:
@@ -77,7 +77,7 @@ package protocol FileManagerProtocol {
     ///
     /// - Throws: If the file couldn't be read.
     func contents(of url: URL) throws -> Data
-    
+
     /// Creates a file with the given contents at the given url with the specified
     /// writing options.
     ///
@@ -105,12 +105,12 @@ extension FileManager: FileManagerProtocol {
     package func contents(of url: URL) throws -> Data {
         return try Data(contentsOf: url)
     }
-    
+
     // This method doesn't exist on `FileManager`. There is a similar looking method but it doesn't provide information about potential errors.
     package func createFile(at location: URL, contents: Data) throws {
         try contents.write(to: location, options: .atomic)
     }
-    
+
     package func createFile(at location: URL, contents: Data, options writingOptions: NSData.WritingOptions?) throws {
         if let writingOptions {
             try contents.write(to: location, options: writingOptions)
@@ -118,7 +118,7 @@ extension FileManager: FileManagerProtocol {
             try contents.write(to: location)
         }
     }
-    
+
     // Because we shadow 'FileManager.temporaryDirectory' in our tests, we can't also use 'temporaryDirectory' in FileManagerProtocol/
     package func uniqueTemporaryDirectory() -> URL {
         temporaryDirectory.appendingPathComponent(ProcessInfo.processInfo.globallyUniqueString, isDirectory: true)

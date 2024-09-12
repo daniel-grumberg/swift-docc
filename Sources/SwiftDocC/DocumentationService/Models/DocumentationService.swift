@@ -14,7 +14,7 @@ import Foundation
 public protocol DocumentationService {
     /// The types of messages this service can handle.
     static var handlingTypes: [DocumentationServer.MessageType] { get }
-    
+
     /// Processes the given documentation service message and calls the completion closure with the result as a message.
     func process(
         _ message: DocumentationServer.Message,

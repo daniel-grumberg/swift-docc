@@ -9,6 +9,7 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class SourceRepositoryTests: XCTestCase {
@@ -18,36 +19,39 @@ class SourceRepositoryTests: XCTestCase {
                 checkoutPath: "/path/to/checkout",
                 sourceServiceBaseURL: URL(string: "https://example.com/source")!,
                 formatLineNumber: { _ in "" }
-            ).format(sourceFileURL: URL(string: "file:///not/path/to/checkout/file")!),
+            )
+            .format(sourceFileURL: URL(string: "file:///not/path/to/checkout/file")!),
             """
             format(sourceFileURL:lineNumber:) unexpectedly returned non-nil result for source file that isn't in \
             source repository's local checkout folder.
             """
         )
     }
-    
+
     func testFormatReturnsURLIfSourceFilePrefixMatchesCheckout() {
         XCTAssertEqual(
             SourceRepository(
                 checkoutPath: "/path/to/checkout",
                 sourceServiceBaseURL: URL(string: "https://example.com/source")!,
                 formatLineNumber: { _ in "" }
-            ).format(sourceFileURL: URL(string: "file:///path/to/checkout/file")!),
+            )
+            .format(sourceFileURL: URL(string: "file:///path/to/checkout/file")!),
             URL(string: "https://example.com/source/file")!
         )
     }
-    
+
     func testFormatReturnsURLWithLineNumber() {
         XCTAssertEqual(
             SourceRepository(
                 checkoutPath: "/path/to/checkout",
                 sourceServiceBaseURL: URL(string: "https://example.com/source")!,
                 formatLineNumber: { lineNumber in "line-\(lineNumber)" }
-            ).format(sourceFileURL: URL(string: "file:///path/to/checkout/file")!, lineNumber: 5),
+            )
+            .format(sourceFileURL: URL(string: "file:///path/to/checkout/file")!, lineNumber: 5),
             URL(string: "https://example.com/source/file#line-5")!
         )
     }
-    
+
     func testGitHubFormatting() {
         XCTAssertEqual(
             SourceRepository
@@ -59,7 +63,7 @@ class SourceRepositoryTests: XCTestCase {
             URL(string: "https://example.com/source/file#L5")!
         )
     }
-    
+
     func testGitLabFormatting() {
         XCTAssertEqual(
             SourceRepository
@@ -71,7 +75,7 @@ class SourceRepositoryTests: XCTestCase {
             URL(string: "https://example.com/source/file#L5")!
         )
     }
-    
+
     func testBitBucketFormatting() {
         XCTAssertEqual(
             SourceRepository
@@ -83,7 +87,7 @@ class SourceRepositoryTests: XCTestCase {
             URL(string: "https://example.com/source/file#lines-5")!
         )
     }
-    
+
     func testLocalFileSystemFormatting() {
         XCTAssertEqual(
             SourceRepository.localFilesystem()

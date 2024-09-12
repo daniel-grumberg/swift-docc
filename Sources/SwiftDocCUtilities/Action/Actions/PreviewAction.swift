@@ -15,7 +15,7 @@ import SwiftDocC
 /// A preview server instance.
 var servers: [String: PreviewServer] = [:]
 
-fileprivate func trapSignals() {
+private func trapSignals() {
     // When the user stops docc - stop the preview server first before exiting.
     Signal.on(Signal.all) { _ in
         // This C function wrapper can't capture context so we print to the standard output.
@@ -42,26 +42,26 @@ public final class PreviewAction: Action, RecreatingContext {
     private let printHTMLTemplatePath: Bool
 
     var logHandle = LogHandle.standardOutput
-    
+
     let port: Int
-    
+
     var convertAction: ConvertAction
-    
+
     public var setupContext: ((inout DocumentationContext) -> Void)?
     private var previewPaths: [String] = []
-    
+
     // Use for testing to override binding to a system port
     var bindServerToSocketPath: String?
-    
+
     /// This closure is used to create a new convert action to generate a new version of the docs
     /// whenever the user changes a file in the watched directory.
     private let createConvertAction: () throws -> ConvertAction
-    
+
     /// A unique ID to access the action's preview server.
     let serverIdentifier = ProcessInfo.processInfo.globallyUniqueString
 
     private let diagnosticEngine: DiagnosticEngine
-    
+
     /// Creates a new preview action from the given parameters.
     ///
     /// - Parameters:
@@ -78,12 +78,12 @@ public final class PreviewAction: Action, RecreatingContext {
         createConvertAction: @escaping () throws -> ConvertAction,
         workspace: DocumentationWorkspace = DocumentationWorkspace(),
         context: DocumentationContext? = nil,
-        printTemplatePath: Bool = true) throws
-    {
+        printTemplatePath: Bool = true
+    ) throws {
         if !Self.allowConcurrentPreviews && !servers.isEmpty {
             assertionFailure("Running multiple preview actions is not allowed.")
         }
-        
+
         // Initialize the action context.
         self.port = port
         self.createConvertAction = createConvertAction
@@ -94,7 +94,7 @@ public final class PreviewAction: Action, RecreatingContext {
         self.context = try context ?? DocumentationContext(dataProvider: workspace, diagnosticEngine: engine)
         self.printHTMLTemplatePath = printTemplatePath
     }
-    
+
     /// Converts a documentation bundle and starts a preview server to render the result of that conversion.
     ///
     /// > Important: On macOS, the bundle will be converted each time the source is modified.
@@ -113,7 +113,7 @@ public final class PreviewAction: Action, RecreatingContext {
         if printHTMLTemplatePath, let htmlTemplateDirectory = convertAction.htmlTemplateDirectory {
             print("Template: \(htmlTemplateDirectory.path)", to: &self.logHandle)
         }
-        
+
         let previewResult = try preview()
         return ActionResult(didEncounterError: previewResult.didEncounterError, outputs: [convertAction.targetDirectory])
     }
@@ -123,7 +123,7 @@ public final class PreviewAction: Action, RecreatingContext {
         try servers[serverIdentifier]?.stop()
         servers.removeValue(forKey: serverIdentifier)
     }
-    
+
     func preview() throws -> ActionResult {
         // Convert the documentation source for previewing.
         let result = try convert()
@@ -143,7 +143,7 @@ public final class PreviewAction: Action, RecreatingContext {
 
             let to: PreviewServer.Bind = bindServerToSocketPath.map { .socket(path: $0) } ?? .localhost(port: port)
             servers[serverIdentifier] = try PreviewServer(contentURL: convertAction.targetDirectory, bindTo: to, logHandle: &logHandle)
-            
+
             // When the user stops docc - stop the preview server first before exiting.
             trapSignals()
 
@@ -163,11 +163,11 @@ public final class PreviewAction: Action, RecreatingContext {
 
         return previewResult
     }
-    
+
     func convert() throws -> ActionResult {
         // `cancel()` will throw `cancelPending` if there is already queued conversion.
         try convertAction.cancel()
-        
+
         convertAction = try createConvertAction()
         convertAction.setupContext = setupContext
 
@@ -175,12 +175,12 @@ public final class PreviewAction: Action, RecreatingContext {
         previewPaths = try convertAction.context.previewPaths()
         return result
     }
-    
+
     private func printPreviewAddresses(base: URL) {
         // If the preview paths are empty, just print the base.
         let firstPath = previewPaths.first ?? ""
         print("\t Address: \(base.appendingPathComponent(firstPath).absoluteString)", to: &logHandle)
-            
+
         let spacing = String(repeating: " ", count: "Address:".count)
         for previewPath in previewPaths.dropFirst() {
             print("\t \(spacing) \(base.appendingPathComponent(previewPath).absoluteString)", to: &logHandle)
@@ -192,7 +192,7 @@ public final class PreviewAction: Action, RecreatingContext {
 
 #if !os(Linux) && !os(Android)
 /// If needed, a retained directory monitor.
-fileprivate var monitor: DirectoryMonitor! = nil
+private var monitor: DirectoryMonitor! = nil
 
 extension PreviewAction {
     private func watch() throws {
@@ -210,7 +210,7 @@ extension PreviewAction {
                     print(error.localizedDescription, to: &self.logHandle)
                 }
             }
-            
+
             do {
                 print("Source bundle was modified, converting... ", terminator: "", to: &self.logHandle)
                 let result = try self.convert()
@@ -237,22 +237,23 @@ extension PreviewAction {
 #endif
 
 extension DocumentationContext {
-    
+
     /// A collection of non-implicit root modules
     var renderRootModules: [ResolvedTopicReference] {
         get throws {
             try rootModules.filter({ try !entity(with: $0).isVirtual })
         }
     }
-    
+
     /// Finds the module and technology pages in the context and returns their paths.
     func previewPaths() throws -> [String] {
         let urlGenerator = PresentationURLGenerator(context: self, baseURL: URL(string: "/")!)
-        
+
         let rootModules = try renderRootModules
-        
-        return (rootModules + rootTechnologies).map { page in
-            urlGenerator.presentationURLForReference(page).absoluteString
-        }
+
+        return (rootModules + rootTechnologies)
+            .map { page in
+                urlGenerator.presentationURLForReference(page).absoluteString
+            }
     }
 }

@@ -10,40 +10,41 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftDocC
 
 class RenderBlockContent_AsideStyleTests: XCTestCase {
     private typealias AsideStyle = RenderBlockContent.AsideStyle
-    
+
     func testDisplayNameForSpecialRawValue() {
         XCTAssertEqual(
             AsideStyle(rawValue: "nonmutatingvariant").displayName,
             "Non-Mutating Variant"
         )
-        
+
         XCTAssertEqual(
             AsideStyle(rawValue: "NonMutatingVariant").displayName,
             "Non-Mutating Variant"
         )
-        
+
         XCTAssertEqual(
             AsideStyle(rawValue: "mutatingvariant").displayName,
             "Mutating Variant"
         )
-        
+
         XCTAssertEqual(
             AsideStyle(rawValue: "todo").displayName,
             "To Do"
         )
     }
-    
+
     func testDisplayNameForAsideWithExistingUppercasedContent() {
         XCTAssertEqual(
             AsideStyle(rawValue: "Random title").displayName,
             "Random title"
         )
     }
-    
+
     func testDisplayNameForAsideWithLowercasedContent() {
         XCTAssertEqual(
             AsideStyle(rawValue: "random title").displayName,

@@ -10,6 +10,7 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftDocC
 
 /// A Data provider and file manager that accepts pre-built documentation bundles with files on the local filesystem.
@@ -42,52 +43,52 @@ import XCTest
 /// - Warning: Use this type for unit testing.
 package class TestFileSystem: FileManagerProtocol, DocumentationWorkspaceDataProvider {
     package let currentDirectoryPath = "/"
-    
+
     package var identifier: String = UUID().uuidString
-    
-    private var _bundles = [DocumentationBundle]()
+
+    private var _bundles: [DocumentationBundle] = []
     package func bundles(options: BundleDiscoveryOptions) throws -> [DocumentationBundle] {
         // Ignore the bundle discovery options, these test bundles are already built.
         return _bundles
     }
-    
+
     /// Thread safe access to the file system.
     private var filesLock = NSRecursiveLock()
 
     /// A plain index of paths and their contents.
-    var files = [String: Data]()
-    
+    var files: [String: Data] = [:]
+
     /// Set to `true` to disable write operations for folders and files.
     /// For example use this for large conversions when the output is not of interest.
     var disableWriting = false
-    
+
     /// A data fixture to use in the `files` index to mark folders.
     static let folderFixtureData = "Folder".data(using: .utf8)!
-    
+
     package convenience init(folders: [Folder]) throws {
         self.init()
-        
+
         // Default system paths
         files["/"] = Self.folderFixtureData
         files["/tmp"] = Self.folderFixtureData
- 
+
         // Import given folders
         try updateDocumentationBundles(withFolders: folders)
     }
-    
+
     func updateDocumentationBundles(withFolders folders: [Folder]) throws {
         _bundles.removeAll()
-        
+
         for folder in folders {
             let files = try addFolder(folder)
-            
+
             func asCatalog(_ file: File) -> Folder? {
                 if let folder = file as? Folder, URL(fileURLWithPath: folder.name).pathExtension == "docc" {
                     return folder
                 }
                 return nil
             }
-            
+
             if let catalog = asCatalog(folder) ?? folder.recursiveContent.mapFirst(where: asCatalog(_:)) {
                 let files = files.filter({ $0.hasPrefix(catalog.absoluteURL.path) }).compactMap({ URL(fileURLWithPath: $0) })
 
@@ -96,13 +97,13 @@ package class TestFileSystem: FileManagerProtocol, DocumentationWorkspaceDataPro
                 let graphs = files.filter({ DocumentationBundleFileTypes.isSymbolGraphFile($0) })
                 let customHeader = files.first(where: { DocumentationBundleFileTypes.isCustomHeader($0) })
                 let customFooter = files.first(where: { DocumentationBundleFileTypes.isCustomFooter($0) })
-                
+
                 let info = try DocumentationBundle.Info(
                     from: try catalog.recursiveContent.mapFirst(where: { $0 as? InfoPlist })?.data(),
                     bundleDiscoveryOptions: nil,
                     derivedDisplayName: URL(fileURLWithPath: catalog.name).deletingPathExtension().lastPathComponent
                 )
-                
+
                 let bundle = DocumentationBundle(
                     info: info,
                     symbolGraphURLs: graphs,
@@ -125,36 +126,36 @@ package class TestFileSystem: FileManagerProtocol, DocumentationWorkspaceDataPro
         }
         return file
     }
-    
+
     package func contents(of url: URL) throws -> Data {
         try contentsOfURL(url)
     }
-    
+
     func filesIn(folder: Folder, at: URL) throws -> [String: Data] {
         filesLock.lock()
         defer { filesLock.unlock() }
 
-        var result = [String: Data]()
+        var result: [String: Data] = [:]
         for file in folder.content {
             switch file {
-                case let folder as Folder:
-                    result[at.appendingPathComponent(folder.name).path] = Self.folderFixtureData
-                    result.merge(try filesIn(folder: folder, at: at.appendingPathComponent(folder.name)), uniquingKeysWith: +)
-                case let file as File & DataRepresentable:
-                    result[at.appendingPathComponent(file.name).path] = try file.data()
-                    if let copy = file as? CopyOfFile {
-                        result[copy.original.path] = try file.data()
-                    }
-                default: break
+            case let folder as Folder:
+                result[at.appendingPathComponent(folder.name).path] = Self.folderFixtureData
+                result.merge(try filesIn(folder: folder, at: at.appendingPathComponent(folder.name)), uniquingKeysWith: +)
+            case let file as File & DataRepresentable:
+                result[at.appendingPathComponent(file.name).path] = try file.data()
+                if let copy = file as? CopyOfFile {
+                    result[copy.original.path] = try file.data()
+                }
+            default: break
             }
         }
         return result
     }
-    
+
     @discardableResult
     func addFolder(_ folder: Folder) throws -> [String] {
         guard !disableWriting else { return [] }
-        
+
         filesLock.lock()
         defer { filesLock.unlock() }
 
@@ -164,47 +165,47 @@ package class TestFileSystem: FileManagerProtocol, DocumentationWorkspaceDataPro
         files.merge(fileList, uniquingKeysWith: +)
         return Array(fileList.keys)
     }
-    
+
     package func fileExists(atPath path: String, isDirectory: UnsafeMutablePointer<ObjCBool>?) -> Bool {
         filesLock.lock()
         defer { filesLock.unlock() }
-        
+
         guard let data = files[path] else {
             isDirectory?.initialize(to: ObjCBool(false))
             return false
         }
-        
+
         isDirectory?.initialize(to: data == Self.folderFixtureData ? ObjCBool(true) : ObjCBool(false))
         return true
     }
-    
+
     package func fileExists(atPath path: String) -> Bool {
         filesLock.lock()
         defer { filesLock.unlock() }
 
         return files.keys.contains(path)
     }
-    
+
     package func copyItem(at srcURL: URL, to dstURL: URL) throws {
         guard !disableWriting else { return }
-        
+
         filesLock.lock()
         defer { filesLock.unlock() }
-        
+
         try ensureParentDirectoryExists(for: dstURL)
-        
+
         let srcPath = srcURL.path
         let dstPath = dstURL.path
-        
+
         files[dstPath] = files[srcPath]
         for (path, data) in files where path.hasPrefix(srcPath) {
             files[path.replacingOccurrences(of: srcPath, with: dstPath)] = data
         }
     }
-    
+
     package func moveItem(at srcURL: URL, to dstURL: URL) throws {
         guard !disableWriting else { return }
-        
+
         filesLock.lock()
         defer { filesLock.unlock() }
 
@@ -212,15 +213,15 @@ package class TestFileSystem: FileManagerProtocol, DocumentationWorkspaceDataPro
 
         try copyItem(at: srcURL, to: dstURL)
         files.removeValue(forKey: srcPath)
-        
+
         for (path, _) in files where path.hasPrefix(srcPath) {
             files.removeValue(forKey: path)
         }
     }
-    
-    func createDirectory(atPath path: String, withIntermediateDirectories createIntermediates: Bool, attributes: [FileAttributeKey : Any]? = nil) throws {
+
+    func createDirectory(atPath path: String, withIntermediateDirectories createIntermediates: Bool, attributes: [FileAttributeKey: Any]? = nil) throws {
         guard !disableWriting else { return }
-        
+
         filesLock.lock()
         defer { filesLock.unlock() }
 
@@ -235,29 +236,29 @@ package class TestFileSystem: FileManagerProtocol, DocumentationWorkspaceDataPro
                 try createDirectory(atPath: parent.path, withIntermediateDirectories: true)
             }
         }
-        
+
         files[path] = Self.folderFixtureData
     }
-    
-    package func createDirectory(at url: URL, withIntermediateDirectories createIntermediates: Bool, attributes: [FileAttributeKey : Any]? = nil) throws {
+
+    package func createDirectory(at url: URL, withIntermediateDirectories createIntermediates: Bool, attributes: [FileAttributeKey: Any]? = nil) throws {
         guard !disableWriting else { return }
-        
+
         filesLock.lock()
         defer { filesLock.unlock() }
 
         try createDirectory(atPath: url.path, withIntermediateDirectories: createIntermediates)
     }
-    
+
     package func contentsEqual(atPath path1: String, andPath path2: String) -> Bool {
         filesLock.lock()
         defer { filesLock.unlock() }
 
         return files[path1] == files[path2]
     }
-    
+
     package func removeItem(at: URL) throws {
         guard !disableWriting else { return }
-        
+
         filesLock.lock()
         defer { filesLock.unlock() }
 
@@ -266,36 +267,36 @@ package class TestFileSystem: FileManagerProtocol, DocumentationWorkspaceDataPro
             files.removeValue(forKey: path)
         }
     }
-    
+
     package func createFile(at url: URL, contents: Data) throws {
         filesLock.lock()
         defer { filesLock.unlock() }
 
         try ensureParentDirectoryExists(for: url)
-        
+
         if !disableWriting {
             files[url.path] = contents
         }
     }
-    
+
     package func createFile(at url: URL, contents: Data, options: NSData.WritingOptions?) throws {
         try createFile(at: url, contents: contents)
     }
-    
+
     package func contents(atPath: String) -> Data? {
         filesLock.lock()
         defer { filesLock.unlock() }
 
         return files[atPath]
     }
-    
+
     package func contentsOfDirectory(atPath path: String) throws -> [String] {
         filesLock.lock()
         defer { filesLock.unlock() }
-        
+
         var results = Set<String>()
         let path = path.appendingTrailingSlash
-        
+
         for subpath in files.keys where subpath.hasPrefix(path) {
             let relativePath = subpath.dropFirst(path.count).removingLeadingSlash
             guard !relativePath.isEmpty else { continue }
@@ -313,16 +314,17 @@ package class TestFileSystem: FileManagerProtocol, DocumentationWorkspaceDataPro
         if let keys {
             XCTAssertTrue(keys.isEmpty, "includingPropertiesForKeys is not implemented in contentsOfDirectory in TestFileSystem")
         }
-        
+
         if !mask.isSubset(of: [.skipsHiddenFiles]) {
             XCTFail("The given directory enumeration option(s) \(mask.rawValue) have not been implemented in the test file system: \(mask)")
         }
 
         let skipHiddenFiles = mask == .skipsHiddenFiles
         let contents = try contentsOfDirectory(atPath: url.path)
-        let output: [URL] = contents.filter({ skipHiddenFiles ? !$0.hasPrefix(".") : true}).map {
-            url.appendingPathComponent($0)
-        }
+        let output: [URL] = contents.filter({ skipHiddenFiles ? !$0.hasPrefix(".") : true })
+            .map {
+                url.appendingPathComponent($0)
+            }
 
         return output
     }
@@ -330,16 +332,16 @@ package class TestFileSystem: FileManagerProtocol, DocumentationWorkspaceDataPro
     package func uniqueTemporaryDirectory() -> URL {
         URL(fileURLWithPath: "/tmp/\(ProcessInfo.processInfo.globallyUniqueString)", isDirectory: true)
     }
-    
+
     enum Errors: DescribedError {
         case invalidPath(String)
         var errorDescription: String {
-            switch self { 
-                case .invalidPath(let path): return "Invalid path \(path.singleQuoted)"
+            switch self {
+            case .invalidPath(let path): return "Invalid path \(path.singleQuoted)"
             }
         }
     }
-    
+
     /// Returns a stable string representation of the file system from a given subpath.
     ///
     /// - Parameter path: The path to the sub hierarchy to dump to a string representation.
@@ -347,43 +349,44 @@ package class TestFileSystem: FileManagerProtocol, DocumentationWorkspaceDataPro
     package func dump(subHierarchyFrom path: String = "/") -> String {
         filesLock.lock()
         defer { filesLock.unlock() }
-        
+
         let relevantFilePaths: [String]
         if path == "/" {
             relevantFilePaths = Array(files.keys)
         } else {
             let lengthToRemove = path.distance(from: path.startIndex, to: path.lastIndex(of: "/")!) + 1
-            
+
             relevantFilePaths = files.keys
                 .filter { $0.hasPrefix(path) }
                 .map { String($0.dropFirst(lengthToRemove)) }
         }
-        return Folder.makeStructure(
-            filePaths: relevantFilePaths,
-            isEmptyDirectoryCheck: { files[$0] == Self.folderFixtureData }
-        )
-        .map { $0.dump() }
-        .joined(separator: "\n")
+        return
+            Folder.makeStructure(
+                filePaths: relevantFilePaths,
+                isEmptyDirectoryCheck: { files[$0] == Self.folderFixtureData }
+            )
+            .map { $0.dump() }
+            .joined(separator: "\n")
     }
-    
+
     // This is a convenience utility for testing, not FileManagerProtocol API
     package func recursiveContentsOfDirectory(atPath path: String) throws -> [String] {
         var allSubpaths = try contentsOfDirectory(atPath: path)
-        
-        for subpath in allSubpaths { // This is iterating over a copy
+
+        for subpath in allSubpaths {  // This is iterating over a copy
             let innerContents = try recursiveContentsOfDirectory(atPath: "\(path)/\(subpath)")
             allSubpaths.append(contentsOf: innerContents.map({ "\(subpath)/\($0)" }))
         }
         return allSubpaths
     }
-    
+
     private func ensureParentDirectoryExists(for url: URL) throws {
         let parentURL = url.deletingLastPathComponent()
         guard directoryExists(atPath: parentURL.path) else {
             throw makeFileNotFoundError(parentURL)
         }
     }
-    
+
     private func makeFileNotFoundError(_ url: URL) -> Error {
         return CocoaError(.fileReadNoSuchFile, userInfo: [NSFilePathErrorKey: url.path])
     }

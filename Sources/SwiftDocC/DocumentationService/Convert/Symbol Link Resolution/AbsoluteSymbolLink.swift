@@ -17,24 +17,24 @@ import SymbolKit
 public struct AbsoluteSymbolLink: CustomStringConvertible {
     /// The identifier for the documentation bundle this link is from.
     public let bundleID: String
-    
+
     /// The name of the module that contains this symbol link.
     /// - Note: This could be a link to the module itself.
     public let module: String
-    
+
     /// The top level symbol in this documentation link.
     ///
     /// If this symbol represents a module (see ``representsModule``), then
     /// this is just the module and can be ignored. Otherwise, it's the top level symbol within
     /// the module.
     public let topLevelSymbol: LinkComponent
-    
+
     /// The ordered path components, excluding the module and top level symbol.
     public let basePathComponents: [LinkComponent]
-    
+
     /// A Boolean value that is true if this is a link to a module.
     public let representsModule: Bool
-    
+
     /// Create a new documentation symbol link from a path.
     ///
     /// Expects an absolute symbol link structured like one of the following:
@@ -49,47 +49,47 @@ public struct AbsoluteSymbolLink: CustomStringConvertible {
         guard let validatedURL = ValidatedURL(parsingExact: string)?.requiring(scheme: ResolvedTopicReference.urlScheme) else {
             return nil
         }
-        
+
         // All absolute documentation links include the bundle identifier as their host.
         guard let bundleID = validatedURL.components.host, !bundleID.isEmpty else {
             return nil
         }
         self.bundleID = bundleID
-        
+
         var pathComponents = validatedURL.url.pathComponents
-        
+
         // Swift's URL interprets the following link "doc://org.swift.docc.example/documentation/ModuleName"
         // to have a sole "/" as its first path component. We'll just remove it if it's there.
         if pathComponents.first == "/" {
             pathComponents.removeFirst()
         }
-        
+
         // Swift-DocC requires absolute symbol links to be prepended with "documentation"
         guard pathComponents.first == NodeURLGenerator.Path.documentationFolderName else {
             return nil
         }
-        
+
         // Swift-DocC requires absolute symbol links to be prepended with "documentation"
         // as their first path component but that's not actually part of the symbol's path
         // so we drop it here.
         pathComponents.removeFirst()
-        
+
         // Now that we've cleaned up the link, confirm that it's non-empty
         guard !pathComponents.isEmpty else {
             return nil
         }
-        
+
         // Validate and construct the link component that represents the module
         guard let moduleLinkComponent = LinkComponent(string: pathComponents.removeFirst()) else {
             return nil
         }
-        
+
         // We don't allow modules to have disambiguation suffixes
         guard !moduleLinkComponent.hasDisambiguationSuffix else {
             return nil
         }
         self.module = moduleLinkComponent.name
-        
+
         // Next we'll attempt to construct the link component for the top level symbol
         // within the module.
         if pathComponents.isEmpty {
@@ -105,18 +105,18 @@ public struct AbsoluteSymbolLink: CustomStringConvertible {
         } else {
             return nil
         }
-        
+
         // Finally we transform the remaining path components into link components
         basePathComponents = pathComponents.compactMap { componentName in
             LinkComponent(string: componentName)
         }
-        
+
         // If any of the path components were invalid, we want to mark the entire link as invalid
         guard basePathComponents.count == pathComponents.count else {
             return nil
         }
     }
-    
+
     public var description: String {
         """
         {
@@ -135,20 +135,20 @@ extension AbsoluteSymbolLink {
     public struct LinkComponent: CustomStringConvertible {
         /// The name of the symbol represented by the link component.
         public let name: String
-        
+
         /// The suffix used to disambiguate this symbol from other symbol's
         /// that share the same name.
         public let disambiguationSuffix: DisambiguationSuffix
-        
+
         var hasDisambiguationSuffix: Bool {
             disambiguationSuffix != .none
         }
-        
+
         init(name: String, disambiguationSuffix: DisambiguationSuffix) {
             self.name = name
             self.disambiguationSuffix = disambiguationSuffix
         }
-        
+
         /// Creates an absolute symbol component from a raw string.
         ///
         /// For example, the input string can be `"foo-swift.var"`.
@@ -164,27 +164,29 @@ extension AbsoluteSymbolLink {
                     // since a split would then result in a single path component.
                     return nil
                 }
-                
+
                 // Set the name from the first half of the split
                 name = String(splitPathComponent.removeFirst())
-                
+
                 // The disambiguation suffix is formed from the second half
                 let disambiguationSuffixString = String(splitPathComponent.removeLast())
-                
+
                 // Attempt to parse and validate a disambiguation suffix
-                guard let disambiguationSuffix = DisambiguationSuffix(
-                    string: disambiguationSuffixString
-                ) else {
+                guard
+                    let disambiguationSuffix = DisambiguationSuffix(
+                        string: disambiguationSuffixString
+                    )
+                else {
                     // Invalid disambiguation suffix, so we just return nil
                     return nil
                 }
-                
+
                 guard disambiguationSuffix != .none else {
                     // Since a "-" was included, we expect the disambiguation
                     // suffix to be non-nil.
                     return nil
                 }
-                
+
                 self.disambiguationSuffix = disambiguationSuffix
             } else {
                 // The path component had no "-" so we just set the name
@@ -193,13 +195,13 @@ extension AbsoluteSymbolLink {
                 disambiguationSuffix = .none
             }
         }
-        
+
         public var description: String {
             """
             (name: \(name.singleQuoted), suffix: \(disambiguationSuffix))
             """
         }
-        
+
         /// A string representation of this link component.
         public var asLinkComponentString: String {
             "\(name)\(disambiguationSuffix.asLinkSuffixString)"
@@ -213,24 +215,25 @@ extension AbsoluteSymbolLink.LinkComponent {
     public enum DisambiguationSuffix: Equatable, CustomStringConvertible {
         /// The link is not disambiguated.
         case none
-        
+
         /// The symbol's kind.
         case kindIdentifier(String)
-        
+
         /// A hash of the symbol's precise identifier.
         case preciseIdentifierHash(String)
-        
+
         /// The symbol's kind and precise identifier.
         ///
         /// See ``kindIdentifier(_:)`` and ``preciseIdentifierHash(_:)`` for details.
         case kindAndPreciseIdentifier(
-            kindIdentifier: String, preciseIdentifierHash: String
+            kindIdentifier: String,
+            preciseIdentifierHash: String
         )
 
         private static func isKnownSymbolKindIdentifier(identifier: String) -> Bool {
             return SymbolGraph.Symbol.KindIdentifier.isKnownIdentifier(identifier)
         }
-        
+
         /// Creates a disambiguation suffix based on the given kind and precise
         /// identifiers.
         init(kindIdentifier: String?, preciseIdentifier: String?) {
@@ -247,19 +250,19 @@ extension AbsoluteSymbolLink.LinkComponent {
                 self = .none
             }
         }
-        
+
         /// Creates a symbol path component disambiguation suffix from the given string.
         init?(string: String) {
             guard !string.isEmpty else {
                 self = .none
                 return
             }
-            
+
             // We begin by splitting the given string in
             // case this disambiguation suffix includes both an id hash
             // and a kind identifier.
             let splitSuffix = string.split(separator: "-")
-            
+
             if splitSuffix.count == 1 && splitSuffix[0] == string {
                 // The string didn't contain a "-" so now we check
                 // to see if the hash is a known symbol kind identifier.
@@ -292,7 +295,7 @@ extension AbsoluteSymbolLink.LinkComponent {
                 return nil
             }
         }
-        
+
         public var description: String {
             switch self {
             case .none:
@@ -302,13 +305,13 @@ extension AbsoluteSymbolLink.LinkComponent {
             case .preciseIdentifierHash(let preciseIdentifierHash):
                 return "(idHash: \(preciseIdentifierHash.singleQuoted))"
             case .kindAndPreciseIdentifier(
-                kindIdentifier: let kindIdentifier,
-                preciseIdentifierHash: let preciseIdentifierHash
+                let kindIdentifier,
+                let preciseIdentifierHash
             ):
                 return "(kind: \(kindIdentifier.singleQuoted), idHash: \(preciseIdentifierHash.singleQuoted))"
             }
         }
-        
+
         /// A string representation of the given disambiguation suffix.
         ///
         /// This value will include the preceding "-" character if necessary.
@@ -329,8 +332,8 @@ extension AbsoluteSymbolLink.LinkComponent {
             case .preciseIdentifierHash(let preciseIdentifierHash):
                 return "-\(preciseIdentifierHash)"
             case .kindAndPreciseIdentifier(
-                kindIdentifier: let kindIdentifier,
-                preciseIdentifierHash: let preciseIdentifierHash
+                let kindIdentifier,
+                let preciseIdentifierHash
             ):
                 return "-\(kindIdentifier)-\(preciseIdentifierHash)"
             }

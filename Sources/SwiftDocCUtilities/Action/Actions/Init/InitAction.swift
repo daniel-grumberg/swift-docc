@@ -13,21 +13,21 @@ import SwiftDocC
 
 /// An action that generates a documentation catalog from a template seed.
 public struct InitAction: Action {
-    
+
     enum Error: DescribedError {
         case catalogAlreadyExists
         var errorDescription: String {
             switch self {
-                case .catalogAlreadyExists: return "A documentation catalog with the same name already exists in the output directory."
+            case .catalogAlreadyExists: return "A documentation catalog with the same name already exists in the output directory."
             }
         }
     }
-    
+
     private var fileManager: FileManagerProtocol
     private let catalogOutputURL: URL
     private let catalogTemplateKind: CatalogTemplateKind
     private let documentationTitle: String
-    
+
     /// Creates a new Init action from the given parameters.
     ///
     /// - Parameters:
@@ -46,7 +46,7 @@ public struct InitAction: Action {
         self.catalogTemplateKind = catalogTemplate
         self.fileManager = fileManager
     }
-    
+
     /// Creates a new Init action from the given parameters.
     ///
     /// - Parameters:
@@ -68,17 +68,17 @@ public struct InitAction: Action {
             fileManager: FileManager.default
         )
     }
-    
+
     /// Generates a documentation catalog from a catalog template.
     ///
     /// - Parameter logHandle: The file handle that the convert and preview actions will print debug messages to.
     public mutating func perform(logHandle: SwiftDocC.LogHandle) throws -> ActionResult {
-        
+
         let diagnosticEngine: DiagnosticEngine = DiagnosticEngine(treatWarningsAsErrors: false)
         diagnosticEngine.filterLevel = .warning
         diagnosticEngine.add(DiagnosticConsoleWriter(formattingOptions: []))
         var logHandle = logHandle
-        var directoryURLsList = [URL]()
+        var directoryURLsList: [URL] = []
         var resourceDocumentationLink: String {
             switch catalogTemplateKind {
             case .articleOnly:
@@ -87,11 +87,11 @@ public struct InitAction: Action {
                 return "https://www.swift.org/documentation/docc/tutorial-syntax"
             }
         }
-        
+
         defer {
             diagnosticEngine.flush()
         }
-        
+
         do {
             // Create the directory where the catalog will be initialized.
             try fileManager.createDirectory(
@@ -114,7 +114,7 @@ public struct InitAction: Action {
                 outputs: []
             )
         }
-        
+
         do {
             // Create a catalog template using the options passed through the CLI.
             let catalogTemplate = try CatalogTemplate(catalogTemplateKind, title: documentationTitle)
@@ -147,16 +147,16 @@ public struct InitAction: Action {
             print(
                 """
                 A new documentation catalog has been generated at \(catalogOutputURL.path) with the following structure:
-                
+
                 \(directoryURLsList.map {
                     """
                     - \($0)
                     """
                 }.joined(separator: "\n"))
-                
+
                 To preview it, run the command:
                     docc preview \(catalogOutputURL.path)
-                
+
                 For additional resources on how to get started with DocC, please refer to \(resourceDocumentationLink).
                 """,
                 to: &logHandle
@@ -176,13 +176,11 @@ public struct InitAction: Action {
                 )
             )
         }
-        
+
         return ActionResult(
             didEncounterError: !diagnosticEngine.problems.isEmpty,
             outputs: [catalogOutputURL]
         )
     }
-    
+
 }
-
-

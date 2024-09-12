@@ -9,9 +9,10 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
-fileprivate struct TestError: DescribedError {
+private struct TestError: DescribedError {
     var errorDescription: String {
         return "TestError"
     }
@@ -23,7 +24,7 @@ class DescribedErrorTests: XCTestCase {
         // is called.
         let error = TestError()
         XCTAssertEqual("TestError", error.errorDescription)
-        
+
         let foundationError = error as Foundation.LocalizedError
         XCTAssertEqual("TestError", foundationError.errorDescription)
     }

@@ -13,12 +13,12 @@ public struct DictionaryKeysSection {
     public static var title: String {
         return "Properties"
     }
-    
+
     /// The list of dictionary keys.
-    public var dictionaryKeys = [DictionaryKey]()
-    
+    public var dictionaryKeys: [DictionaryKey] = []
+
     /// Merge additional keys to section.
-    /// 
+    ///
     /// Preserves the order and merges in documentation and symbols to any existing keys.
     mutating public func mergeDictionaryKeys(_ newDictionaryKeys: [DictionaryKey]) {
         if dictionaryKeys.isEmpty {
@@ -26,7 +26,7 @@ public struct DictionaryKeysSection {
             dictionaryKeys = newDictionaryKeys
             return
         }
-        
+
         // Update existing keys with new data being passed in.
         dictionaryKeys = dictionaryKeys.insertAndUpdate(newDictionaryKeys) { existingKey, newKey in
             let contents = existingKey.contents.count > 0 ? existingKey.contents : newKey.contents

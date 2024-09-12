@@ -12,11 +12,11 @@ import Foundation
 import Markdown
 
 struct SemanticAnalyzer: MarkupVisitor {
-    var problems = [Problem]()
+    var problems: [Problem] = []
     let source: URL?
     let context: DocumentationContext
     let bundle: DocumentationBundle
-    
+
     init(source: URL?, context: DocumentationContext, bundle: DocumentationBundle) {
         self.source = source
         self.context = context
@@ -24,7 +24,7 @@ struct SemanticAnalyzer: MarkupVisitor {
     }
 
     private mutating func analyzeChildren(of markup: Markup) -> [Semantic] {
-        var semanticChildren = [Semantic]()
+        var semanticChildren: [Semantic] = []
         for child in markup.children {
             guard let semantic = visit(child) else {
                 continue
@@ -33,30 +33,35 @@ struct SemanticAnalyzer: MarkupVisitor {
         }
         return semanticChildren
     }
-    
+
     /// Analyses the given document and returns the semantic object that the analyzer parsed from the document's content.
     /// - Returns: The parsed semantic object or `nil` if the analyzer couldn't parse a semantic object from the document.
     mutating func visitDocument(_ document: Document) -> Semantic? {
         if let range = document.range, range.isEmpty {
             return nil
         }
-        
+
         let semanticChildren = analyzeChildren(of: document)
         let topLevelChildren = semanticChildren.filter {
-            return $0 is Technology ||
-            $0 is Tutorial ||
-            $0 is TutorialArticle
+            return $0 is Technology || $0 is Tutorial || $0 is TutorialArticle
         }
 
         let topLevelDirectives = BlockDirective.topLevelDirectiveNames
             .map { $0.singleQuoted }
             .list(finalConjunction: .or)
-        
+
         if let source {
             if !topLevelChildren.isEmpty, !DocumentationBundleFileTypes.isTutorialFile(source) {
                 // Only tutorials support top level directives. This document has top level directives but is not a tutorial file.
                 let directiveName = type(of: topLevelChildren.first! as! DirectiveConvertible).directiveName
-                let diagnostic = Diagnostic(source: source, severity: .warning, range: document.range, identifier: "org.swift.docc.unsupportedTopLevelChild", summary: "Found unsupported \(directiveName.singleQuoted) directive in '.\(source.pathExtension)' file", explanation: "Only '.tutorial' files support top-level directives")
+                let diagnostic = Diagnostic(
+                    source: source,
+                    severity: .warning,
+                    range: document.range,
+                    identifier: "org.swift.docc.unsupportedTopLevelChild",
+                    summary: "Found unsupported \(directiveName.singleQuoted) directive in '.\(source.pathExtension)' file",
+                    explanation: "Only '.tutorial' files support top-level directives"
+                )
                 problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
                 return nil
             } else if topLevelChildren.isEmpty, !DocumentationBundleFileTypes.isReferenceDocumentationFile(source) {
@@ -68,30 +73,37 @@ struct SemanticAnalyzer: MarkupVisitor {
                     identifier: "org.swift.docc.missingTopLevelChild",
                     summary: "No valid content was found in this file",
                     explanation: """
-                    A '.\(source.pathExtension)' file should contain a top-level directive \
-                    (\(topLevelDirectives)) and valid child content. \
-                    Only '.md' files support content without a top-level directive
-                    """
+                        A '.\(source.pathExtension)' file should contain a top-level directive \
+                        (\(topLevelDirectives)) and valid child content. \
+                        Only '.md' files support content without a top-level directive
+                        """
                 )
                 problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
                 return nil
             }
         }
-        
+
         if topLevelChildren.isEmpty {
             guard let article = Article(from: document, source: source, for: bundle, in: context, problems: &problems) else {
                 // We've already diagnosed the invalid article.
                 return nil
             }
-            
+
             return article
         }
-        
+
         // Diagnose more than one top-level directive
         for extraneousTopLevelChild in topLevelChildren.suffix(from: 1) {
             if let directiveConvertible = extraneousTopLevelChild as? DirectiveConvertible,
-                let range = directiveConvertible.originalMarkup.range {
-                let diagnostic = Diagnostic(source: source, severity: .warning, range: range, identifier: "org.swift.docc.extraneousTopLevelChild", summary: "Only one top-level directive from \(topLevelDirectives) may exist in a document; this directive will be ignored")
+                let range = directiveConvertible.originalMarkup.range
+            {
+                let diagnostic = Diagnostic(
+                    source: source,
+                    severity: .warning,
+                    range: range,
+                    identifier: "org.swift.docc.extraneousTopLevelChild",
+                    summary: "Only one top-level directive from \(topLevelDirectives) may exist in a document; this directive will be ignored"
+                )
                 let solution = Solution(summary: "Remove this extraneous directive", replacements: [Replacement(range: range, replacement: "")])
                 problems.append(Problem(diagnostic: diagnostic, possibleSolutions: [solution]))
             }
@@ -159,22 +171,30 @@ struct SemanticAnalyzer: MarkupVisitor {
             return nil
         default:
             guard let directiveType = DirectiveIndex.shared.indexedDirectives[blockDirective.name]?.type else {
-                let diagnostic = Diagnostic(source: source, severity: .warning, range: blockDirective.range, identifier: "org.swift.docc.unknownDirective", summary: "Unknown directive \(blockDirective.name.singleQuoted); this element will be ignored")
+                let diagnostic = Diagnostic(
+                    source: source,
+                    severity: .warning,
+                    range: blockDirective.range,
+                    identifier: "org.swift.docc.unknownDirective",
+                    summary: "Unknown directive \(blockDirective.name.singleQuoted); this element will be ignored"
+                )
                 problems.append(Problem(diagnostic: diagnostic, possibleSolutions: []))
-                
+
                 return nil
             }
-            
-            guard let directive = directiveType.init(
-                from: blockDirective,
-                source: source,
-                for: bundle,
-                in: context,
-                problems: &problems
-            ) else {
+
+            guard
+                let directive = directiveType.init(
+                    from: blockDirective,
+                    source: source,
+                    for: bundle,
+                    in: context,
+                    problems: &problems
+                )
+            else {
                 return nil
             }
-            
+
             // Analyze any structured markup directives (like @Row or @Column)
             // that are contained in the child markup of this directive.
             if let markupContainingDirective = directive as? MarkupContaining {
@@ -182,7 +202,7 @@ struct SemanticAnalyzer: MarkupVisitor {
                     _ = visit(markupElement)
                 }
             }
-            
+
             return directive as? Semantic
         }
     }
@@ -190,7 +210,7 @@ struct SemanticAnalyzer: MarkupVisitor {
     func defaultVisit(_ markup: Markup) -> Semantic? {
         return MarkupContainer(markup)
     }
-    
+
     typealias Result = Semantic?
-    
+
 }

@@ -9,6 +9,7 @@
 */
 
 import Foundation
+
 #if os(Windows)
 import ucrt
 #elseif os(Linux) || os(Android)
@@ -18,25 +19,26 @@ import Darwin
 #endif
 
 internal func SetEnvironmentVariable(_ key: String, _ value: String) {
-#if os(Windows)
+    #if os(Windows)
     _ = key.withCString(encodedAs: UTF16.self) { key in
         value.withCString(encodedAs: UTF16.self) { value in
             _wputenv_s(key, value)
         }
     }
-#else
+    #else
     setenv(key, value, 1)
-#endif
+    #endif
 }
 
 internal func UnsetEnvironmentVariable(_ key: String) {
-#if os(Windows)
+    #if os(Windows)
     _ = key.withCString(encodedAs: UTF16.self) { key in
-        "".withCString(encodedAs: UTF16.self) { value in
-            _wputenv_s(key, value)
-        }
+        ""
+            .withCString(encodedAs: UTF16.self) { value in
+                _wputenv_s(key, value)
+            }
     }
-#else
+    #else
     unsetenv(key)
-#endif
+    #endif
 }

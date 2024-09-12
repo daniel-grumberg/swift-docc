@@ -15,12 +15,12 @@ extension String {
 }
 
 /// Complete sentences to use for constructing texts.
-fileprivate let sentences = [
+private let sentences = [
     "TestFramework provides APIs, data-models, controls, and layout structures for declaring a rich model to describe relationships and dependencies along with rich user interfaces.",
     "Define your application's structure using the rich data model and relationships defined by expressing relationships in a graph of nodes that interact with each other throughout the app life.",
     "Create your own custom node-based graph models by using the TestFramework rich APIs for describing connections between entities that are related via rich connections.",
     "Apply powerful modifiers to expressive chain-able queries that allow you to fetch batches of nodes via a rich query language from a graph-based in-memory model.",
-    "You can integrate your app's workflow directly with TestFramework by adopting a hierarchy of protocol-based models that describe an in-memory model graph data queries."
+    "You can integrate your app's workflow directly with TestFramework by adopting a hierarchy of protocol-based models that describe an in-memory model graph data queries.",
 ]
 
 /// A list of words to use for naming things.
@@ -41,7 +41,7 @@ var words = WrappingEnumerator<String>(items: [
     "Guava",
     "Kiwi",
     "Lemon",
-    "Lime"
+    "Lime",
 ])
 
 /// A set of functions to generate gibberish text.
@@ -57,32 +57,32 @@ enum Text {
         }
         return result
     }
-    
+
     /// Makes a paragraph.
     static func paragraph() -> String {
         return sentence() + "\n" + sentence() + "\n" + sentence() + "\n"
     }
-    
+
     enum RichText: CaseIterable {
         case formatting, inlineCode, blockCode, images
     }
-    
+
     /// Creates a text with the given traits.
     static func text(bundle: OutputBundle, numSections: Int = 2, formatting: [RichText] = []) -> String {
         var result = ""
-        
+
         for _ in 1...numSections {
             var body = ""
-            
+
             if formatting.contains(.images) {
                 body += "![Accessible image description](\(bundle.topLevelImages.next().name))"
             }
-            
-            for i in 0 ..< 3 {
+
+            for i in 0..<3 {
                 if i == 2 {
                     body += "### Sub-Section \(i)\n\n"
                 }
-                
+
                 if formatting.contains(.formatting) {
                     body += "This __paragraph__ contains ~~un~~formatted _text_. "
                 }
@@ -91,55 +91,56 @@ enum Text {
                 }
                 body += paragraph() + "\n"
             }
-            
+
             if formatting.contains(.blockCode) {
                 body += """
-                ```swift
-                if ProcessInfo.Time.local.isAM {
-                    print("Good morning")
-                } else if ProcessInfo.Time.local.isBedTime {
-                    print("Good night")
-                } else {
-                    print("Hello")
-                }
-                ```
-                """.appending("\n")
+                    ```swift
+                    if ProcessInfo.Time.local.isAM {
+                        print("Good morning")
+                    } else if ProcessInfo.Time.local.isBedTime {
+                        print("Good night")
+                    } else {
+                        print("Hello")
+                    }
+                    ```
+                    """
+                    .appending("\n")
             }
-            
+
             result += body
         }
         return result
     }
-    
+
     /// Creates a "Topics" section.
     static func topics(for name: String) -> String {
         var result = "## Topics\n"
         let name = name.components(separatedBy: CharacterSet.letters.inverted).joined()
         let idString = name.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
         let id = Int(idString) ?? 1
-        
+
         for i in 0...3 {
             result += " - ``\(name)\(id+i)``\n"
         }
         return result
     }
-    
+
     /// Creates a markup note.
     static func note() -> String {
         return "> Note: " + sentence() + "\n"
     }
-    
+
     /// Converts the lines of a text as source comments.
     static func asComment(_ string: String) -> String {
         return string.components(separatedBy: .newlines)
             .map({ "/// \($0)" })
             .joined(separator: "\n")
     }
-    
+
     enum DocSection: CaseIterable {
         case abstract, discussion, topics, note
     }
-    
+
     /// Creates a documentation markup for a given type with the given traits.
     static func docs(for name: String, bundle: OutputBundle, sections: [DocSection] = Array(DocSection.allCases), numSections: Int = 1) -> String {
         var result = "\n"
@@ -147,7 +148,7 @@ enum Text {
             result += Text.asComment(Text.sentence())
             result += "\n\n"
         }
-        
+
         if sections.contains(.discussion) {
             result += Text.asComment("## Overview")
             result += "\n"

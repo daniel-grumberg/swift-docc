@@ -31,10 +31,11 @@ struct ArticleSymbolMentions {
     func articlesMentioning(_ symbol: ResolvedTopicReference) -> [ResolvedTopicReference] {
         // Mentions are sorted on demand based on the number of mentions.
         // This could change in the future.
-        return mentions[symbol, default: [:]].sorted {
-            $0.value > $1.value
-        }
-        .map { $0.key }
+        return mentions[symbol, default: [:]]
+            .sorted {
+                $0.value > $1.value
+            }
+            .map { $0.key }
     }
 }
 
@@ -45,7 +46,8 @@ struct SymbolLinkCollector: MarkupWalker {
 
     func visitSymbolLink(_ symbolLink: SymbolLink) {
         if let destination = symbolLink.destination,
-           let symbol = context.referenceIndex[destination] {
+            let symbol = context.referenceIndex[destination]
+        {
             context.articleSymbolMentions.article(article, didMention: symbol, weight: baseWeight)
         }
     }

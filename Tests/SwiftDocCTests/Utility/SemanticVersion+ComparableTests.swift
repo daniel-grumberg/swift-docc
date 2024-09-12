@@ -8,26 +8,27 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
 import SymbolKit
+import XCTest
+
 @testable import SwiftDocC
 
 class SemanticVersion_ComparableTests: XCTestCase {
     private typealias Version = SymbolGraph.SemanticVersion
-    
+
     func test() {
         // Patch difference
         XCTAssertLessThan(
             Version(major: 1, minor: 1, patch: 1),
             Version(major: 1, minor: 1, patch: 2)
         )
-        
+
         // Minor difference
         XCTAssertLessThan(
             Version(major: 1, minor: 1, patch: 3),
             Version(major: 1, minor: 2, patch: 1)
         )
-        
+
         // Major difference
         XCTAssertLessThan(
             Version(major: 1, minor: 3, patch: 1),

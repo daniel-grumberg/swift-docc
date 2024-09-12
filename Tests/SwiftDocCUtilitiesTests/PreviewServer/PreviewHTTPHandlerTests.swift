@@ -25,16 +25,19 @@ class PreviewHTTPHandlerTests: XCTestCase {
     func testPreviewHandler() throws {
         let tempFolderURL = try createTempFolder(content: [
             TextFile(name: "index.html", utf8Content: "index"),
-            Folder(name: "css", content: [
-                TextFile(name: "test.css", utf8Content: "css"),
-            ])
+            Folder(
+                name: "css",
+                content: [
+                    TextFile(name: "test.css", utf8Content: "css")
+                ]
+            ),
         ])
 
         let channel = EmbeddedChannel()
         let channelHandler = PreviewHTTPHandler(fileIO: fileIO, rootURL: tempFolderURL)
 
         let response = Response()
-        
+
         XCTAssertNoThrow(try channel.pipeline.addHandler(HTTPResponseEncoder()).wait())
         XCTAssertNoThrow(try channel.pipeline.addHandler(response).wait())
         XCTAssertNoThrow(try channel.pipeline.addHandler(channelHandler).wait())
@@ -47,7 +50,7 @@ class PreviewHTTPHandlerTests: XCTestCase {
             let request = makeRequestHead(uri: "/tutorials")
             XCTAssertNoThrow(try channel.writeInbound(HTTPServerRequestPart.head(request)))
             XCTAssertNoThrow(try channel.writeInbound(HTTPServerRequestPart.end(nil)))
-            
+
             XCTAssertEqual(response.head?.status, .ok)
             XCTAssertEqual(response.body, "index")
         }
@@ -57,7 +60,7 @@ class PreviewHTTPHandlerTests: XCTestCase {
             let request = makeRequestHead(uri: "/css/test.css")
             XCTAssertNoThrow(try channel.writeInbound(HTTPServerRequestPart.head(request)))
             XCTAssertNoThrow(try channel.writeInbound(HTTPServerRequestPart.end(nil)))
-            
+
             XCTAssertEqual(response.head?.status, .ok)
             XCTAssertEqual(response.body, "css")
         }
@@ -67,17 +70,17 @@ class PreviewHTTPHandlerTests: XCTestCase {
             let request = makeRequestHead(uri: "/css/notfound.css")
             XCTAssertNoThrow(try channel.writeInbound(HTTPServerRequestPart.head(request)))
             XCTAssertNoThrow(try channel.writeInbound(HTTPServerRequestPart.end(nil)))
-            
+
             XCTAssertEqual(response.head?.status, .notFound)
             XCTAssertEqual(response.body, "")
         }
-        
+
         // Passed credentials when none required
         do {
             let request = makeRequestHead(uri: "/tutorials", headers: [("Authorization", "Basic \("USER:PASS".data(using: .utf8)!.base64EncodedString())")])
             XCTAssertNoThrow(try channel.writeInbound(HTTPServerRequestPart.head(request)))
             XCTAssertNoThrow(try channel.writeInbound(HTTPServerRequestPart.end(nil)))
-            
+
             XCTAssertEqual(response.head?.status, .ok)
             XCTAssertEqual(response.body, "index")
         }

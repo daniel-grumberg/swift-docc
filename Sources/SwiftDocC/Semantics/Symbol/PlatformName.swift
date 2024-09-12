@@ -13,12 +13,12 @@ import Foundation
 /// A supported platform's name representation.
 public struct PlatformName: Codable, Hashable, Equatable {
     public var rawValue: String
-    
+
     /// Compares platform names independently of any known aliases differences or possible incomplete display names.
     public static func == (lhs: PlatformName, rhs: PlatformName) -> Bool {
         return lhs.rawValue == rhs.rawValue
     }
-    
+
     /// Creates a new platform name value.
     /// - Parameters:
     ///   - rawValue: The raw source string.
@@ -29,24 +29,24 @@ public struct PlatformName: Codable, Hashable, Equatable {
         self.aliases = aliases
         self.displayName = displayName ?? rawValue
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(displayName)
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let name = try container.decode(String.self)
         self.init(operatingSystemName: name)
     }
-    
+
     /// Other known identifiers for the same platform (aka "macosx" for "macOS").
     public var aliases: [String] = []
-    
+
     /// The name to use in render JSON. If `nil` returns `rawValue`.
     public var displayName: String
-    
+
     /// Apple's macOS operating system.
     public static let macOS = PlatformName(rawValue: "macOS", aliases: ["macosx"])
     public static let macOSAppExtension = PlatformName(rawValue: "macOSAppExtension", displayName: "macOS App Extension")
@@ -70,7 +70,7 @@ public struct PlatformName: Codable, Hashable, Equatable {
     public static let iPadOS = PlatformName(rawValue: "iPadOS")
     /// Apple's visionOS operating system.
     public static let visionOS = PlatformName(rawValue: "visionOS")
-    
+
     /// All supported platforms sorted for presentation.
     public static let sortedPlatforms: [PlatformName] = [
         .iOS, .iOSAppExtension,
@@ -80,9 +80,9 @@ public struct PlatformName: Codable, Hashable, Equatable {
         .tvOS, .tvOSAppExtension,
         .visionOS,
         .watchOS, .watchOSAppExtension,
-        .swift
+        .swift,
     ]
-    
+
     /// A common platform names fast lookup index.
     ///
     /// A static, lazily created platform name index for fast lookups by name.

@@ -14,8 +14,8 @@ extension Sequence {
     /// - Parameter matches: A closure that takes an element of the sequence as its argument and returns a `Result` value indicating whether the element should be included in the matching list.
     /// - Returns: A pair of the matching elements and the remaining elements, that didn't match.
     func categorize<Result>(where matches: (Element) -> Result?) -> (matching: [Result], remainder: [Element]) {
-        var matching = [Result]()
-        var remainder = [Element]()
+        var matching: [Result] = []
+        var remainder: [Element] = []
         for element in self {
             if let matchingResult = matches(element) {
                 matching.append(matchingResult)

@@ -9,10 +9,11 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class ValidatedURLTests: XCTestCase {
-    
+
     func testValidURLs() {
         let validURLs = [
             URL(string: "http://domain")!,
@@ -21,7 +22,7 @@ class ValidatedURLTests: XCTestCase {
             URL(string: "https://www.domain.com/path")!,
             URL(string: "ftp://www.domain.com/path/file.ext")!,
         ]
-        
+
         // Test ValidatedURL.init(String)
         validURLs.forEach { url in
             let validated = ValidatedURL(parsingExact: url.absoluteString)
@@ -47,7 +48,7 @@ class ValidatedURLTests: XCTestCase {
             URL(string: "https://www.domain.com")!,
             URL(string: "ftp://www.domain.com/path")!,
         ]
-        
+
         // Test successful requiring
         validURLs
             .filter { $0.scheme == "ftp" }
@@ -62,7 +63,7 @@ class ValidatedURLTests: XCTestCase {
                 XCTAssertNil(ValidatedURL(url)?.requiring(scheme: "ftp"))
             }
     }
-    
+
     // We need to validate fragment parsing because former approach using `URL`
     // led to failing to parse the fragment for some variants of the test strings below.
     func testFragment() {

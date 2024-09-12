@@ -8,20 +8,21 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import XCTest
-@testable import SwiftDocC
 import Markdown
+import XCTest
+
+@testable import SwiftDocC
 
 class MarkupReferenceResolverTests: XCTestCase {
     func testArbitraryReferenceInComment() throws {
         let (bundle, context) = try testBundleAndContext(named: "TestBundle")
         let source = """
-        @Comment {
-            ``hello`` and ``world`` are 2 arbitrary symbol links.
-            <doc:NOT-EXISTS-DESTINATION#UNKNOWN>
-            But since they are under a comment block, no reference resolve problem should be emitted.
-        }
-        """
+            @Comment {
+                ``hello`` and ``world`` are 2 arbitrary symbol links.
+                <doc:NOT-EXISTS-DESTINATION#UNKNOWN>
+                But since they are under a comment block, no reference resolve problem should be emitted.
+            }
+            """
         let document = Document(parsing: source, options: [.parseBlockDirectives, .parseSymbolLinks])
         var resolver = MarkupReferenceResolver(context: context, bundle: bundle, rootReference: context.rootModules[0])
         _ = resolver.visit(document)

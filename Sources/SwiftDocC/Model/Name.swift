@@ -11,7 +11,7 @@
 extension DocumentationNode {
     /**
      The annotated name of a node.
-     
+
      Extend this type to transform the name of a node into various forms,
      such as for display as a title or in a task group, or normalized for
      search indexing.
@@ -21,7 +21,7 @@ extension DocumentationNode {
         case conceptual(title: String)
         /// The name of the symbol.
         case symbol(name: String)
-        
+
         public func hash(into hasher: inout Hasher) {
             switch self {
             case .conceptual(let text):
@@ -30,7 +30,7 @@ extension DocumentationNode {
                 hasher.combine(name)
             }
         }
-        
+
         public var description: String {
             switch self {
             case .conceptual(let title):
@@ -39,14 +39,14 @@ extension DocumentationNode {
                 return name
             }
         }
-        
+
         var plainText: String {
             description
         }
-        
+
         @available(*, deprecated, message: "This deprecated API will be removed after 6.1 is released")
         static func symbol(declaration: AttributedCodeListing.Line) -> Name {
-            // This static function exists so that `Name.symbol(declaration:)` is available while 
+            // This static function exists so that `Name.symbol(declaration:)` is available while
             // still allowing switching over the two "symbol" name cases.
             Name.symbol(name: declaration.tokens.first?.description ?? "")
         }

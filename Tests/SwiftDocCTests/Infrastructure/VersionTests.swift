@@ -9,6 +9,7 @@
 */
 
 import XCTest
+
 @testable import SwiftDocC
 
 class VersionTests: XCTestCase {

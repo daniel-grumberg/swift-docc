@@ -11,16 +11,14 @@
 import Markdown
 import SymbolKit
 
-/**
- A textual replacement.
- */
+/// A textual replacement.
 public struct Replacement: Hashable {
     /// The range to replace.
     public var range: SourceRange
-    
+
     /// The replacement text.
     public var replacement: String
-    
+
     public init(range: SourceRange, replacement: String) {
         self.range = range
         self.replacement = replacement
@@ -37,9 +35,9 @@ extension Replacement {
     mutating func offsetWithRange(_ range: SourceRange) {
         self.range.offsetWithRange(range)
     }
-    
+
     /// Offsets the replacement using a certain SymbolKit `SourceRange`.
-    /// 
+    ///
     /// Useful when validating a doc comment that needs to be projected in its containing file "space".
     mutating func offsetWithRange(_ docRange: SymbolGraph.LineList.SourceRange) {
         self.offsetWithRange(SourceRange(from: docRange))

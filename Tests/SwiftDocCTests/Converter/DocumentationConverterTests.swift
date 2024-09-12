@@ -8,15 +8,15 @@
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-
 import XCTest
+
 @testable import SwiftDocC
 
 class DocumentationConverterTests: XCTestCase {
     /// An empty implementation of `ConvertOutputConsumer` that purposefully does nothing.
     struct EmptyConvertOutputConsumer: ConvertOutputConsumer {
-        func consume(renderNode: RenderNode) throws { }
-        func consume(problems: [Problem]) throws { }
+        func consume(renderNode: RenderNode) throws {}
+        func consume(problems: [Problem]) throws {}
         func consume(assetsInBundle bundle: DocumentationBundle) throws {}
         func consume(linkableElementSummaries: [LinkDestinationSummary]) throws {}
         func consume(indexingRecords: [IndexingRecord]) throws {}
@@ -32,7 +32,16 @@ class DocumentationConverterTests: XCTestCase {
         let workspace = DocumentationWorkspace()
         try workspace.registerProvider(dataProvider)
         let context = try DocumentationContext(dataProvider: workspace)
-        var converter = DocumentationConverter(documentationBundleURL: rootURL, emitDigest: false, documentationCoverageOptions: .noCoverage, currentPlatforms: nil, workspace: workspace, context: context, dataProvider: dataProvider, bundleDiscoveryOptions: BundleDiscoveryOptions())
+        var converter = DocumentationConverter(
+            documentationBundleURL: rootURL,
+            emitDigest: false,
+            documentationCoverageOptions: .noCoverage,
+            currentPlatforms: nil,
+            workspace: workspace,
+            context: context,
+            dataProvider: dataProvider,
+            bundleDiscoveryOptions: BundleDiscoveryOptions()
+        )
         XCTAssertThrowsError(try converter.convert(outputConsumer: EmptyConvertOutputConsumer())) { error in
             let converterError = try? XCTUnwrap(error as? DocumentationConverter.Error)
             XCTAssertEqual(converterError, DocumentationConverter.Error.doesNotContainBundle(url: rootURL))

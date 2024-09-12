@@ -21,12 +21,12 @@ struct AttributesSectionTranslator: RenderSectionTranslator {
         translateSectionToVariantCollection(
             documentationDataVariants: symbol.attributesVariants
         ) { _, attributes in
-            
+
             func translateFragments(_ fragments: [SymbolGraph.Symbol.DeclarationFragments.Fragment]) -> [DeclarationRenderSection.Token] {
                 return fragments.map { fragment in
                     let reference: ResolvedTopicReference?
                     if let preciseIdentifier = fragment.preciseIdentifier,
-                       let resolved = renderNodeTranslator.context.localOrExternalReference(symbolID: preciseIdentifier)
+                        let resolved = renderNodeTranslator.context.localOrExternalReference(symbolID: preciseIdentifier)
                     {
                         reference = resolved
                         renderNodeTranslator.collectedTopicReferences.append(resolved)
@@ -38,42 +38,43 @@ struct AttributesSectionTranslator: RenderSectionTranslator {
                     return DeclarationRenderSection.Token(fragment: fragment, identifier: reference?.absoluteString)
                 }
             }
-            
+
             let attributesRenderSection = AttributesRenderSection(
                 title: "Attributes",
-                attributes: attributes.compactMap { kind, attribute in
-                    
-                    switch (kind, attribute) {
-                    case (.minimum, let value as SymbolGraph.AnyNumber):
-                        return RenderAttribute.minimum(String(value))
-                    case (.maximum, let value as SymbolGraph.AnyNumber):
-                        return RenderAttribute.maximum(String(value))
-                    case (.minimumExclusive, let value as SymbolGraph.AnyNumber):
-                        return RenderAttribute.minimumExclusive(String(value))
-                    case (.maximumExclusive, let value as SymbolGraph.AnyNumber):
-                        return RenderAttribute.maximumExclusive(String(value))
-                    case (.minimumLength, let value as Int):
-                        return RenderAttribute.minimumLength(String(value))
-                    case (.maximumLength, let value as Int):
-                        return RenderAttribute.maximumLength(String(value))
-                    case (.default, let value as SymbolGraph.AnyScalar):
-                        return RenderAttribute.default(String(value))
-                    case (.allowedTypes, let types as [SymbolGraph.Symbol.TypeDetail]):
-                        let tokens = types.compactMap { $0.fragments.map(translateFragments) }
-                        return RenderAttribute.allowedTypes(tokens)
-                    default:
-                        return nil
+                attributes:
+                    attributes.compactMap { kind, attribute in
+
+                        switch (kind, attribute) {
+                        case (.minimum, let value as SymbolGraph.AnyNumber):
+                            return RenderAttribute.minimum(String(value))
+                        case (.maximum, let value as SymbolGraph.AnyNumber):
+                            return RenderAttribute.maximum(String(value))
+                        case (.minimumExclusive, let value as SymbolGraph.AnyNumber):
+                            return RenderAttribute.minimumExclusive(String(value))
+                        case (.maximumExclusive, let value as SymbolGraph.AnyNumber):
+                            return RenderAttribute.maximumExclusive(String(value))
+                        case (.minimumLength, let value as Int):
+                            return RenderAttribute.minimumLength(String(value))
+                        case (.maximumLength, let value as Int):
+                            return RenderAttribute.maximumLength(String(value))
+                        case (.default, let value as SymbolGraph.AnyScalar):
+                            return RenderAttribute.default(String(value))
+                        case (.allowedTypes, let types as [SymbolGraph.Symbol.TypeDetail]):
+                            let tokens = types.compactMap { $0.fragments.map(translateFragments) }
+                            return RenderAttribute.allowedTypes(tokens)
+                        default:
+                            return nil
+                        }
+
                     }
-                    
-                }.sorted { $0.title < $1.title }
+                    .sorted { $0.title < $1.title }
             )
             guard let attributes = attributesRenderSection.attributes, !attributes.isEmpty else {
                 return nil
             }
-            
+
             return attributesRenderSection
         }
     }
-    
-    
+
 }

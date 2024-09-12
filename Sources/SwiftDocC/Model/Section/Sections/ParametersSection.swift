@@ -13,7 +13,7 @@ public struct ParametersSection {
     public static var title: String? {
         return "Parameters"
     }
-    
+
     /// The list of function parameters.
     public let parameters: [Parameter]
 }
